@@ -61,6 +61,7 @@ CHANGE LOG:
 - 2025-12-15: Added vault creation modal for setting language/currency defaults
 - 2025-12-15: Added dark theme toggle in top controls
 - 2025-12-15: Changed vault modal to use vault name as suggested filename
+- 2025-12-15: Added credit card edit modal and Edit Settings button
 -->
 <!DOCTYPE html>
 <html lang="en">
@@ -160,6 +161,11 @@ CHANGE LOG:
                             <span id="credit-dates-label"></span>
                             <span id="credit-dates-value"></span>
                         </div>
+                        <!-- 2025-12-15: Edit CC settings button -->
+                        <button id="btn-edit-credit" class="btn btn-secondary btn-sm"
+                            style="margin-top: var(--space-sm); width: 100%;">
+                            ⚙️ <span data-i18n="editCreditSettings">Edit Settings</span>
+                        </button>
                     </div>
                 </section>
 
@@ -327,6 +333,41 @@ CHANGE LOG:
                 </button>
                 <button id="btn-apply-balance" class="btn btn-primary">
                     <span data-i18n="applyBalance">Apply</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2025-12-15: Edit Credit Card Modal -->
+    <div id="credit-modal" class="modal" style="display: none;">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <h2 id="credit-modal-title" class="modal-title">⚙️ Credit Card Settings</h2>
+            <p id="credit-modal-desc" class="modal-desc">Edit your credit card account settings.</p>
+
+            <div class="form-group">
+                <label id="label-edit-credit-limit" for="input-edit-credit-limit">Credit Limit</label>
+                <input type="number" id="input-edit-credit-limit" class="input" placeholder="e.g. 5000" step="0.01"
+                    min="0">
+            </div>
+
+            <div class="form-row">
+                <div class="form-group form-group-half">
+                    <label id="label-edit-payment-due" for="select-edit-payment-due">Payment Due Day</label>
+                    <select id="select-edit-payment-due" class="input"></select>
+                </div>
+                <div class="form-group form-group-half">
+                    <label id="label-edit-statement-close" for="select-edit-statement-close">Statement Close Day</label>
+                    <select id="select-edit-statement-close" class="input"></select>
+                </div>
+            </div>
+
+            <div class="modal-actions">
+                <button id="btn-cancel-credit" class="btn btn-secondary">
+                    <span data-i18n="cancel">Cancel</span>
+                </button>
+                <button id="btn-save-credit" class="btn btn-primary">
+                    <span data-i18n="saveChanges">Save Changes</span>
                 </button>
             </div>
         </div>

@@ -59,6 +59,7 @@
  * - 2025-12-15: Added balance overview widget translations (balanceOverview, totals, amountOwed)
  * - 2025-12-15: Added vault creation modal translations (vaultModalTitle, vaultLanguage, etc.)
  * - 2025-12-15: Changed vault modal to use vaultName instead of vaultAccountName
+ * - 2025-12-15: Added LANGUAGES config, LANGUAGE_CURRENCY_MAP, and extensibility helpers
  */
 
 const I18n = (() => {
@@ -66,6 +67,45 @@ const I18n = (() => {
 
     // Default language
     let currentLang = 'en';
+
+    /**
+     * =========================================================================
+     * LANGUAGE CONFIGURATION
+     * =========================================================================
+     * To add a new language:
+     * 1. Add entry to LANGUAGES object below with code, name, locale, direction
+     * 2. Add entry to LANGUAGE_CURRENCY_MAP with default currency for that language
+     * 3. Add translation dictionary to 'translations' object with all keys
+     * =========================================================================
+     */
+    const LANGUAGES = {
+        en: {
+            code: 'en',
+            name: 'English',
+            locale: 'en-US',
+            direction: 'ltr'  // left-to-right (for future RTL support)
+        },
+        es: {
+            code: 'es',
+            name: 'Español',
+            locale: 'es-MX',
+            direction: 'ltr'
+        }
+        // To add more languages:
+        // fr: { code: 'fr', name: 'Français', locale: 'fr-FR', direction: 'ltr' },
+        // ar: { code: 'ar', name: 'العربية', locale: 'ar-SA', direction: 'rtl' }
+    };
+
+    /**
+     * Default currency for each language
+     * Used when creating new vaults or accounts
+     */
+    const LANGUAGE_CURRENCY_MAP = {
+        en: 'USD',
+        es: 'MXN'
+        // fr: 'EUR',
+        // ar: 'SAR'
+    };
 
     // Translation dictionaries
     const translations = {
@@ -169,6 +209,13 @@ const I18n = (() => {
             totalNegative: 'Negative:',
             totalNet: 'Net:',
             amountOwed: 'Owed',
+
+            // Credit Card Edit Modal (2025-12-15)
+            editCreditSettings: 'Edit Settings',
+            creditModalTitle: '⚙️ Credit Card Settings',
+            creditModalDesc: 'Edit your credit card account settings.',
+            saveChanges: 'Save Changes',
+            toastCreditUpdated: '✅ Credit card settings updated!',
 
             // New Vault Modal (2025-12-15)
             vaultModalTitle: '✨ Create New Vault',
@@ -281,6 +328,13 @@ const I18n = (() => {
             totalNet: 'Neto:',
             amountOwed: 'Deuda',
 
+            // Credit Card Edit Modal (2025-12-15)
+            editCreditSettings: 'Editar Configuración',
+            creditModalTitle: '⚙️ Configuración de Tarjeta',
+            creditModalDesc: 'Edita la configuración de tu tarjeta de crédito.',
+            saveChanges: 'Guardar Cambios',
+            toastCreditUpdated: '✅ ¡Configuración actualizada!',
+
             // New Vault Modal (2025-12-15)
             vaultModalTitle: '✨ Crear Nueva Bóveda',
             vaultModalDesc: 'Configura tus preferencias para este rastreador de gastos.',
@@ -347,13 +401,41 @@ const I18n = (() => {
     }
 
     /**
-     * Get available languages
+     * Get language info by code
+     * @param {string} code - Language code (e.g., 'en', 'es')
+     * @returns {object} Language metadata or default (en)
+     */
+    function getLanguageInfo(code) {
+        return LANGUAGES[code] || LANGUAGES.en;
+    }
+
+    /**
+     * Get available languages from config
+     * @returns {Array} Array of language objects with code and name
      */
     function getAvailableLanguages() {
-        return [
-            { code: 'en', name: 'English' },
-            { code: 'es', name: 'Español' }
-        ];
+        return Object.values(LANGUAGES).map(lang => ({
+            code: lang.code,
+            name: lang.name
+        }));
+    }
+
+    /**
+     * Get the default currency for a language
+     * @param {string} langCode - Language code
+     * @returns {string} Currency code (defaults to USD)
+     */
+    function getDefaultCurrency(langCode) {
+        return LANGUAGE_CURRENCY_MAP[langCode] || 'USD';
+    }
+
+    /**
+     * Get the current locale (e.g., 'en-US', 'es-MX')
+     * Useful for date/number formatting
+     */
+    function getLocale() {
+        const lang = LANGUAGES[currentLang];
+        return lang ? lang.locale : 'en-US';
     }
 
     // Initialize on load
@@ -361,9 +443,17 @@ const I18n = (() => {
 
     // Public API
     return {
+        // Config objects (for extension reference)
+        LANGUAGES,
+        LANGUAGE_CURRENCY_MAP,
+
+        // Core functions
         t,
         setLanguage,
         getLanguage,
-        getAvailableLanguages
+        getLanguageInfo,
+        getAvailableLanguages,
+        getDefaultCurrency,
+        getLocale
     };
 })();

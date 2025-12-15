@@ -150,9 +150,8 @@ const Calendar = (() => {
         const currentMonth = now.getMonth();
         const currentYear = now.getFullYear();
 
-        // Get current language locale (2025-12-15: Use I18n language for localization)
-        const lang = typeof I18n !== 'undefined' ? I18n.getLanguage() : 'en';
-        const locale = lang === 'es' ? 'es-MX' : 'en-US';
+        // Get current language locale (2025-12-15: Use I18n.getLocale() for localization)
+        const locale = typeof I18n !== 'undefined' ? I18n.getLocale() : 'en-US';
 
         // Format full date: "Sunday, December 15, 2025" or "domingo, 15 de diciembre de 2025"
         const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };

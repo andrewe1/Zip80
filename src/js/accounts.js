@@ -46,10 +46,27 @@
  * - 2025-12-14: Initial creation with USD/MXN currency support
  * - 2025-12-14: Added data migration from v1 to v2 format
  * - 2025-12-14: Added balance calculation and account CRUD
+ * - 2025-12-15: Added currency extension documentation
  */
 
 const Accounts = (() => {
-    // Currency definitions
+    /**
+     * =========================================================================
+     * CURRENCY CONFIGURATION
+     * =========================================================================
+     * To add a new currency:
+     * 1. Add entry to CURRENCIES object below with code, symbol, name, locale
+     * 2. Add translation entry to I18n LANGUAGE_CURRENCY_MAP if needed
+     * 3. Currency will automatically appear in dropdowns via getAvailableCurrencies()
+     * 
+     * Properties:
+     * - code: ISO 4217 currency code (e.g., 'USD', 'EUR')
+     * - symbol: Currency symbol displayed before amounts (e.g., '$', '€')
+     * - name: Human-readable currency name
+     * - locale: BCP 47 locale for number formatting (e.g., 'en-US')
+     * - suffix: Optional suffix appended after amount (e.g., ' MXN')
+     * =========================================================================
+     */
     const CURRENCIES = {
         USD: {
             code: 'USD',
@@ -64,6 +81,10 @@ const Accounts = (() => {
             locale: 'es-MX',
             suffix: ' MXN'
         }
+        // To add more currencies:
+        // EUR: { code: 'EUR', symbol: '€', name: 'Euro', locale: 'de-DE' },
+        // GBP: { code: 'GBP', symbol: '£', name: 'British Pound', locale: 'en-GB' },
+        // JPY: { code: 'JPY', symbol: '¥', name: 'Japanese Yen', locale: 'ja-JP' }
     };
 
     /**

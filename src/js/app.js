@@ -55,6 +55,8 @@
  * - 2025-12-15: Added vault creation modal with language/currency defaults
  * - 2025-12-15: Added dark/light theme toggle with setupTheme()
  * - 2025-12-15: Added currency default based on language, vault name as filename
+ * - 2025-12-15: Added CC edit modal, account type icons, toast dark mode fix
+ * - 2025-12-15: Refactored to use I18n.getDefaultCurrency() for extensibility
  */
 
 (() => {
@@ -172,7 +174,21 @@
         labelVaultName: document.getElementById('label-vault-name'),
         inputVaultName: document.getElementById('input-vault-name'),
         btnCancelVault: document.getElementById('btn-cancel-vault'),
-        btnCreateVault: document.getElementById('btn-create-vault')
+        btnCreateVault: document.getElementById('btn-create-vault'),
+
+        // Credit Card Edit Modal (2025-12-15)
+        btnEditCredit: document.getElementById('btn-edit-credit'),
+        creditModal: document.getElementById('credit-modal'),
+        creditModalTitle: document.getElementById('credit-modal-title'),
+        creditModalDesc: document.getElementById('credit-modal-desc'),
+        labelEditCreditLimit: document.getElementById('label-edit-credit-limit'),
+        inputEditCreditLimit: document.getElementById('input-edit-credit-limit'),
+        labelEditPaymentDue: document.getElementById('label-edit-payment-due'),
+        selectEditPaymentDue: document.getElementById('select-edit-payment-due'),
+        labelEditStatementClose: document.getElementById('label-edit-statement-close'),
+        selectEditStatementClose: document.getElementById('select-edit-statement-close'),
+        btnCancelCredit: document.getElementById('btn-cancel-credit'),
+        btnSaveCredit: document.getElementById('btn-save-credit')
     };
 
     // --- Initialization ---
@@ -183,6 +199,7 @@
         setupEventListeners();
         setupDragAndDrop();
         setupCreditCardUI();  // 2025-12-15: Credit card setup
+        setupCreditEditModal();  // 2025-12-15: Credit edit modal
         setupVaultLanguageSync();  // 2025-12-15: Vault language-currency sync
         await checkForRecentFile();
         updateUILanguage();
@@ -396,6 +413,12 @@
         elements.inputVaultName.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') handleCreateVault();
         });
+
+        // Credit card edit modal (2025-12-15)
+        elements.btnEditCredit.addEventListener('click', openCreditModal);
+        elements.btnCancelCredit.addEventListener('click', closeCreditModal);
+        elements.btnSaveCredit.addEventListener('click', handleSaveCredit);
+        elements.creditModal.querySelector('.modal-backdrop').addEventListener('click', closeCreditModal);
     }
 
     function setupDragAndDrop() {
@@ -452,7 +475,7 @@
 
         // Set default currency based on language (2025-12-15)
         // Spanish -> MXN, English -> USD
-        elements.selectVaultCurrency.value = currentLang === 'es' ? 'MXN' : 'USD';
+        elements.selectVaultCurrency.value = I18n.getDefaultCurrency(currentLang);
 
         // Clear vault name and set placeholder
         elements.inputVaultName.value = '';
@@ -474,7 +497,7 @@
         `;
 
         // Set default currency AFTER options are populated (2025-12-15)
-        elements.selectVaultCurrency.value = currentLang === 'es' ? 'MXN' : 'USD';
+        elements.selectVaultCurrency.value = I18n.getDefaultCurrency(currentLang);
 
         elements.vaultModal.style.display = 'flex';
         elements.inputVaultName.focus();
@@ -487,7 +510,7 @@
     function setupVaultLanguageSync() {
         elements.selectVaultLanguage.addEventListener('change', (e) => {
             const lang = e.target.value;
-            elements.selectVaultCurrency.value = lang === 'es' ? 'MXN' : 'USD';
+            elements.selectVaultCurrency.value = I18n.getDefaultCurrency(lang);
         });
     }
 
@@ -581,7 +604,11 @@
         // Reset form fields
         elements.selectAccountType.value = 'checking';
         elements.inputAccountName.value = '';
-        elements.selectCurrency.value = 'USD';
+
+        // 2025-12-15: Default currency based on current language
+        const currentLang = I18n.getLanguage();
+        elements.selectCurrency.value = I18n.getDefaultCurrency(currentLang);
+
         elements.creditCardFields.style.display = 'none';  // 2025-12-15: Hide credit fields
         elements.inputCreditLimit.value = '';
         elements.selectPaymentDueDay.value = '15';
@@ -649,6 +676,75 @@
         render();
         handleSave();
         showToast(I18n.t('toastBalanceUpdated'));
+    }
+
+    // --- Credit Card Edit Operations (2025-12-15) ---
+
+    /**
+     * Setup credit modal day dropdowns (1-31)
+     * Called during init
+     */
+    function setupCreditEditModal() {
+        // Populate day dropdowns
+        for (let day = 1; day <= 31; day++) {
+            const option1 = document.createElement('option');
+            option1.value = day;
+            option1.textContent = day;
+            elements.selectEditPaymentDue.appendChild(option1);
+
+            const option2 = document.createElement('option');
+            option2.value = day;
+            option2.textContent = day;
+            elements.selectEditStatementClose.appendChild(option2);
+        }
+    }
+
+    function openCreditModal() {
+        const currentAccount = data.accounts.find(a => a.id === currentAccountId);
+        if (!currentAccount || currentAccount.type !== 'credit') return;
+
+        const t = I18n.t;
+
+        // Update modal labels
+        elements.creditModalTitle.textContent = t('creditModalTitle');
+        elements.creditModalDesc.textContent = t('creditModalDesc');
+        elements.labelEditCreditLimit.textContent = t('creditLimit');
+        elements.labelEditPaymentDue.textContent = t('paymentDueDay');
+        elements.labelEditStatementClose.textContent = t('statementCloseDay');
+        elements.btnCancelCredit.querySelector('[data-i18n="cancel"]').textContent = t('cancel');
+        elements.btnSaveCredit.querySelector('[data-i18n="saveChanges"]').textContent = t('saveChanges');
+
+        // Populate current values
+        elements.inputEditCreditLimit.value = currentAccount.creditLimit || '';
+        elements.selectEditPaymentDue.value = currentAccount.paymentDueDay || '15';
+        elements.selectEditStatementClose.value = currentAccount.statementCloseDay || '28';
+
+        elements.creditModal.style.display = 'flex';
+        elements.inputEditCreditLimit.focus();
+        elements.inputEditCreditLimit.select();
+    }
+
+    function closeCreditModal() {
+        elements.creditModal.style.display = 'none';
+    }
+
+    function handleSaveCredit() {
+        const currentAccount = data.accounts.find(a => a.id === currentAccountId);
+        if (!currentAccount) return;
+
+        const newLimit = parseFloat(elements.inputEditCreditLimit.value) || 0;
+        const newDueDay = parseInt(elements.selectEditPaymentDue.value) || 15;
+        const newCloseDay = parseInt(elements.selectEditStatementClose.value) || 28;
+
+        // Update account
+        currentAccount.creditLimit = newLimit;
+        currentAccount.paymentDueDay = newDueDay;
+        currentAccount.statementCloseDay = newCloseDay;
+
+        closeCreditModal();
+        render();
+        handleSave();
+        showToast(I18n.t('toastCreditUpdated'));
     }
 
     function handleCreateAccount() {
@@ -786,10 +882,13 @@
         data.accounts.forEach(account => {
             const isActive = account.id === currentAccountId;
             const canDelete = data.accounts.length > 1;
+            // 2025-12-15: Account type icons
+            const accountIcon = account.type === 'credit' ? '💳' : '🏦';
 
             const tab = document.createElement('button');
             tab.className = `account-tab ${isActive ? 'active' : ''}`;
             tab.innerHTML = `
+                <span class="account-icon">${accountIcon}</span>
                 <span class="account-name">${escapeHtml(account.name)}</span>
                 <span class="currency-badge">${account.currency}</span>
                 ${canDelete ? `<span class="delete-account" data-id="${account.id}">✕</span>` : ''}
@@ -837,6 +936,9 @@
             elements.creditLimitValue.textContent = Accounts.formatCurrency(currentAccount.creditLimit, currentAccount.currency);
             elements.creditDatesLabel.textContent = `${t('dueDay')}: ${currentAccount.paymentDueDay}`;
             elements.creditDatesValue.textContent = `${t('closesDay')}: ${currentAccount.statementCloseDay}`;
+
+            // 2025-12-15: Translate edit settings button
+            elements.btnEditCredit.querySelector('[data-i18n="editCreditSettings"]').textContent = t('editCreditSettings');
         } else {
             // Checking account: Show balance
             elements.balanceLabel.textContent = t('balanceLabel');
@@ -949,9 +1051,12 @@
                 ? `<span class="balance-account-owed">${t('amountOwed')}: <span class="negative">${Accounts.formatCurrency(amountOwed, account.currency)}</span></span>`
                 : '';
 
+            // 2025-12-15: Account type icons
+            const accountIcon = account.type === 'credit' ? '💳' : '🏦';
+
             item.innerHTML = `
                 <div class="balance-account-info">
-                    <span class="balance-account-name">${escapeHtml(account.name)}</span>
+                    <span class="balance-account-name">${accountIcon} ${escapeHtml(account.name)}</span>
                     <span class="balance-account-currency">${account.currency}${account.type === 'credit' ? ' • Credit' : ''}</span>
                     ${owedHtml}
                 </div>
