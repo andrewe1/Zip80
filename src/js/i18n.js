@@ -1,6 +1,49 @@
 /**
- * Internationalization (i18n) Module
- * Supports English and Spanish language switching
+ * ============================================================================
+ * ZIP80 EXPENSE TRACKER - INTERNATIONALIZATION (i18n) MODULE
+ * ============================================================================
+ * 
+ * PURPOSE:
+ * Manages multi-language support for the application. Currently supports
+ * English (en) and Spanish (es) with easy extensibility for more languages.
+ * 
+ * KEY FEATURES:
+ * - Translation dictionaries for all UI strings
+ * - Browser language auto-detection on first visit
+ * - Language preference persistence via localStorage
+ * - Template interpolation for dynamic strings (${variable} syntax)
+ * - Real-time UI updates when switching languages
+ * 
+ * TRANSLATION KEYS ORGANIZED BY:
+ * - App title and startup screen
+ * - Buttons (open, save, add income/expense, etc.)
+ * - Form labels and placeholders
+ * - Toast messages (success/error)
+ * - Account management
+ * - Edit balance modal
+ * 
+ * HOW TO ADD A NEW LANGUAGE:
+ * 1. Add a new object to translations (e.g., 'fr': { ... })
+ * 2. Copy all keys from 'en' and translate values
+ * 3. The language will auto-appear in the dropdown
+ * 
+ * DEPENDENCIES: None (standalone module, loads first)
+ * USED BY: app.js
+ * 
+ * ============================================================================
+ * LLM LEGEND - IMPORTANT FOR FUTURE AI ASSISTANTS:
+ * All future edits to this file MUST be commented with:
+ * 1. Date of change
+ * 2. Description of what was changed and why
+ * 3. When adding new UI strings, add translations to ALL languages
+ * This ensures human developers and future LLMs can understand the codebase.
+ * ============================================================================
+ * 
+ * CHANGE LOG:
+ * - 2025-12-14: Initial creation with English/Spanish support
+ * - 2025-12-14: Added account management translations
+ * - 2025-12-14: Added edit balance modal translations
+ * - 2025-12-14: Added adjustment reason field translations
  */
 
 const I18n = (() => {
@@ -63,7 +106,34 @@ const I18n = (() => {
             btnDeleteTitle: 'Delete',
 
             // Language switcher
-            languageLabel: 'Language'
+            languageLabel: 'Language',
+
+            // Accounts
+            accountsTitle: 'Accounts',
+            newAccount: '+ New Account',
+            accountName: 'Account Name',
+            accountNamePlaceholder: 'e.g. Checking, Savings',
+            currency: 'Currency',
+            createAccount: 'Create Account',
+            cancel: 'Cancel',
+            deleteAccount: 'Delete Account',
+            confirmDeleteAccount: 'Delete this account and all its transactions?',
+            currencyUSD: 'USD - US Dollar',
+            currencyMXN: 'MXN - Mexican Peso',
+            noAccounts: 'No accounts yet',
+            toastAccountCreated: '✅ Account created!',
+            toastAccountDeleted: 'Account deleted',
+            toastErrorAccountName: 'Please enter an account name',
+
+            // Edit Balance
+            editBalance: 'Edit Balance',
+            editBalanceDesc: 'Set the new balance. An adjustment transaction will be created.',
+            newBalance: 'New Balance',
+            applyBalance: 'Apply',
+            balanceAdjustment: 'Balance Adjustment',
+            adjustmentReason: 'Reason for Adjustment',
+            adjustmentReasonPlaceholder: 'e.g. Bank reconciliation, Error correction',
+            toastBalanceUpdated: '✅ Balance updated!'
         },
 
         es: {
@@ -118,7 +188,34 @@ const I18n = (() => {
             btnDeleteTitle: 'Eliminar',
 
             // Language switcher
-            languageLabel: 'Idioma'
+            languageLabel: 'Idioma',
+
+            // Accounts
+            accountsTitle: 'Cuentas',
+            newAccount: '+ Nueva Cuenta',
+            accountName: 'Nombre de Cuenta',
+            accountNamePlaceholder: 'ej. Cheques, Ahorros',
+            currency: 'Moneda',
+            createAccount: 'Crear Cuenta',
+            cancel: 'Cancelar',
+            deleteAccount: 'Eliminar Cuenta',
+            confirmDeleteAccount: '¿Eliminar esta cuenta y todas sus transacciones?',
+            currencyUSD: 'USD - Dólar Americano',
+            currencyMXN: 'MXN - Peso Mexicano',
+            noAccounts: 'No hay cuentas aún',
+            toastAccountCreated: '✅ ¡Cuenta creada!',
+            toastAccountDeleted: 'Cuenta eliminada',
+            toastErrorAccountName: 'Por favor ingresa un nombre de cuenta',
+
+            // Edit Balance
+            editBalance: 'Editar Saldo',
+            editBalanceDesc: 'Establece el nuevo saldo. Se creará una transacción de ajuste.',
+            newBalance: 'Nuevo Saldo',
+            applyBalance: 'Aplicar',
+            balanceAdjustment: 'Ajuste de Saldo',
+            adjustmentReason: 'Razón del Ajuste',
+            adjustmentReasonPlaceholder: 'ej. Conciliación bancaria, Corrección de error',
+            toastBalanceUpdated: '✅ ¡Saldo actualizado!'
         }
     };
 

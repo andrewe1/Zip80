@@ -1,6 +1,41 @@
 /**
- * Calendar Module - Handles passive notifications
- * Requirement: Passive Notifications via external calendar links
+ * ============================================================================
+ * ZIP80 EXPENSE TRACKER - CALENDAR MODULE
+ * ============================================================================
+ * 
+ * PURPOSE:
+ * Provides passive notifications for expense reminders by integrating with
+ * external calendar services. No intrusive pop-ups - user chooses to add.
+ * 
+ * KEY FEATURES:
+ * - Google Calendar deep-links (opens in new tab)
+ * - Outlook Web calendar links
+ * - .ics file download (works with any calendar app)
+ * 
+ * HOW IT WORKS:
+ * When user clicks the calendar icon (📅) on a transaction, it opens
+ * Google Calendar with a pre-filled event based on the transaction details.
+ * 
+ * KEY FUNCTIONS:
+ * - openGoogleCalendar(): Main function called from app.js
+ * - createGoogleCalendarLink(): Generates Google Calendar URL
+ * - createOutlookLink(): Generates Outlook Web URL
+ * - downloadICS(): Creates and downloads .ics file
+ * 
+ * DEPENDENCIES: None (standalone module)
+ * USED BY: app.js (history item calendar buttons)
+ * 
+ * ============================================================================
+ * LLM LEGEND - IMPORTANT FOR FUTURE AI ASSISTANTS:
+ * All future edits to this file MUST be commented with:
+ * 1. Date of change
+ * 2. Description of what was changed and why
+ * 3. Any new functions should have JSDoc-style comments
+ * This ensures human developers and future LLMs can understand the codebase.
+ * ============================================================================
+ * 
+ * CHANGE LOG:
+ * - 2025-12-14: Initial creation with Google Calendar, Outlook, and .ics support
  */
 
 const Calendar = (() => {

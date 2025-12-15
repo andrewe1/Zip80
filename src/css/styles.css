@@ -1,7 +1,55 @@
-/* ================================================
-   ZIP80 EXPENSE TRACKER - DESIGN SYSTEM
-   Clean, accessible, simple design
-   ================================================ */
+/*
+ * ============================================================================
+ * ZIP80 EXPENSE TRACKER - DESIGN SYSTEM (styles.css)
+ * ============================================================================
+ * 
+ * PURPOSE:
+ * Complete CSS design system for the Zip80 expense tracker. Provides a clean,
+ * accessible, and simple aesthetic with CSS custom properties (variables).
+ * 
+ * DESIGN PRINCIPLES:
+ * - Accessibility First: Min 50px button heights, high contrast text
+ * - Clean & Simple: Minimal visual clutter, clear hierarchy
+ * - Responsive: Mobile-friendly with breakpoints at 480px
+ * 
+ * FILE STRUCTURE:
+ * 1. CSS Variables (:root) - Colors, spacing, typography, shadows
+ * 2. Reset & Base - Box-sizing, body styles
+ * 3. Typography - Headings
+ * 4. Buttons - All button variants and sizes
+ * 5. Inputs - Form controls
+ * 6. Cards - Container components
+ * 7. Startup Screen - Initial file selection UI
+ * 8. Workspace - Main app layout, header, balance card
+ * 9. History List - Transaction items
+ * 10. Toast Notifications - User feedback messages
+ * 11. Account Card - Account tabs and selector
+ * 12. Modal - Popup dialogs (new account, edit balance)
+ * 13. Responsive - Mobile adaptations
+ * 
+ * COLOR PALETTE:
+ * - Primary: #2563eb (blue)
+ * - Success: #16a34a (green) - for income
+ * - Danger: #dc2626 (red) - for expenses
+ * - Background: #f8fafc (light gray)
+ * - Surface: #ffffff (white cards)
+ * 
+ * ============================================================================
+ * LLM LEGEND - IMPORTANT FOR FUTURE AI ASSISTANTS:
+ * All future edits to this file MUST be commented with:
+ * 1. Date of change (in CSS comment)
+ * 2. Description of what was changed and why
+ * 3. Keep sections clearly labeled with --- SECTION NAME ---
+ * This ensures human developers and future LLMs can understand the codebase.
+ * ============================================================================
+ * 
+ * CHANGE LOG:
+ * - 2025-12-14: Initial creation with design system
+ * - 2025-12-14: Added language switcher styles
+ * - 2025-12-14: Added account tabs and modal styles
+ * - 2025-12-14: Added edit balance button and modal description styles
+ * ============================================================================
+ */
 
 /* --- LANGUAGE SWITCHER --- */
 .lang-switcher {
@@ -372,6 +420,33 @@ h3 {
     color: var(--color-danger);
 }
 
+.balance-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-sm);
+}
+
+.btn-edit-balance {
+    background: none;
+    border: none;
+    font-size: var(--font-size-lg);
+    cursor: pointer;
+    opacity: 0.5;
+    transition: opacity 0.15s;
+    padding: var(--space-xs);
+}
+
+.btn-edit-balance:hover {
+    opacity: 1;
+}
+
+.modal-desc {
+    color: var(--color-text-muted);
+    margin-bottom: var(--space-lg);
+    font-size: var(--font-size-sm);
+}
+
 /* Form */
 .form-group {
     margin-bottom: var(--space-md);
@@ -471,6 +546,129 @@ h3 {
 
 .toast.success {
     background-color: var(--color-success);
+}
+
+/* --- ACCOUNT CARD --- */
+.account-card {
+    padding: var(--space-md);
+}
+
+.account-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-md);
+}
+
+.account-header .card-title {
+    margin-bottom: 0;
+}
+
+.account-tabs {
+    display: flex;
+    gap: var(--space-sm);
+    overflow-x: auto;
+    padding-bottom: var(--space-xs);
+}
+
+.account-tab {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: var(--space-sm) var(--space-md);
+    background-color: var(--color-bg);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-md);
+    font-family: inherit;
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.15s ease;
+    min-height: 44px;
+}
+
+.account-tab:hover {
+    border-color: var(--color-primary);
+    color: var(--color-text);
+}
+
+.account-tab.active {
+    background-color: var(--color-primary);
+    border-color: var(--color-primary);
+    color: white;
+}
+
+.account-tab .currency-badge {
+    font-size: 0.75rem;
+    opacity: 0.8;
+}
+
+.account-tab .delete-account {
+    margin-left: var(--space-xs);
+    opacity: 0.6;
+    font-size: 0.9rem;
+}
+
+.account-tab .delete-account:hover {
+    opacity: 1;
+}
+
+.account-currency {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+    margin-top: var(--space-xs);
+}
+
+/* --- MODAL --- */
+.modal {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-lg);
+}
+
+.modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.modal-content {
+    position: relative;
+    background-color: var(--color-surface);
+    border-radius: var(--radius-lg);
+    padding: var(--space-xl);
+    width: 100%;
+    max-width: 400px;
+    box-shadow: var(--shadow-lg);
+}
+
+.modal-title {
+    font-size: var(--font-size-xl);
+    margin-bottom: var(--space-lg);
+}
+
+.modal-actions {
+    display: flex;
+    gap: var(--space-md);
+    margin-top: var(--space-lg);
+}
+
+.modal-actions .btn {
+    flex: 1;
+    min-height: 48px;
+}
+
+.form-group label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: var(--space-sm);
+    color: var(--color-text);
 }
 
 /* --- RESPONSIVE --- */

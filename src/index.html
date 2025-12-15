@@ -1,3 +1,51 @@
+<!--
+============================================================================
+ZIP80 EXPENSE TRACKER - MAIN HTML
+============================================================================
+
+PURPOSE:
+Main application HTML file containing the complete UI structure for the
+Zip80 expense tracking application.
+
+PAGE STRUCTURE:
+1. Language Switcher - Fixed top-right dropdown for EN/ES switching
+2. Startup Screen - Initial file open/create screen with drag-drop zone
+3. Main Workspace:
+   - Header with file badge and save button
+   - Account selector with tabs and "New Account" button
+   - Balance card with edit button
+   - Transaction form (income/expense)
+   - History list with calendar and delete actions
+4. Modals:
+   - New Account modal (name + currency)
+   - Edit Balance modal (new balance + reason)
+5. Toast notification container
+
+SCRIPTS LOADED (order matters):
+1. i18n.js - Translations (no dependencies)
+2. accounts.js - Account/currency logic (no dependencies)
+3. storage.js - File operations (depends on Accounts)
+4. calendar.js - Calendar links (no dependencies)
+5. app.js - Main app (depends on all above)
+
+DATA ATTRIBUTES:
+- data-i18n="key" : Elements with translatable text content
+
+============================================================================
+LLM LEGEND - IMPORTANT FOR FUTURE AI ASSISTANTS:
+All future edits to this file MUST be commented with:
+1. Date of change (in HTML comment)
+2. Description of what was changed and why
+3. Keep sections clearly labeled with HTML comments
+This ensures human developers and future LLMs can understand the codebase.
+============================================================================
+
+CHANGE LOG:
+- 2025-12-14: Initial creation with startup screen and workspace
+- 2025-12-14: Added language switcher dropdown
+- 2025-12-14: Added account tabs and new account modal
+- 2025-12-14: Added edit balance modal with reason field
+-->
 <!DOCTYPE html>
 <html lang="en">
 
@@ -49,10 +97,29 @@
             </button>
         </header>
 
+        <!-- Account Selector -->
+        <section class="card account-card">
+            <div class="account-header">
+                <h2 id="accounts-title" class="card-title">Accounts</h2>
+                <button id="btn-new-account" class="btn btn-secondary btn-sm">
+                    <span data-i18n="newAccount">+ New Account</span>
+                </button>
+            </div>
+            <div id="account-tabs" class="account-tabs">
+                <!-- Account tabs rendered here -->
+            </div>
+        </section>
+
         <!-- Balance Card -->
         <section class="card balance-card">
             <div id="balance-label" class="balance-label">Current Balance</div>
-            <div id="balance-display" class="balance-value">$0.00</div>
+            <div class="balance-row">
+                <div id="balance-display" class="balance-value">$0.00</div>
+                <button id="btn-edit-balance" class="btn-edit-balance" title="Edit Balance">
+                    ✏️
+                </button>
+            </div>
+            <div id="account-currency" class="account-currency">USD</div>
         </section>
 
         <!-- Add Transaction Card -->
@@ -89,10 +156,65 @@
         </section>
     </main>
 
+    <!-- New Account Modal -->
+    <div id="account-modal" class="modal" style="display: none;">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <h2 id="modal-title" class="modal-title">New Account</h2>
+            <div class="form-group">
+                <label id="label-account-name" for="input-account-name">Account Name</label>
+                <input type="text" id="input-account-name" class="input" placeholder="e.g. Checking, Savings">
+            </div>
+            <div class="form-group">
+                <label id="label-currency" for="select-currency">Currency</label>
+                <select id="select-currency" class="input">
+                    <option value="USD">USD - US Dollar ($)</option>
+                    <option value="MXN">MXN - Mexican Peso ($MXN)</option>
+                </select>
+            </div>
+            <div class="modal-actions">
+                <button id="btn-cancel-account" class="btn btn-secondary">
+                    <span data-i18n="cancel">Cancel</span>
+                </button>
+                <button id="btn-create-account" class="btn btn-primary">
+                    <span data-i18n="createAccount">Create Account</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Balance Modal -->
+    <div id="balance-modal" class="modal" style="display: none;">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <h2 id="balance-modal-title" class="modal-title">Edit Balance</h2>
+            <p id="balance-modal-desc" class="modal-desc">Set the new balance. An adjustment transaction will be
+                created.</p>
+            <div class="form-group">
+                <label id="label-new-balance" for="input-new-balance">New Balance</label>
+                <input type="number" id="input-new-balance" class="input" placeholder="0.00" step="0.01">
+            </div>
+            <div class="form-group">
+                <label id="label-adjustment-reason" for="input-adjustment-reason">Reason for Adjustment</label>
+                <input type="text" id="input-adjustment-reason" class="input"
+                    placeholder="e.g. Bank reconciliation, Error correction">
+            </div>
+            <div class="modal-actions">
+                <button id="btn-cancel-balance" class="btn btn-secondary">
+                    <span data-i18n="cancel">Cancel</span>
+                </button>
+                <button id="btn-apply-balance" class="btn btn-primary">
+                    <span data-i18n="applyBalance">Apply</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast Notification -->
     <div id="toast" class="toast" aria-live="polite"></div>
 
     <script src="js/i18n.js"></script>
+    <script src="js/accounts.js"></script>
     <script src="js/storage.js"></script>
     <script src="js/calendar.js"></script>
     <script src="js/app.js"></script>

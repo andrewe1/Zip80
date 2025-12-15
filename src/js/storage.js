@@ -1,31 +1,71 @@
 /**
- * Storage Module - Handles File System Access API and IndexedDB
- * Requirements: Zero-Navigation File IO, Data Portability
+ * ============================================================================
+ * ZIP80 EXPENSE TRACKER - STORAGE MODULE
+ * ============================================================================
+ * 
+ * PURPOSE:
+ * Handles all file system operations using modern browser APIs.
+ * Provides zero-navigation file IO (no dialog spam) and data portability.
+ * 
+ * KEY FEATURES:
+ * - File System Access API for reading/writing JSON files
+ * - IndexedDB for persisting file handles between sessions
+ * - Drag-and-drop file support
+ * - JSON export for data portability
+ * - Automatic data migration via Accounts.migrateData()
+ * 
+ * BROWSER SUPPORT:
+ * Requires Chromium-based browsers (Chrome, Edge) for File System Access API
+ * 
+ * KEY FUNCTIONS:
+ * - openFilePicker(): Open file dialog
+ * - createNewFile(): Create new expense file
+ * - reopenLastFile(): Reopen last used file from IndexedDB
+ * - readFile(): Read and parse JSON, auto-migrate to v2 format
+ * - writeFile(): Save data to file
+ * - handleDrop(): Process drag-and-drop file
+ * 
+ * DEPENDENCIES: Accounts module (for data migration)
+ * USED BY: app.js
+ * 
+ * ============================================================================
+ * LLM LEGEND - IMPORTANT FOR FUTURE AI ASSISTANTS:
+ * All future edits to this file MUST be commented with:
+ * 1. Date of change
+ * 2. Description of what was changed and why
+ * 3. Any new functions should have JSDoc-style comments
+ * This ensures human developers and future LLMs can understand the codebase.
+ * ============================================================================
+ * 
+ * CHANGE LOG:
+ * - 2025-12-14: Initial creation with File System Access API
+ * - 2025-12-14: Added IndexedDB for file handle persistence
+ * - 2025-12-14: Added auto-migration to v2 data format via Accounts module
  */
 
 const Storage = (() => {
     const DB_NAME = 'Zip80DB';
     const STORE_NAME = 'fileHandles';
-    
+
     let db = null;
 
     // --- IndexedDB Operations ---
-    
+
     async function initDB() {
         if (db) return db;
-        
+
         return new Promise((resolve, reject) => {
             const request = indexedDB.open(DB_NAME, 1);
-            
+
             request.onupgradeneeded = (e) => {
                 e.target.result.createObjectStore(STORE_NAME);
             };
-            
+
             request.onsuccess = () => {
                 db = request.result;
                 resolve(db);
             };
-            
+
             request.onerror = () => reject(request.error);
         });
     }
@@ -64,7 +104,7 @@ const Storage = (() => {
     async function openFilePicker() {
         const lastHandle = await getLastHandle();
         const options = { ...FILE_OPTIONS };
-        
+
         if (lastHandle) {
             options.startIn = lastHandle;
         }
@@ -104,7 +144,9 @@ const Storage = (() => {
     async function readFile(handle) {
         const file = await handle.getFile();
         const text = await file.text();
-        return text ? JSON.parse(text) : [];
+        const rawData = text ? JSON.parse(text) : null;
+        // Migrate v1 data to v2 format automatically
+        return Accounts.migrateData(rawData);
     }
 
     async function writeFile(handle, data) {
