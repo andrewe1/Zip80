@@ -62,6 +62,8 @@ CHANGE LOG:
 - 2025-12-15: Added dark theme toggle in top controls
 - 2025-12-15: Changed vault modal to use vault name as suggested filename
 - 2025-12-15: Added credit card edit modal and Edit Settings button
+- 2025-12-15: Added "Close Vault" button to header
+- 2025-12-15: Added "Cash" option to account type selector
 -->
 <!DOCTYPE html>
 <html lang="en">
@@ -113,9 +115,14 @@ CHANGE LOG:
     <main id="app-workspace" class="workspace" style="display: none;">
         <header class="header">
             <span id="file-badge" class="file-badge">📄 Loading...</span>
-            <button id="btn-save" class="btn btn-primary btn-save">
-                <span data-i18n="btnSave">💾 Save</span>
-            </button>
+            <div class="header-actions">
+                <button id="btn-close-vault" class="btn btn-secondary btn-save">
+                    <span data-i18n="btnCloseVault">🚪 Close</span>
+                </button>
+                <button id="btn-save" class="btn btn-primary btn-save">
+                    <span data-i18n="btnSave">💾 Save</span>
+                </button>
+            </div>
         </header>
 
         <!-- 2025-12-15: Added workspace layout with sidebar for balance overview -->
@@ -257,6 +264,7 @@ CHANGE LOG:
                 <label id="label-account-type" for="select-account-type">Account Type</label>
                 <select id="select-account-type" class="input">
                     <option value="checking">Checking Account</option>
+                    <option value="cash">Cash</option>
                     <option value="credit">Credit Card</option>
                 </select>
             </div>

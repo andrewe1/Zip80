@@ -1,0 +1,30 @@
+{
+  "name": "zip80-track",
+  "version": "1.0.0",
+  "description": "Zip80 Expense Tracker - Simple expense tracking app",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron . --no-sandbox --disable-gpu",
+    "build": "electron-builder"
+  },
+  "build": {
+    "appId": "com.zip80.track",
+    "productName": "Zip80 Track",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "src/**/*"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "src/icon.ico"
+    }
+  },
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1"
+  }
+}

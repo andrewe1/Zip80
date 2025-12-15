@@ -60,6 +60,7 @@
  * - 2025-12-15: Added vault creation modal translations (vaultModalTitle, vaultLanguage, etc.)
  * - 2025-12-15: Changed vault modal to use vaultName instead of vaultAccountName
  * - 2025-12-15: Added LANGUAGES config, LANGUAGE_CURRENCY_MAP, and extensibility helpers
+ * - 2025-12-15: Added cash account type translations
  */
 
 const I18n = (() => {
@@ -124,6 +125,7 @@ const I18n = (() => {
             // Header
             fileBadge: '📄 ${filename}',
             btnSave: '💾 Save',
+            btnCloseVault: '🚪 Close',
 
             // Balance
             balanceLabel: 'Current Balance',
@@ -155,6 +157,7 @@ const I18n = (() => {
 
             // Dialogs
             confirmDelete: 'Delete this transaction?',
+            confirmCloseVault: 'Close this vault? Make sure you\'ve saved your changes.',
 
             // Buttons
             btnCalendarTitle: 'Add to Calendar',
@@ -193,6 +196,7 @@ const I18n = (() => {
             // Credit Card Accounts (2025-12-15)
             accountType: 'Account Type',
             accountTypeChecking: 'Checking Account',
+            accountTypeCash: 'Cash',
             accountTypeCreditCard: 'Credit Card',
             creditLimit: 'Credit Limit',
             creditLimitPlaceholder: 'e.g. 5000',
@@ -209,6 +213,8 @@ const I18n = (() => {
             totalNegative: 'Negative:',
             totalNet: 'Net:',
             amountOwed: 'Owed',
+            accountsBank: 'Bank/Cash',
+            accountsCredit: 'Credit Cards',
 
             // Credit Card Edit Modal (2025-12-15)
             editCreditSettings: 'Edit Settings',
@@ -242,6 +248,7 @@ const I18n = (() => {
             // Header
             fileBadge: '📄 ${filename}',
             btnSave: '💾 Guardar',
+            btnCloseVault: '🚪 Cerrar',
 
             // Balance
             balanceLabel: 'Saldo Actual',
@@ -273,6 +280,7 @@ const I18n = (() => {
 
             // Dialogs
             confirmDelete: '¿Eliminar esta transacción?',
+            confirmCloseVault: '¿Cerrar esta bóveda? Asegúrate de haber guardado tus cambios.',
 
             // Buttons
             btnCalendarTitle: 'Agregar al Calendario',
@@ -311,6 +319,7 @@ const I18n = (() => {
             // Credit Card Accounts (2025-12-15)
             accountType: 'Tipo de Cuenta',
             accountTypeChecking: 'Cuenta de Cheques',
+            accountTypeCash: 'Efectivo',
             accountTypeCreditCard: 'Tarjeta de Crédito',
             creditLimit: 'Límite de Crédito',
             creditLimitPlaceholder: 'ej. 5000',
@@ -327,6 +336,8 @@ const I18n = (() => {
             totalNegative: 'Negativo:',
             totalNet: 'Neto:',
             amountOwed: 'Deuda',
+            accountsBank: 'Banco/Efectivo',
+            accountsCredit: 'Tarjetas',
 
             // Credit Card Edit Modal (2025-12-15)
             editCreditSettings: 'Editar Configuración',

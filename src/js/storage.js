@@ -53,11 +53,19 @@
  * - 2025-12-14: Added IndexedDB for file handle persistence
  * - 2025-12-14: Added auto-migration to v2 data format via Accounts module
  * - 2025-12-15: Added optional suggestedName parameter to createNewFile()
+ * - 2025-12-15: Added Electron support with Node.js file operations fallback
  */
 
 const Storage = (() => {
+    // Detect Electron environment
+    const isElectron = !!(window.electronAPI && window.electronAPI.isElectron);
+
+    // In Electron, we store file path instead of handle
+    let currentFilePath = null;
+
     const DB_NAME = 'Zip80DB';
     const STORE_NAME = 'fileHandles';
+    const LAST_FILENAME_KEY = 'zip80_lastFilename';  // localStorage backup
 
     let db = null;
 
@@ -83,6 +91,11 @@ const Storage = (() => {
     }
 
     async function saveHandle(handle) {
+        // Also save filename to localStorage as backup
+        if (handle && handle.name) {
+            localStorage.setItem(LAST_FILENAME_KEY, handle.name);
+        }
+
         const database = await initDB();
         return new Promise((resolve, reject) => {
             const tx = database.transaction(STORE_NAME, 'readwrite');
@@ -91,6 +104,13 @@ const Storage = (() => {
             request.onsuccess = () => resolve();
             request.onerror = () => reject(request.error);
         });
+    }
+
+    /**
+     * Get last filename from localStorage (works even when handle fails)
+     */
+    function getLastFileName() {
+        return localStorage.getItem(LAST_FILENAME_KEY);
     }
 
     async function getLastHandle() {
@@ -143,21 +163,48 @@ const Storage = (() => {
     }
 
     async function reopenLastFile() {
+        console.log('reopenLastFile: getting handle...');
         const handle = await getLastHandle();
+        console.log('reopenLastFile: handle =', handle);
         if (!handle) {
             throw new Error('No recent file found');
         }
 
-        // Check/request permissions
-        const readPerm = await handle.queryPermission({ mode: 'read' });
-        if (readPerm !== 'granted') {
-            const newPerm = await handle.requestPermission({ mode: 'read' });
-            if (newPerm !== 'granted') {
-                throw new Error('Permission denied');
-            }
-        }
+        // Check/request permissions - need readwrite for full access
+        const options = { mode: 'readwrite' };
 
-        return handle;
+        // Helper: timeout wrapper to prevent hanging on file:// URLs
+        const withTimeout = (promise, ms) => {
+            return Promise.race([
+                promise,
+                new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error('Permission request timed out')), ms)
+                )
+            ]);
+        };
+
+        try {
+            console.log('reopenLastFile: querying permission...');
+            const permission = await withTimeout(handle.queryPermission(options), 3000);
+            console.log('reopenLastFile: permission =', permission);
+            if (permission === 'granted') {
+                return handle;
+            }
+
+            // Request permission (requires user gesture)
+            console.log('reopenLastFile: requesting permission...');
+            const newPermission = await withTimeout(handle.requestPermission(options), 3000);
+            console.log('reopenLastFile: newPermission =', newPermission);
+            if (newPermission === 'granted') {
+                return handle;
+            }
+
+            throw new Error('Permission denied');
+        } catch (err) {
+            // Handle case where file no longer exists or permission denied
+            console.error('Permission error:', err);
+            throw new Error('Could not access file. It may have been moved or deleted.');
+        }
     }
 
     async function readFile(handle) {
@@ -205,8 +252,70 @@ const Storage = (() => {
     }
 
     // Public API
+    // In Electron mode, we use wrapper functions that use electronAPI
+    if (isElectron) {
+        return {
+            isElectron: true,
+
+            async openFilePicker() {
+                const filePath = await window.electronAPI.openFileDialog();
+                if (!filePath) throw new Error('No file selected');
+                currentFilePath = filePath;
+                return filePath;
+            },
+
+            async createNewFile(suggestedName = 'zip80_expenses') {
+                const filename = suggestedName.endsWith('.json') ? suggestedName : `${suggestedName}.json`;
+                const filePath = await window.electronAPI.saveFileDialog(filename);
+                if (!filePath) throw new Error('No file selected');
+                currentFilePath = filePath;
+                return filePath;
+            },
+
+            async reopenLastFile() {
+                const filePath = await window.electronAPI.getLastFilePath();
+                if (!filePath) throw new Error('No recent file found');
+
+                const exists = await window.electronAPI.fileExists(filePath);
+                if (!exists) throw new Error('File no longer exists');
+
+                currentFilePath = filePath;
+                return filePath;
+            },
+
+            async readFile(filePath) {
+                const result = await window.electronAPI.readFile(filePath);
+                if (!result.success) throw new Error(result.error);
+                return Accounts.migrateData(result.data);
+            },
+
+            async writeFile(filePath, data) {
+                const result = await window.electronAPI.writeFile(filePath, data);
+                if (!result.success) throw new Error(result.error);
+            },
+
+            async getFileName(filePath) {
+                return await window.electronAPI.getFileName(filePath);
+            },
+
+            async getLastFileName() {
+                const filePath = await window.electronAPI.getLastFilePath();
+                if (!filePath) return null;
+                return await window.electronAPI.getFileName(filePath);
+            },
+
+            getLastHandle: async () => null,  // Not used in Electron
+
+            exportToJSON,
+            handleDrop: async () => { throw new Error('Drop not supported in Electron'); }
+        };
+    }
+
+    // Browser API (original)
     return {
+        isElectron: false,
         getLastHandle,
+        getLastFileName,
         openFilePicker,
         createNewFile,
         reopenLastFile,

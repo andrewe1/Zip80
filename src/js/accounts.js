@@ -43,10 +43,11 @@
  * ==============================================================================
  * 
  * CHANGE LOG:
- * - 2025-12-14: Initial creation with USD/MXN currency support
- * - 2025-12-14: Added data migration from v1 to v2 format
+ * - 2025-12-14: Initial creation
+ * - 2025-12-14: Added migration logic for v2 data format
  * - 2025-12-14: Added balance calculation and account CRUD
  * - 2025-12-15: Added currency extension documentation
+ * - 2025-12-15: Added Cash account type support
  */
 
 const Accounts = (() => {
@@ -102,6 +103,20 @@ const Accounts = (() => {
         return {
             id: generateId(),
             type: 'checking',
+            name: name.trim(),
+            currency: currency,
+            createdAt: new Date().toISOString()
+        };
+    }
+
+    /**
+     * Create a new cash account object
+     * 2025-12-15: Added for tracking physical cash, similar to checking but distinct
+     */
+    function createCashAccount(name, currency = 'USD') {
+        return {
+            id: generateId(),
+            type: 'cash',
             name: name.trim(),
             currency: currency,
             createdAt: new Date().toISOString()
@@ -248,6 +263,7 @@ const Accounts = (() => {
         CURRENCIES,
         generateId,
         createAccount,
+        createCashAccount,
         createCreditCardAccount,
         createDefaultAccount,
         getAvailableCurrencies,

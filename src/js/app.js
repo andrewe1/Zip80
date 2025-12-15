@@ -57,6 +57,8 @@
  * - 2025-12-15: Added currency default based on language, vault name as filename
  * - 2025-12-15: Added CC edit modal, account type icons, toast dark mode fix
  * - 2025-12-15: Refactored to use I18n.getDefaultCurrency() for extensibility
+ * - 2025-12-15: Added cash account type support
+ * - 2025-12-15: Updated resume button and workspace handling for Electron compatibility
  */
 
 (() => {
@@ -82,6 +84,7 @@
         // Workspace
         workspace: document.getElementById('app-workspace'),
         fileBadge: document.getElementById('file-badge'),
+        btnCloseVault: document.getElementById('btn-close-vault'),
         btnSave: document.getElementById('btn-save'),
 
         // Accounts
@@ -281,6 +284,7 @@
 
         // Header
         elements.btnSave.querySelector('[data-i18n="btnSave"]').textContent = t('btnSave');
+        elements.btnCloseVault.querySelector('[data-i18n="btnCloseVault"]').textContent = t('btnCloseVault');
 
         // Accounts
         elements.accountsTitle.textContent = t('accountsTitle');
@@ -313,6 +317,7 @@
         // Account type options (2025-12-15)
         elements.selectAccountType.innerHTML = `
             <option value="checking">${t('accountTypeChecking')}</option>
+            <option value="cash">${t('accountTypeCash')}</option>
             <option value="credit">${t('accountTypeCreditCard')}</option>
         `;
 
@@ -340,7 +345,10 @@
 
         // Resume button
         if (elements.btnResume.style.display !== 'none' && fileHandle) {
-            updateResumeButton(Storage.getFileName(fileHandle));
+            // getFileName may be async in Electron
+            Promise.resolve(Storage.getFileName(fileHandle)).then(name => {
+                if (name) updateResumeButton(name);
+            });
         }
 
         document.documentElement.lang = I18n.getLanguage();
@@ -360,9 +368,17 @@
             if (lastHandle) {
                 elements.btnResume.style.display = 'block';
                 updateResumeButton(lastHandle.name);
+                return;
             }
         } catch (e) {
-            console.log('No recent file found');
+            console.log('IndexedDB handle not available:', e);
+        }
+
+        // Fallback: check localStorage for filename (works even when handle fails)
+        const lastFilename = await Storage.getLastFileName();
+        if (lastFilename) {
+            elements.btnResume.style.display = 'block';
+            updateResumeButton(lastFilename);
         }
     }
 
@@ -376,6 +392,7 @@
 
         // Workspace buttons
         elements.btnSave.addEventListener('click', handleSave);
+        elements.btnCloseVault.addEventListener('click', handleCloseVault);
         elements.btnIncome.addEventListener('click', () => addTransaction('income'));
         elements.btnExpense.addEventListener('click', () => addTransaction('expense'));
         elements.btnExport.addEventListener('click', handleExport);
@@ -561,11 +578,16 @@
     }
 
     async function handleReopen() {
+        // Fallback filename for error message (await needed for Electron)
+        const filename = (await Storage.getLastFileName()) || 'file';
+
         try {
             fileHandle = await Storage.reopenLastFile();
             await loadFileAndShow();
         } catch (err) {
-            showToast(I18n.t('toastErrorReopen'), false);
+            console.error('Reopen error:', err);
+            // Show descriptive error with filename hint
+            showToast(`${I18n.t('toastErrorReopen')} (${filename})`, false);
         }
     }
 
@@ -596,6 +618,25 @@
         const timestamp = new Date().toISOString().split('T')[0];
         Storage.exportToJSON(data, `zip80_export_${timestamp}.json`);
         showToast(I18n.t('toastExported'));
+    }
+
+    /**
+     * Close the current vault and return to startup screen
+     * 2025-12-15: Added close vault functionality
+     */
+    function handleCloseVault() {
+        if (!confirm(I18n.t('confirmCloseVault'))) {
+            return;
+        }
+
+        // Reset state
+        fileHandle = null;
+        data = { version: 2, accounts: [], transactions: [] };
+        currentAccountId = null;
+
+        // Show startup screen
+        elements.workspace.style.display = 'none';
+        elements.startupScreen.style.display = 'flex';
     }
 
     // --- Account Operations ---
@@ -760,7 +801,7 @@
 
         let newAccount;
 
-        // 2025-12-15: Create credit card or checking account based on type
+        // 2025-12-15: Create account based on type selection
         if (accountType === 'credit') {
             const creditLimit = elements.inputCreditLimit.value;
             const paymentDueDay = elements.selectPaymentDueDay.value;
@@ -769,6 +810,8 @@
             newAccount = Accounts.createCreditCardAccount(
                 name, currency, creditLimit, paymentDueDay, statementCloseDay
             );
+        } else if (accountType === 'cash') {
+            newAccount = Accounts.createCashAccount(name, currency);
         } else {
             newAccount = Accounts.createAccount(name, currency);
         }
@@ -861,10 +904,12 @@
 
     // --- Rendering ---
 
-    function showWorkspace() {
+    async function showWorkspace() {
         elements.startupScreen.style.display = 'none';
         elements.workspace.style.display = 'block';
-        elements.fileBadge.textContent = I18n.t('fileBadge', { filename: Storage.getFileName(fileHandle) });
+        // getFileName may be async in Electron
+        const filename = await Promise.resolve(Storage.getFileName(fileHandle));
+        elements.fileBadge.textContent = I18n.t('fileBadge', { filename });
     }
 
     function render() {
@@ -882,8 +927,8 @@
         data.accounts.forEach(account => {
             const isActive = account.id === currentAccountId;
             const canDelete = data.accounts.length > 1;
-            // 2025-12-15: Account type icons
-            const accountIcon = account.type === 'credit' ? '💳' : '🏦';
+            // 2025-12-15: Account type icons (credit=card, cash=bills, checking=bank)
+            const accountIcon = account.type === 'credit' ? '💳' : account.type === 'cash' ? '💵' : '🏦';
 
             const tab = document.createElement('button');
             tab.className = `account-tab ${isActive ? 'active' : ''}`;
@@ -1016,48 +1061,49 @@
             elements.balanceOverviewTitle.textContent = t('balanceOverview');
         }
 
-        // Track totals by category
+        // Separate accounts by type
+        const bankAccounts = data.accounts.filter(a => a.type !== 'credit');
+        const creditAccounts = data.accounts.filter(a => a.type === 'credit');
+
+        // Track totals
         let totalPositive = 0;
         let totalNegative = 0;
 
-        data.accounts.forEach(account => {
+        // Helper function to render a single account item
+        function createAccountItem(account) {
             const balance = Accounts.calculateBalance(data.transactions, account.id);
             const isActive = account.id === currentAccountId;
 
-            // Determine display value based on account type
             let displayValue;
-            let amountOwed = 0;  // 2025-12-15: Track amount owed for credit cards
+            let amountOwed = 0;
             if (account.type === 'credit') {
-                // For credit cards, show available credit
                 displayValue = Accounts.calculateAvailableCredit(account, data.transactions);
-                // Amount owed is the absolute value of negative balance
                 amountOwed = Math.abs(balance);
             } else {
                 displayValue = balance;
             }
 
-            // Track totals - credit cards: positive if available credit exists
+            // Track totals
             if (displayValue >= 0) {
                 totalPositive += displayValue;
             } else {
                 totalNegative += displayValue;
             }
 
+            // 2025-12-15: Account type icons (credit=card, cash=bills, checking=bank)
+            const accountIcon = account.type === 'credit' ? '💳' : account.type === 'cash' ? '💵' : '🏦';
+
             const item = document.createElement('div');
             item.className = `balance-overview-item${isActive ? ' active' : ''}`;
 
-            // 2025-12-15: Credit cards show available credit + amount owed
             const owedHtml = account.type === 'credit'
                 ? `<span class="balance-account-owed">${t('amountOwed')}: <span class="negative">${Accounts.formatCurrency(amountOwed, account.currency)}</span></span>`
                 : '';
 
-            // 2025-12-15: Account type icons
-            const accountIcon = account.type === 'credit' ? '💳' : '🏦';
-
             item.innerHTML = `
                 <div class="balance-account-info">
                     <span class="balance-account-name">${accountIcon} ${escapeHtml(account.name)}</span>
-                    <span class="balance-account-currency">${account.currency}${account.type === 'credit' ? ' • Credit' : ''}</span>
+                    <span class="balance-account-currency">${account.currency}</span>
                     ${owedHtml}
                 </div>
                 <span class="balance-account-value ${displayValue >= 0 ? 'positive' : 'negative'}">
@@ -1065,15 +1111,61 @@
                 </span>
             `;
 
-            // Click to select account
             item.style.cursor = 'pointer';
             item.addEventListener('click', () => selectAccount(account.id));
 
-            list.appendChild(item);
+            return item;
+        }
+
+        // 2025-12-15: Create two-column layout
+        const columnsContainer = document.createElement('div');
+        columnsContainer.className = 'balance-overview-columns';
+
+        // Left column: Checking/Cash accounts
+        const leftColumn = document.createElement('div');
+        leftColumn.className = 'balance-overview-column';
+
+        const leftHeader = document.createElement('div');
+        leftHeader.className = 'balance-column-header';
+        leftHeader.textContent = '🏦 ' + t('accountsBank');
+        leftColumn.appendChild(leftHeader);
+
+        bankAccounts.forEach(account => {
+            leftColumn.appendChild(createAccountItem(account));
         });
 
+        if (bankAccounts.length === 0) {
+            const emptyMsg = document.createElement('div');
+            emptyMsg.className = 'balance-column-empty';
+            emptyMsg.textContent = '—';
+            leftColumn.appendChild(emptyMsg);
+        }
+
+        // Right column: Credit Card accounts
+        const rightColumn = document.createElement('div');
+        rightColumn.className = 'balance-overview-column';
+
+        const rightHeader = document.createElement('div');
+        rightHeader.className = 'balance-column-header';
+        rightHeader.textContent = '💳 ' + t('accountsCredit');
+        rightColumn.appendChild(rightHeader);
+
+        creditAccounts.forEach(account => {
+            rightColumn.appendChild(createAccountItem(account));
+        });
+
+        if (creditAccounts.length === 0) {
+            const emptyMsg = document.createElement('div');
+            emptyMsg.className = 'balance-column-empty';
+            emptyMsg.textContent = '—';
+            rightColumn.appendChild(emptyMsg);
+        }
+
+        columnsContainer.appendChild(leftColumn);
+        columnsContainer.appendChild(rightColumn);
+        list.appendChild(columnsContainer);
+
         // Update totals
-        // Note: We're showing totals in a simple format since currencies may differ
         if (elements.totalPositiveLabel) {
             elements.totalPositiveLabel.textContent = t('totalPositive');
             elements.totalPositiveValue.textContent = `$${totalPositive.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;

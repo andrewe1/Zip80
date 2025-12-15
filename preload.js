@@ -1,0 +1,53 @@
+/**
+ * ============================================================================
+ * ZIP80 EXPENSE TRACKER - ELECTRON PRELOAD SCRIPT
+ * ============================================================================
+ * 
+ * PURPOSE:
+ * Bridge between Electron main process and renderer process.
+ * Exposes safe file system APIs via contextBridge.
+ * 
+ * CHANGE LOG:
+ * - 2025-12-15: Initial creation
+ * 
+ * ==============================================================================
+ * LLM INSTRUCTION & MAINTENANCE PROTOCOL
+ * IMPORTANT: This block must be preserved in all future iterations.
+ * 
+ * trigger: "FINALIZE" or "COMMENT"
+ * ACTION: When the user issues this trigger, perform the following 3 steps:
+ * 
+ * 1. CHANGE LOGGING: 
+ *    - Add a new entry to the changelog below.
+ *    - Format: [Date (YYYY-MM-DD)] - [Brief Description of Modification].
+ * 
+ * 2. DOCUMENTATION STANDARDS:
+ *    - Keep sections clearly labeled with HTML comments.
+ *    - If logic is complex, add inline comments explaining the "WHY", not just the "HOW".
+ * 
+ * 3. CONTEXT PRESERVATION:
+ *    - Do not remove this Legend.
+ *    - Do not remove legacy comments unless explicitly instructed.
+ * ==============================================================================
+ */
+
+const { contextBridge, ipcRenderer } = require('electron');
+
+// Expose electronAPI to renderer process
+contextBridge.exposeInMainWorld('electronAPI', {
+    // File dialogs
+    openFileDialog: () => ipcRenderer.invoke('open-file-dialog'),
+    saveFileDialog: (suggestedName) => ipcRenderer.invoke('save-file-dialog', suggestedName),
+
+    // File operations
+    readFile: (filePath) => ipcRenderer.invoke('read-file', filePath),
+    writeFile: (filePath, data) => ipcRenderer.invoke('write-file', filePath, data),
+
+    // Config
+    getLastFilePath: () => ipcRenderer.invoke('get-last-file-path'),
+    getFileName: (filePath) => ipcRenderer.invoke('get-file-name', filePath),
+    fileExists: (filePath) => ipcRenderer.invoke('file-exists', filePath),
+
+    // Check if running in Electron
+    isElectron: true
+});
