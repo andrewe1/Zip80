@@ -1,0 +1,24 @@
+Feature Requirements Checklist (Based on our POC)
+1. The "Zero-Navigation" File IO
+
+Requirement: The user must not be required to navigate file system trees to load data.
+
+Solution: Implementation must support Drag-and-Drop file loading and Session Persistence (remembering the last used file/database connection automatically).
+
+2. Passive Notifications
+
+Requirement: The system must allow setting future reminders without requiring the app to be open or a server to be constantly running.
+
+Solution: Generate external calendar deep-links (Google Calendar/Outlook Web) or downloadable .ics files so the user's phone OS handles the actual alerting.
+
+3. Accessibility First
+
+Requirement: UI must be legible and "click-safe" for older users.
+
+Solution: High-contrast text, large "call to action" buttons (50px+ height), and clear visual confirmation (e.g., "✅ Saved!") for every state change.
+
+4. Data Portability
+
+Requirement: Data must be owned by the user and easily backed up.
+
+Solution: Even if moving to a database, retain a "Export to JSON" feature so the user can physically possess their financial history.
