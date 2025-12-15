@@ -54,6 +54,7 @@
  * - 2025-12-15: Added calendar widget integration via Calendar.renderCalendarWidget()
  * - 2025-12-15: Added vault creation modal with language/currency defaults
  * - 2025-12-15: Added dark/light theme toggle with setupTheme()
+ * - 2025-12-15: Added currency default based on language, vault name as filename
  */
 
 (() => {
@@ -168,8 +169,8 @@
         selectVaultLanguage: document.getElementById('select-vault-language'),
         labelVaultCurrency: document.getElementById('label-vault-currency'),
         selectVaultCurrency: document.getElementById('select-vault-currency'),
-        labelVaultAccount: document.getElementById('label-vault-account'),
-        inputVaultAccount: document.getElementById('input-vault-account'),
+        labelVaultName: document.getElementById('label-vault-name'),
+        inputVaultName: document.getElementById('input-vault-name'),
         btnCancelVault: document.getElementById('btn-cancel-vault'),
         btnCreateVault: document.getElementById('btn-create-vault')
     };
@@ -182,6 +183,7 @@
         setupEventListeners();
         setupDragAndDrop();
         setupCreditCardUI();  // 2025-12-15: Credit card setup
+        setupVaultLanguageSync();  // 2025-12-15: Vault language-currency sync
         await checkForRecentFile();
         updateUILanguage();
     }
@@ -391,7 +393,7 @@
         elements.btnCreateVault.addEventListener('click', handleCreateVault);
         elements.vaultModal.querySelector('.modal-backdrop').addEventListener('click', closeVaultModal);
 
-        elements.inputVaultAccount.addEventListener('keypress', (e) => {
+        elements.inputVaultName.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') handleCreateVault();
         });
     }
@@ -443,23 +445,25 @@
 
     function openVaultModal() {
         const t = I18n.t;
+        const currentLang = I18n.getLanguage();
 
         // Set current language as default selection
-        elements.selectVaultLanguage.value = I18n.getLanguage();
+        elements.selectVaultLanguage.value = currentLang;
 
-        // Set USD as default currency
-        elements.selectVaultCurrency.value = 'USD';
+        // Set default currency based on language (2025-12-15)
+        // Spanish -> MXN, English -> USD
+        elements.selectVaultCurrency.value = currentLang === 'es' ? 'MXN' : 'USD';
 
-        // Clear account name and set placeholder
-        elements.inputVaultAccount.value = '';
-        elements.inputVaultAccount.placeholder = t('vaultAccountPlaceholder');
+        // Clear vault name and set placeholder
+        elements.inputVaultName.value = '';
+        elements.inputVaultName.placeholder = t('vaultNamePlaceholder');
 
         // Update modal labels
         elements.vaultModalTitle.textContent = t('vaultModalTitle');
         elements.vaultModalDesc.textContent = t('vaultModalDesc');
         elements.labelVaultLanguage.textContent = t('vaultLanguage');
         elements.labelVaultCurrency.textContent = t('vaultCurrency');
-        elements.labelVaultAccount.textContent = t('vaultAccountName');
+        elements.labelVaultName.textContent = t('vaultName');
         elements.btnCancelVault.querySelector('[data-i18n="cancel"]').textContent = t('cancel');
         elements.btnCreateVault.querySelector('[data-i18n="createVault"]').textContent = t('createVault');
 
@@ -469,8 +473,22 @@
             <option value="MXN">${t('currencyMXN')}</option>
         `;
 
+        // Set default currency AFTER options are populated (2025-12-15)
+        elements.selectVaultCurrency.value = currentLang === 'es' ? 'MXN' : 'USD';
+
         elements.vaultModal.style.display = 'flex';
-        elements.inputVaultAccount.focus();
+        elements.inputVaultName.focus();
+    }
+
+    /**
+     * Setup vault modal language-currency sync
+     * 2025-12-15: When user changes language in vault modal, update currency default
+     */
+    function setupVaultLanguageSync() {
+        elements.selectVaultLanguage.addEventListener('change', (e) => {
+            const lang = e.target.value;
+            elements.selectVaultCurrency.value = lang === 'es' ? 'MXN' : 'USD';
+        });
     }
 
     function closeVaultModal() {
@@ -480,21 +498,27 @@
     async function handleCreateVault() {
         const selectedLanguage = elements.selectVaultLanguage.value;
         const selectedCurrency = elements.selectVaultCurrency.value;
-        const accountName = elements.inputVaultAccount.value.trim() || 'Main Account';
+
+        // 2025-12-15: Vault name is used as suggested filename
+        const vaultName = elements.inputVaultName.value.trim() || 'zip80_expenses';
+
+        // Default account name based on language
+        const defaultAccountName = selectedLanguage === 'es' ? 'Cuenta Principal' : 'Main Account';
 
         // Apply language selection
         I18n.setLanguage(selectedLanguage);
         elements.langSelect.value = selectedLanguage;
 
         try {
-            fileHandle = await Storage.createNewFile();
+            // Pass vault name as suggested filename
+            fileHandle = await Storage.createNewFile(vaultName);
 
             // Create data with selected settings
             data = Accounts.createEmptyData();
 
-            // Update the default account with selected currency and name
+            // Update the default account with selected currency and default name
             if (data.accounts.length > 0) {
-                data.accounts[0].name = accountName;
+                data.accounts[0].name = defaultAccountName;
                 data.accounts[0].currency = selectedCurrency;
             }
 

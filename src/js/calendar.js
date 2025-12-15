@@ -48,6 +48,7 @@
  * CHANGE LOG:
  * - 2025-12-14: Initial creation with Google Calendar, Outlook, and .ics support
  * - 2025-12-15: Added renderCalendarWidget() for sidebar calendar display
+ * - 2025-12-15: Fixed calendar date localization to use current I18n language
  */
 
 const Calendar = (() => {
@@ -149,9 +150,13 @@ const Calendar = (() => {
         const currentMonth = now.getMonth();
         const currentYear = now.getFullYear();
 
-        // Format full date: "Sunday, December 15, 2025"
+        // Get current language locale (2025-12-15: Use I18n language for localization)
+        const lang = typeof I18n !== 'undefined' ? I18n.getLanguage() : 'en';
+        const locale = lang === 'es' ? 'es-MX' : 'en-US';
+
+        // Format full date: "Sunday, December 15, 2025" or "domingo, 15 de diciembre de 2025"
         const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-        const fullDateStr = now.toLocaleDateString('en-US', options);
+        const fullDateStr = now.toLocaleDateString(locale, options);
         fullDateEl.textContent = fullDateStr;
 
         // Calculate calendar grid

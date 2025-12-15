@@ -60,6 +60,7 @@ CHANGE LOG:
 - 2025-12-15: Added calendar widget to sidebar with current day highlighting
 - 2025-12-15: Added vault creation modal for setting language/currency defaults
 - 2025-12-15: Added dark theme toggle in top controls
+- 2025-12-15: Changed vault modal to use vault name as suggested filename
 -->
 <!DOCTYPE html>
 <html lang="en">
@@ -356,10 +357,10 @@ CHANGE LOG:
                 </select>
             </div>
 
-            <!-- First Account Name -->
+            <!-- Vault Name (used as suggested filename) -->
             <div class="form-group">
-                <label id="label-vault-account" for="input-vault-account">First Account Name</label>
-                <input type="text" id="input-vault-account" class="input" placeholder="e.g. Main Account, Checking">
+                <label id="label-vault-name" for="input-vault-name">Vault Name</label>
+                <input type="text" id="input-vault-name" class="input" placeholder="e.g. Personal, Business, Savings">
             </div>
 
             <div class="modal-actions">

@@ -52,6 +52,7 @@
  * - 2025-12-14: Initial creation with File System Access API
  * - 2025-12-14: Added IndexedDB for file handle persistence
  * - 2025-12-14: Added auto-migration to v2 data format via Accounts module
+ * - 2025-12-15: Added optional suggestedName parameter to createNewFile()
  */
 
 const Storage = (() => {
@@ -125,9 +126,16 @@ const Storage = (() => {
         return handle;
     }
 
-    async function createNewFile() {
+    /**
+     * Create new file with save dialog
+     * @param {string} suggestedName - Optional suggested filename (without extension)
+     */
+    async function createNewFile(suggestedName = 'zip80_expenses') {
+        // Ensure filename ends with .json
+        const filename = suggestedName.endsWith('.json') ? suggestedName : `${suggestedName}.json`;
+
         const handle = await window.showSaveFilePicker({
-            suggestedName: 'zip80_expenses.json',
+            suggestedName: filename,
             ...FILE_OPTIONS
         });
         await saveHandle(handle);
