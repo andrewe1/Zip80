@@ -45,6 +45,7 @@ CHANGE LOG:
 - 2025-12-14: Added language switcher dropdown
 - 2025-12-14: Added account tabs and new account modal
 - 2025-12-14: Added edit balance modal with reason field
+- 2025-12-15: Added balance overview sidebar widget with totals
 -->
 <!DOCTYPE html>
 <html lang="en">
@@ -97,79 +98,112 @@ CHANGE LOG:
             </button>
         </header>
 
-        <!-- Account Selector -->
-        <section class="card account-card">
-            <div class="account-header">
-                <h2 id="accounts-title" class="card-title">Accounts</h2>
-                <button id="btn-new-account" class="btn btn-secondary btn-sm">
-                    <span data-i18n="newAccount">+ New Account</span>
-                </button>
-            </div>
-            <div id="account-tabs" class="account-tabs">
-                <!-- Account tabs rendered here -->
-            </div>
-        </section>
+        <!-- 2025-12-15: Added workspace layout with sidebar for balance overview -->
+        <div class="workspace-layout">
+            <!-- Main Content -->
+            <div class="workspace-main">
 
-        <!-- Balance Card (2025-12-15: Added credit card info section) -->
-        <section class="card balance-card">
-            <div id="balance-label" class="balance-label">Current Balance</div>
-            <div class="balance-row">
-                <div id="balance-display" class="balance-value">$0.00</div>
-                <button id="btn-edit-balance" class="btn-edit-balance" title="Edit Balance">
-                    ✏️
-                </button>
-            </div>
-            <div id="account-currency" class="account-currency">USD</div>
+                <!-- Account Selector -->
+                <section class="card account-card">
+                    <div class="account-header">
+                        <h2 id="accounts-title" class="card-title">Accounts</h2>
+                        <button id="btn-new-account" class="btn btn-secondary btn-sm">
+                            <span data-i18n="newAccount">+ New Account</span>
+                        </button>
+                    </div>
+                    <div id="account-tabs" class="account-tabs">
+                        <!-- Account tabs rendered here -->
+                    </div>
+                </section>
 
-            <!-- Credit Card Info (shown for credit accounts) -->
-            <div id="credit-card-info" class="credit-card-info" style="display: none;">
-                <div class="credit-info-row">
-                    <span id="credit-balance-label">Balance:</span>
-                    <span id="credit-balance-value">-$0.00</span>
+                <!-- Balance Card (2025-12-15: Added credit card info section) -->
+                <section class="card balance-card">
+                    <div id="balance-label" class="balance-label">Current Balance</div>
+                    <div class="balance-row">
+                        <div id="balance-display" class="balance-value">$0.00</div>
+                        <button id="btn-edit-balance" class="btn-edit-balance" title="Edit Balance">
+                            ✏️
+                        </button>
+                    </div>
+                    <div id="account-currency" class="account-currency">USD</div>
+
+                    <!-- Credit Card Info (shown for credit accounts) -->
+                    <div id="credit-card-info" class="credit-card-info" style="display: none;">
+                        <div class="credit-info-row">
+                            <span id="credit-balance-label">Balance:</span>
+                            <span id="credit-balance-value">-$0.00</span>
+                        </div>
+                        <div class="credit-info-row">
+                            <span id="credit-limit-label">Limit:</span>
+                            <span id="credit-limit-value">$0.00</span>
+                        </div>
+                        <div class="credit-info-row">
+                            <span id="credit-dates-label"></span>
+                            <span id="credit-dates-value"></span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Add Transaction Card -->
+                <section class="card">
+                    <h2 id="add-transaction-title" class="card-title">Add Transaction</h2>
+                    <div class="form-group">
+                        <input type="text" id="input-desc" class="input"
+                            placeholder="Description (e.g. Rent, Groceries)">
+                    </div>
+                    <div class="form-group">
+                        <input type="number" id="input-amount" class="input" placeholder="Amount (0.00)" step="0.01"
+                            min="0">
+                    </div>
+                    <div class="form-row">
+                        <button id="btn-income" class="btn btn-success btn-action">
+                            <span data-i18n="btnIncome">➕ Add Income</span>
+                        </button>
+                        <button id="btn-expense" class="btn btn-danger btn-action">
+                            <span data-i18n="btnExpense">➖ Add Expense</span>
+                        </button>
+                    </div>
+                </section>
+
+                <!-- History Card -->
+                <section class="card">
+                    <div class="card-header">
+                        <h2 id="history-title" class="card-title">History</h2>
+                        <button id="btn-export" class="btn btn-secondary btn-sm">
+                            <span data-i18n="btnExport">📥 Export JSON</span>
+                        </button>
+                    </div>
+                    <ul id="history-list" class="history-list">
+                        <!-- Transactions rendered here -->
+                    </ul>
+                    <p id="empty-state" class="empty-state">No transactions yet. Add one above!</p>
+                </section>
+            </div><!-- end workspace-main -->
+
+            <!-- 2025-12-15: Balance Overview Sidebar Widget -->
+            <aside class="workspace-sidebar">
+                <div class="card balance-overview-card">
+                    <h3 id="balance-overview-title" class="card-title">Balance Overview</h3>
+                    <div id="balance-overview-list" class="balance-overview-list">
+                        <!-- Balance items rendered here by JS -->
+                    </div>
+                    <div class="balance-overview-totals">
+                        <div class="overview-totals-row positive">
+                            <span id="total-positive-label">Positive:</span>
+                            <span id="total-positive-value">$0.00</span>
+                        </div>
+                        <div class="overview-totals-row negative">
+                            <span id="total-negative-label">Negative:</span>
+                            <span id="total-negative-value">$0.00</span>
+                        </div>
+                        <div class="overview-totals-row net">
+                            <span id="total-net-label">Net:</span>
+                            <span id="total-net-value">$0.00</span>
+                        </div>
+                    </div>
                 </div>
-                <div class="credit-info-row">
-                    <span id="credit-limit-label">Limit:</span>
-                    <span id="credit-limit-value">$0.00</span>
-                </div>
-                <div class="credit-info-row">
-                    <span id="credit-dates-label"></span>
-                    <span id="credit-dates-value"></span>
-                </div>
-            </div>
-        </section>
-
-        <!-- Add Transaction Card -->
-        <section class="card">
-            <h2 id="add-transaction-title" class="card-title">Add Transaction</h2>
-            <div class="form-group">
-                <input type="text" id="input-desc" class="input" placeholder="Description (e.g. Rent, Groceries)">
-            </div>
-            <div class="form-group">
-                <input type="number" id="input-amount" class="input" placeholder="Amount (0.00)" step="0.01" min="0">
-            </div>
-            <div class="form-row">
-                <button id="btn-income" class="btn btn-success btn-action">
-                    <span data-i18n="btnIncome">➕ Add Income</span>
-                </button>
-                <button id="btn-expense" class="btn btn-danger btn-action">
-                    <span data-i18n="btnExpense">➖ Add Expense</span>
-                </button>
-            </div>
-        </section>
-
-        <!-- History Card -->
-        <section class="card">
-            <div class="card-header">
-                <h2 id="history-title" class="card-title">History</h2>
-                <button id="btn-export" class="btn btn-secondary btn-sm">
-                    <span data-i18n="btnExport">📥 Export JSON</span>
-                </button>
-            </div>
-            <ul id="history-list" class="history-list">
-                <!-- Transactions rendered here -->
-            </ul>
-            <p id="empty-state" class="empty-state">No transactions yet. Add one above!</p>
-        </section>
+            </aside>
+        </div><!-- end workspace-layout -->
     </main>
 
     <!-- New Account Modal (2025-12-15: Added credit card fields) -->

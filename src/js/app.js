@@ -39,6 +39,7 @@
  * - 2025-12-14: Added multi-account support with account tabs
  * - 2025-12-14: Added edit balance feature with adjustment transactions
  * - 2025-12-14: Added "reason for adjustment" field to balance editing
+ * - 2025-12-15: Added balance overview sidebar widget with renderBalanceOverview()
  */
 
 (() => {
@@ -132,7 +133,17 @@
         btnApplyBalance: document.getElementById('btn-apply-balance'),
 
         // Toast
-        toast: document.getElementById('toast')
+        toast: document.getElementById('toast'),
+
+        // Balance Overview Widget (2025-12-15)
+        balanceOverviewTitle: document.getElementById('balance-overview-title'),
+        balanceOverviewList: document.getElementById('balance-overview-list'),
+        totalPositiveLabel: document.getElementById('total-positive-label'),
+        totalPositiveValue: document.getElementById('total-positive-value'),
+        totalNegativeLabel: document.getElementById('total-negative-label'),
+        totalNegativeValue: document.getElementById('total-negative-value'),
+        totalNetLabel: document.getElementById('total-net-label'),
+        totalNetValue: document.getElementById('total-net-value')
     };
 
     // --- Initialization ---
@@ -612,6 +623,7 @@
         renderAccountTabs();
         renderBalance();
         renderHistory();
+        renderBalanceOverview();  // 2025-12-15: Balance overview widget
     }
 
     function renderAccountTabs() {
@@ -733,6 +745,93 @@
 
             list.appendChild(li);
         });
+    }
+
+    /**
+     * Render the balance overview sidebar widget
+     * 2025-12-15: Added to show all account balances at a glance
+     */
+    function renderBalanceOverview() {
+        const t = I18n.t;
+        const list = elements.balanceOverviewList;
+        list.innerHTML = '';
+
+        // Update title
+        if (elements.balanceOverviewTitle) {
+            elements.balanceOverviewTitle.textContent = t('balanceOverview');
+        }
+
+        // Track totals by category
+        let totalPositive = 0;
+        let totalNegative = 0;
+
+        data.accounts.forEach(account => {
+            const balance = Accounts.calculateBalance(data.transactions, account.id);
+            const isActive = account.id === currentAccountId;
+
+            // Determine display value based on account type
+            let displayValue;
+            let amountOwed = 0;  // 2025-12-15: Track amount owed for credit cards
+            if (account.type === 'credit') {
+                // For credit cards, show available credit
+                displayValue = Accounts.calculateAvailableCredit(account, data.transactions);
+                // Amount owed is the absolute value of negative balance
+                amountOwed = Math.abs(balance);
+            } else {
+                displayValue = balance;
+            }
+
+            // Track totals - credit cards: positive if available credit exists
+            if (displayValue >= 0) {
+                totalPositive += displayValue;
+            } else {
+                totalNegative += displayValue;
+            }
+
+            const item = document.createElement('div');
+            item.className = `balance-overview-item${isActive ? ' active' : ''}`;
+
+            // 2025-12-15: Credit cards show available credit + amount owed
+            const owedHtml = account.type === 'credit'
+                ? `<span class="balance-account-owed">${t('amountOwed')}: <span class="negative">${Accounts.formatCurrency(amountOwed, account.currency)}</span></span>`
+                : '';
+
+            item.innerHTML = `
+                <div class="balance-account-info">
+                    <span class="balance-account-name">${escapeHtml(account.name)}</span>
+                    <span class="balance-account-currency">${account.currency}${account.type === 'credit' ? ' • Credit' : ''}</span>
+                    ${owedHtml}
+                </div>
+                <span class="balance-account-value ${displayValue >= 0 ? 'positive' : 'negative'}">
+                    ${displayValue >= 0 ? '' : '-'}${Accounts.formatCurrency(displayValue, account.currency)}
+                </span>
+            `;
+
+            // Click to select account
+            item.style.cursor = 'pointer';
+            item.addEventListener('click', () => selectAccount(account.id));
+
+            list.appendChild(item);
+        });
+
+        // Update totals
+        // Note: We're showing totals in a simple format since currencies may differ
+        if (elements.totalPositiveLabel) {
+            elements.totalPositiveLabel.textContent = t('totalPositive');
+            elements.totalPositiveValue.textContent = `$${totalPositive.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        }
+
+        if (elements.totalNegativeLabel) {
+            elements.totalNegativeLabel.textContent = t('totalNegative');
+            elements.totalNegativeValue.textContent = `$${Math.abs(totalNegative).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        }
+
+        if (elements.totalNetLabel) {
+            const netTotal = totalPositive + totalNegative;
+            elements.totalNetLabel.textContent = t('totalNet');
+            elements.totalNetValue.textContent = `${netTotal >= 0 ? '' : '-'}$${Math.abs(netTotal).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            elements.totalNetValue.className = netTotal >= 0 ? '' : 'negative';
+        }
     }
 
     // --- Utilities ---

@@ -44,6 +44,7 @@
  * - 2025-12-14: Added account management translations
  * - 2025-12-14: Added edit balance modal translations
  * - 2025-12-14: Added adjustment reason field translations
+ * - 2025-12-15: Added balance overview widget translations (balanceOverview, totals, amountOwed)
  */
 
 const I18n = (() => {
@@ -146,7 +147,14 @@ const I18n = (() => {
             availableCredit: 'Available Credit',
             currentBalance: 'Current Balance',
             dueDay: 'Due',
-            closesDay: 'Closes'
+            closesDay: 'Closes',
+
+            // Balance Overview Widget (2025-12-15)
+            balanceOverview: 'Balance Overview',
+            totalPositive: 'Positive:',
+            totalNegative: 'Negative:',
+            totalNet: 'Net:',
+            amountOwed: 'Owed'
         },
 
         es: {
@@ -241,7 +249,14 @@ const I18n = (() => {
             availableCredit: 'Crédito Disponible',
             currentBalance: 'Saldo Actual',
             dueDay: 'Pago',
-            closesDay: 'Corte'
+            closesDay: 'Corte',
+
+            // Balance Overview Widget (2025-12-15)
+            balanceOverview: 'Resumen de Saldos',
+            totalPositive: 'Positivo:',
+            totalNegative: 'Negativo:',
+            totalNet: 'Neto:',
+            amountOwed: 'Deuda'
         }
     };
 

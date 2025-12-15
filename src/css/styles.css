@@ -48,6 +48,7 @@
  * - 2025-12-14: Added language switcher styles
  * - 2025-12-14: Added account tabs and modal styles
  * - 2025-12-14: Added edit balance button and modal description styles
+ * - 2025-12-15: Added workspace sidebar layout and balance overview widget styles
  * ============================================================================
  */
 
@@ -374,9 +375,155 @@ h3 {
 
 /* --- WORKSPACE --- */
 .workspace {
-    max-width: 500px;
+    max-width: 1100px;
     margin: 0 auto;
     padding: var(--space-lg);
+}
+
+/* 2025-12-15: Workspace layout with sidebar for balance overview */
+.workspace-layout {
+    display: flex;
+    gap: var(--space-lg);
+    align-items: flex-start;
+    justify-content: center;
+}
+
+.workspace-main {
+    flex: 1;
+    max-width: 500px;
+    min-width: 0;
+}
+
+.workspace-sidebar {
+    width: 320px;
+    flex-shrink: 0;
+    position: sticky;
+    top: var(--space-lg);
+}
+
+/* Balance Overview Widget */
+.balance-overview-card {
+    padding: var(--space-lg);
+}
+
+.balance-overview-card .card-title {
+    font-size: var(--font-size-base);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--color-text-muted);
+    margin-bottom: var(--space-md);
+    border-bottom: 1px solid var(--color-border);
+    padding-bottom: var(--space-sm);
+}
+
+.balance-overview-list {
+    margin-bottom: var(--space-md);
+}
+
+.balance-overview-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-sm) 0;
+    border-bottom: 1px solid var(--color-border);
+    gap: var(--space-sm);
+}
+
+.balance-overview-item:last-child {
+    border-bottom: none;
+}
+
+.balance-overview-item.active {
+    background-color: rgba(37, 99, 235, 0.08);
+    margin: 0 calc(-1 * var(--space-md));
+    padding-left: var(--space-md);
+    padding-right: var(--space-md);
+    border-radius: var(--radius-sm);
+}
+
+.balance-account-info {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.balance-account-name {
+    font-weight: 600;
+    font-size: var(--font-size-sm);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.balance-account-currency {
+    font-size: 0.7rem;
+    color: var(--color-text-muted);
+}
+
+/* 2025-12-15: Amount owed for credit cards */
+.balance-account-owed {
+    font-size: 0.7rem;
+    color: var(--color-text-muted);
+}
+
+.balance-account-owed .negative {
+    color: var(--color-danger);
+    font-weight: 600;
+}
+
+.balance-account-value {
+    font-weight: 700;
+    font-size: var(--font-size-sm);
+    text-align: right;
+    white-space: nowrap;
+}
+
+.balance-account-value.positive {
+    color: var(--color-success);
+}
+
+.balance-account-value.negative {
+    color: var(--color-danger);
+}
+
+.balance-overview-totals {
+    border-top: 2px solid var(--color-border);
+    padding-top: var(--space-md);
+    margin-top: var(--space-sm);
+}
+
+.overview-totals-row {
+    display: flex;
+    justify-content: space-between;
+    padding: var(--space-xs) 0;
+    font-size: var(--font-size-sm);
+}
+
+.overview-totals-row span:first-child {
+    color: var(--color-text-muted);
+}
+
+.overview-totals-row span:last-child {
+    font-weight: 700;
+}
+
+.overview-totals-row.positive span:last-child {
+    color: var(--color-success);
+}
+
+.overview-totals-row.negative span:last-child {
+    color: var(--color-danger);
+}
+
+.overview-totals-row.net {
+    border-top: 1px solid var(--color-border);
+    margin-top: var(--space-xs);
+    padding-top: var(--space-sm);
+    font-weight: 600;
+}
+
+.overview-totals-row.net span:first-child {
+    color: var(--color-text);
 }
 
 /* Header */
@@ -706,6 +853,23 @@ h3 {
 }
 
 /* --- RESPONSIVE --- */
+/* 2025-12-15: Added sidebar responsive behavior */
+@media (max-width: 900px) {
+    .workspace-layout {
+        flex-direction: column;
+    }
+
+    .workspace-main {
+        max-width: none;
+    }
+
+    .workspace-sidebar {
+        width: 100%;
+        position: static;
+        order: -1;
+    }
+}
+
 @media (max-width: 480px) {
     .workspace {
         padding: var(--space-md);
