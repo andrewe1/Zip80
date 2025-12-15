@@ -51,6 +51,8 @@
  * - 2025-12-14: Added edit balance feature with adjustment transactions
  * - 2025-12-14: Added "reason for adjustment" field to balance editing
  * - 2025-12-15: Added balance overview sidebar widget with renderBalanceOverview()
+ * - 2025-12-15: Added calendar widget integration via Calendar.renderCalendarWidget()
+ * - 2025-12-15: Added vault creation modal with language/currency defaults
  */
 
 (() => {
@@ -154,7 +156,20 @@
         totalNegativeLabel: document.getElementById('total-negative-label'),
         totalNegativeValue: document.getElementById('total-negative-value'),
         totalNetLabel: document.getElementById('total-net-label'),
-        totalNetValue: document.getElementById('total-net-value')
+        totalNetValue: document.getElementById('total-net-value'),
+
+        // Vault Modal (2025-12-15)
+        vaultModal: document.getElementById('vault-modal'),
+        vaultModalTitle: document.getElementById('vault-modal-title'),
+        vaultModalDesc: document.getElementById('vault-modal-desc'),
+        labelVaultLanguage: document.getElementById('label-vault-language'),
+        selectVaultLanguage: document.getElementById('select-vault-language'),
+        labelVaultCurrency: document.getElementById('label-vault-currency'),
+        selectVaultCurrency: document.getElementById('select-vault-currency'),
+        labelVaultAccount: document.getElementById('label-vault-account'),
+        inputVaultAccount: document.getElementById('input-vault-account'),
+        btnCancelVault: document.getElementById('btn-cancel-vault'),
+        btnCreateVault: document.getElementById('btn-create-vault')
     };
 
     // --- Initialization ---
@@ -340,6 +355,15 @@
         elements.inputNewBalance.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') handleApplyBalance();
         });
+
+        // Vault modal (2025-12-15)
+        elements.btnCancelVault.addEventListener('click', closeVaultModal);
+        elements.btnCreateVault.addEventListener('click', handleCreateVault);
+        elements.vaultModal.querySelector('.modal-backdrop').addEventListener('click', closeVaultModal);
+
+        elements.inputVaultAccount.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') handleCreateVault();
+        });
     }
 
     function setupDragAndDrop() {
@@ -381,11 +405,74 @@
     }
 
     async function handleNewFile() {
+        // 2025-12-15: Show vault modal instead of directly creating file
+        openVaultModal();
+    }
+
+    // --- Vault Modal Operations (2025-12-15) ---
+
+    function openVaultModal() {
+        const t = I18n.t;
+
+        // Set current language as default selection
+        elements.selectVaultLanguage.value = I18n.getLanguage();
+
+        // Set USD as default currency
+        elements.selectVaultCurrency.value = 'USD';
+
+        // Clear account name and set placeholder
+        elements.inputVaultAccount.value = '';
+        elements.inputVaultAccount.placeholder = t('vaultAccountPlaceholder');
+
+        // Update modal labels
+        elements.vaultModalTitle.textContent = t('vaultModalTitle');
+        elements.vaultModalDesc.textContent = t('vaultModalDesc');
+        elements.labelVaultLanguage.textContent = t('vaultLanguage');
+        elements.labelVaultCurrency.textContent = t('vaultCurrency');
+        elements.labelVaultAccount.textContent = t('vaultAccountName');
+        elements.btnCancelVault.querySelector('[data-i18n="cancel"]').textContent = t('cancel');
+        elements.btnCreateVault.querySelector('[data-i18n="createVault"]').textContent = t('createVault');
+
+        // Update currency options
+        elements.selectVaultCurrency.innerHTML = `
+            <option value="USD">${t('currencyUSD')}</option>
+            <option value="MXN">${t('currencyMXN')}</option>
+        `;
+
+        elements.vaultModal.style.display = 'flex';
+        elements.inputVaultAccount.focus();
+    }
+
+    function closeVaultModal() {
+        elements.vaultModal.style.display = 'none';
+    }
+
+    async function handleCreateVault() {
+        const selectedLanguage = elements.selectVaultLanguage.value;
+        const selectedCurrency = elements.selectVaultCurrency.value;
+        const accountName = elements.inputVaultAccount.value.trim() || 'Main Account';
+
+        // Apply language selection
+        I18n.setLanguage(selectedLanguage);
+        elements.langSelect.value = selectedLanguage;
+
         try {
             fileHandle = await Storage.createNewFile();
+
+            // Create data with selected settings
             data = Accounts.createEmptyData();
+
+            // Update the default account with selected currency and name
+            if (data.accounts.length > 0) {
+                data.accounts[0].name = accountName;
+                data.accounts[0].currency = selectedCurrency;
+            }
+
             currentAccountId = data.accounts[0]?.id || null;
             await Storage.writeFile(fileHandle, data);
+
+            closeVaultModal();
+            updateUILanguage();
             showWorkspace();
             render();
             showToast(I18n.t('toastNewFile'));
@@ -635,6 +722,7 @@
         renderBalance();
         renderHistory();
         renderBalanceOverview();  // 2025-12-15: Balance overview widget
+        Calendar.renderCalendarWidget();  // 2025-12-15: Calendar widget
     }
 
     function renderAccountTabs() {

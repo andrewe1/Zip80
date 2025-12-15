@@ -57,6 +57,7 @@
  * - 2025-12-14: Added edit balance modal translations
  * - 2025-12-14: Added adjustment reason field translations
  * - 2025-12-15: Added balance overview widget translations (balanceOverview, totals, amountOwed)
+ * - 2025-12-15: Added vault creation modal translations (vaultModalTitle, vaultLanguage, etc.)
  */
 
 const I18n = (() => {
@@ -166,7 +167,16 @@ const I18n = (() => {
             totalPositive: 'Positive:',
             totalNegative: 'Negative:',
             totalNet: 'Net:',
-            amountOwed: 'Owed'
+            amountOwed: 'Owed',
+
+            // New Vault Modal (2025-12-15)
+            vaultModalTitle: '✨ Create New Vault',
+            vaultModalDesc: 'Set your preferences for this expense tracker.',
+            vaultLanguage: 'Default Language',
+            vaultCurrency: 'Default Currency',
+            vaultAccountName: 'First Account Name',
+            vaultAccountPlaceholder: 'e.g. Main Account, Checking',
+            createVault: 'Create Vault'
         },
 
         es: {
@@ -268,7 +278,16 @@ const I18n = (() => {
             totalPositive: 'Positivo:',
             totalNegative: 'Negativo:',
             totalNet: 'Neto:',
-            amountOwed: 'Deuda'
+            amountOwed: 'Deuda',
+
+            // New Vault Modal (2025-12-15)
+            vaultModalTitle: '✨ Crear Nueva Bóveda',
+            vaultModalDesc: 'Configura tus preferencias para este rastreador de gastos.',
+            vaultLanguage: 'Idioma Predeterminado',
+            vaultCurrency: 'Moneda Predeterminada',
+            vaultAccountName: 'Nombre de Primera Cuenta',
+            vaultAccountPlaceholder: 'ej. Cuenta Principal, Cheques',
+            createVault: 'Crear Bóveda'
         }
     };
 

@@ -47,6 +47,7 @@
  * 
  * CHANGE LOG:
  * - 2025-12-14: Initial creation with Google Calendar, Outlook, and .ics support
+ * - 2025-12-15: Added renderCalendarWidget() for sidebar calendar display
  */
 
 const Calendar = (() => {
@@ -133,11 +134,62 @@ const Calendar = (() => {
         window.open(url, '_blank');
     }
 
+    /**
+     * Render the calendar widget in the sidebar
+     * Displays full date at top and monthly grid with today highlighted
+     */
+    function renderCalendarWidget() {
+        const fullDateEl = document.getElementById('calendar-full-date');
+        const daysEl = document.getElementById('calendar-days');
+
+        if (!fullDateEl || !daysEl) return;
+
+        const now = new Date();
+        const today = now.getDate();
+        const currentMonth = now.getMonth();
+        const currentYear = now.getFullYear();
+
+        // Format full date: "Sunday, December 15, 2025"
+        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        const fullDateStr = now.toLocaleDateString('en-US', options);
+        fullDateEl.textContent = fullDateStr;
+
+        // Calculate calendar grid
+        const firstDayOfMonth = new Date(currentYear, currentMonth, 1);
+        const lastDayOfMonth = new Date(currentYear, currentMonth + 1, 0);
+        const startDayOfWeek = firstDayOfMonth.getDay(); // 0 = Sunday
+        const daysInMonth = lastDayOfMonth.getDate();
+
+        // Clear existing days
+        daysEl.innerHTML = '';
+
+        // Add empty cells for days before the first of the month
+        for (let i = 0; i < startDayOfWeek; i++) {
+            const emptyDay = document.createElement('div');
+            emptyDay.className = 'calendar-day empty';
+            daysEl.appendChild(emptyDay);
+        }
+
+        // Add days of the month
+        for (let day = 1; day <= daysInMonth; day++) {
+            const dayEl = document.createElement('div');
+            dayEl.className = 'calendar-day';
+            dayEl.textContent = day;
+
+            if (day === today) {
+                dayEl.classList.add('today');
+            }
+
+            daysEl.appendChild(dayEl);
+        }
+    }
+
     // Public API
     return {
         createGoogleCalendarLink,
         createOutlookLink,
         downloadICS,
-        openGoogleCalendar
+        openGoogleCalendar,
+        renderCalendarWidget
     };
 })();

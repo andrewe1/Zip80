@@ -57,6 +57,8 @@ CHANGE LOG:
 - 2025-12-14: Added account tabs and new account modal
 - 2025-12-14: Added edit balance modal with reason field
 - 2025-12-15: Added balance overview sidebar widget with totals
+- 2025-12-15: Added calendar widget to sidebar with current day highlighting
+- 2025-12-15: Added vault creation modal for setting language/currency defaults
 -->
 <!DOCTYPE html>
 <html lang="en">
@@ -213,6 +215,21 @@ CHANGE LOG:
                         </div>
                     </div>
                 </div>
+
+                <!-- 2025-12-15: Calendar Widget -->
+                <div class="card calendar-widget-card">
+                    <div id="calendar-full-date" class="calendar-full-date">
+                        <!-- Full date rendered by JS -->
+                    </div>
+                    <div class="calendar-grid">
+                        <div class="calendar-weekdays">
+                            <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
+                        </div>
+                        <div id="calendar-days" class="calendar-days">
+                            <!-- Days rendered by JS -->
+                        </div>
+                    </div>
+                </div>
             </aside>
         </div><!-- end workspace-layout -->
     </main>
@@ -304,6 +321,48 @@ CHANGE LOG:
                 </button>
                 <button id="btn-apply-balance" class="btn btn-primary">
                     <span data-i18n="applyBalance">Apply</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2025-12-15: New Vault Modal - Settings for new data files -->
+    <div id="vault-modal" class="modal" style="display: none;">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <h2 id="vault-modal-title" class="modal-title">✨ Create New Vault</h2>
+            <p id="vault-modal-desc" class="modal-desc">Set your preferences for this expense tracker.</p>
+
+            <!-- Default Language -->
+            <div class="form-group">
+                <label id="label-vault-language" for="select-vault-language">Default Language</label>
+                <select id="select-vault-language" class="input">
+                    <option value="en">🇺🇸 English</option>
+                    <option value="es">🇲🇽 Español</option>
+                </select>
+            </div>
+
+            <!-- Default Currency -->
+            <div class="form-group">
+                <label id="label-vault-currency" for="select-vault-currency">Default Currency</label>
+                <select id="select-vault-currency" class="input">
+                    <option value="USD">USD - US Dollar ($)</option>
+                    <option value="MXN">MXN - Mexican Peso ($MXN)</option>
+                </select>
+            </div>
+
+            <!-- First Account Name -->
+            <div class="form-group">
+                <label id="label-vault-account" for="input-vault-account">First Account Name</label>
+                <input type="text" id="input-vault-account" class="input" placeholder="e.g. Main Account, Checking">
+            </div>
+
+            <div class="modal-actions">
+                <button id="btn-cancel-vault" class="btn btn-secondary">
+                    <span data-i18n="cancel">Cancel</span>
+                </button>
+                <button id="btn-create-vault" class="btn btn-primary">
+                    <span data-i18n="createVault">Create Vault</span>
                 </button>
             </div>
         </div>

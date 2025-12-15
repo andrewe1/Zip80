@@ -60,6 +60,7 @@
  * - 2025-12-14: Added account tabs and modal styles
  * - 2025-12-14: Added edit balance button and modal description styles
  * - 2025-12-15: Added workspace sidebar layout and balance overview widget styles
+ * - 2025-12-15: Added calendar widget styles with today highlighting
  * ============================================================================
  */
 
@@ -861,6 +862,74 @@ h3 {
     font-weight: 600;
     margin-bottom: var(--space-sm);
     color: var(--color-text);
+}
+
+/* --- CALENDAR WIDGET --- */
+/* 2025-12-15: Calendar widget in sidebar */
+.calendar-widget-card {
+    padding: var(--space-md);
+}
+
+.calendar-full-date {
+    font-size: var(--font-size-lg);
+    font-weight: 700;
+    text-align: center;
+    color: var(--color-text);
+    margin-bottom: var(--space-md);
+    padding-bottom: var(--space-sm);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.calendar-grid {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+}
+
+.calendar-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+    text-align: center;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: var(--space-xs);
+}
+
+.calendar-days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+}
+
+.calendar-day {
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--font-size-sm);
+    color: var(--color-text);
+    border-radius: var(--radius-sm);
+    transition: background-color 0.15s ease;
+}
+
+.calendar-day.empty {
+    visibility: hidden;
+}
+
+.calendar-day.other-month {
+    color: var(--color-text-muted);
+    opacity: 0.4;
+}
+
+.calendar-day.today {
+    background-color: var(--color-primary);
+    color: white;
+    font-weight: 700;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.4);
 }
 
 /* --- RESPONSIVE --- */
