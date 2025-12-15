@@ -61,17 +61,12 @@
  * - 2025-12-14: Added edit balance button and modal description styles
  * - 2025-12-15: Added workspace sidebar layout and balance overview widget styles
  * - 2025-12-15: Added calendar widget styles with today highlighting
+ * - 2025-12-15: Added dark theme variables and theme toggle button styles
  * ============================================================================
  */
 
-/* --- LANGUAGE SWITCHER --- */
-.lang-switcher {
-    position: fixed;
-    top: var(--space-md);
-    right: var(--space-md);
-    z-index: 1001;
-}
-
+/* --- LANGUAGE SELECT --- */
+/* Language dropdown styling (positioned inside .top-controls) */
 .lang-select {
     padding: var(--space-sm) var(--space-md);
     font-family: inherit;
@@ -132,6 +127,77 @@
     --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
     --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     --shadow-lg: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+/* --- DARK THEME (2025-12-15) --- */
+html.dark {
+    --color-primary: #3b82f6;
+    --color-primary-hover: #60a5fa;
+    --color-success: #22c55e;
+    --color-success-hover: #4ade80;
+    --color-danger: #ef4444;
+    --color-danger-hover: #f87171;
+
+    /* Dark Neutrals */
+    --color-bg: #0f172a;
+    --color-surface: #1e293b;
+    --color-text: #f1f5f9;
+    --color-text-muted: #94a3b8;
+    --color-border: #334155;
+
+    /* Darker shadows for dark mode */
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+}
+
+/* --- THEME TOGGLE --- */
+.top-controls {
+    position: fixed;
+    top: var(--space-md);
+    right: var(--space-md);
+    z-index: 1001;
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.theme-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background-color: var(--color-surface);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    font-size: 1.2rem;
+    transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+}
+
+.theme-toggle:hover {
+    border-color: var(--color-primary);
+    transform: translateY(-2px);
+}
+
+.theme-toggle:focus {
+    outline: none;
+    border-color: var(--color-primary);
+}
+
+/* Sun/Moon icons */
+.theme-toggle .icon-sun,
+.theme-toggle .icon-moon {
+    display: none;
+}
+
+html:not(.dark) .theme-toggle .icon-moon {
+    display: block;
+}
+
+html.dark .theme-toggle .icon-sun {
+    display: block;
 }
 
 /* --- RESET & BASE --- */

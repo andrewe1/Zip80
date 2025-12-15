@@ -53,6 +53,7 @@
  * - 2025-12-15: Added balance overview sidebar widget with renderBalanceOverview()
  * - 2025-12-15: Added calendar widget integration via Calendar.renderCalendarWidget()
  * - 2025-12-15: Added vault creation modal with language/currency defaults
+ * - 2025-12-15: Added dark/light theme toggle with setupTheme()
  */
 
 (() => {
@@ -63,7 +64,8 @@
 
     // DOM Elements
     const elements = {
-        // Language
+        // Theme & Language (2025-12-15)
+        themeToggle: document.getElementById('theme-toggle'),
         langSelect: document.getElementById('lang-select'),
 
         // Startup
@@ -175,6 +177,7 @@
     // --- Initialization ---
 
     async function init() {
+        setupTheme();  // 2025-12-15: Theme toggle
         setupLanguage();
         setupEventListeners();
         setupDragAndDrop();
@@ -209,6 +212,33 @@
         elements.selectAccountType.addEventListener('change', () => {
             const isCredit = elements.selectAccountType.value === 'credit';
             elements.creditCardFields.style.display = isCredit ? 'block' : 'none';
+        });
+    }
+
+    /**
+     * Setup dark/light theme toggle
+     * 2025-12-15: Loads saved preference or system preference, toggles on click
+     */
+    function setupTheme() {
+        const THEME_KEY = 'zip80_theme';
+
+        // Load saved theme or detect system preference
+        const savedTheme = localStorage.getItem(THEME_KEY);
+        if (savedTheme === 'dark') {
+            document.documentElement.classList.add('dark');
+        } else if (savedTheme === 'light') {
+            document.documentElement.classList.remove('dark');
+        } else {
+            // Auto-detect system preference
+            if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                document.documentElement.classList.add('dark');
+            }
+        }
+
+        // Toggle theme on click
+        elements.themeToggle.addEventListener('click', () => {
+            const isDark = document.documentElement.classList.toggle('dark');
+            localStorage.setItem(THEME_KEY, isDark ? 'dark' : 'light');
         });
     }
 

@@ -59,6 +59,7 @@ CHANGE LOG:
 - 2025-12-15: Added balance overview sidebar widget with totals
 - 2025-12-15: Added calendar widget to sidebar with current day highlighting
 - 2025-12-15: Added vault creation modal for setting language/currency defaults
+- 2025-12-15: Added dark theme toggle in top controls
 -->
 <!DOCTYPE html>
 <html lang="en">
@@ -72,8 +73,12 @@ CHANGE LOG:
 </head>
 
 <body>
-    <!-- Language Switcher (visible on both screens) -->
-    <div id="lang-switcher" class="lang-switcher">
+    <!-- 2025-12-15: Top Controls (Theme Toggle + Language Switcher) -->
+    <div id="top-controls" class="top-controls">
+        <button id="theme-toggle" class="theme-toggle" aria-label="Toggle dark mode">
+            <span class="icon-sun">☀️</span>
+            <span class="icon-moon">🌙</span>
+        </button>
         <select id="lang-select" class="lang-select" aria-label="Language">
             <option value="en">🇺🇸 English</option>
             <option value="es">🇲🇽 Español</option>
