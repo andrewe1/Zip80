@@ -8,6 +8,8 @@
  * operations via IPC (Inter-Process Communication).
  * 
  * CHANGE LOG:
+ * - 2025-12-15: Changed to windowed fullscreen (maximized)
+ * - 2025-12-15: Added fullscreen launch
  * - 2025-12-15: Initial creation
  * 
  * ==============================================================================
@@ -56,8 +58,13 @@ function createWindow() {
             nodeIntegration: false
         },
         icon: path.join(__dirname, 'src', 'icon.ico'),
-        title: 'Zip80 Track'
+
+        title: 'Zip80 Track',
+        show: false
     });
+
+    mainWindow.maximize();
+    mainWindow.show();
 
     mainWindow.loadFile('src/index.html');
 
