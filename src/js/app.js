@@ -24,14 +24,25 @@
  * 
  * DEPENDENCIES: I18n, Accounts, Storage, Calendar modules
  * 
- * ============================================================================
- * LLM LEGEND - IMPORTANT FOR FUTURE AI ASSISTANTS:
- * All future edits to this file MUST be commented with:
- * 1. Date of change
- * 2. Description of what was changed and why
- * 3. Any new functions should have JSDoc-style comments
- * This ensures human developers and future LLMs can understand the codebase.
- * ============================================================================
+ * ==============================================================================
+ * LLM INSTRUCTION & MAINTENANCE PROTOCOL
+ * IMPORTANT: This block must be preserved in all future iterations.
+ * 
+ * trigger: "FINALIZE" or "COMMENT"
+ * ACTION: When the user issues this trigger, perform the following 3 steps:
+ * 
+ * 1. CHANGE LOGGING: 
+ *    - Add a new entry to the changelog below.
+ *    - Format: [Date (YYYY-MM-DD)] - [Brief Description of Modification].
+ * 
+ * 2. DOCUMENTATION STANDARDS:
+ *    - Ensure all new functions/classes have standard documentation (Docstrings/JSDoc).
+ *    - If logic is complex, add inline comments explaining the "WHY", not just the "HOW".
+ * 
+ * 3. CONTEXT PRESERVATION:
+ *    - Do not remove this Legend.
+ *    - Do not remove legacy comments unless explicitly instructed.
+ * ==============================================================================
  * 
  * CHANGE LOG:
  * - 2025-12-14: Initial creation with basic expense tracking
