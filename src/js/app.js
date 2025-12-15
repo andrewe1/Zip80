@@ -76,6 +76,15 @@
         accountCurrency: document.getElementById('account-currency'),
         btnEditBalance: document.getElementById('btn-edit-balance'),
 
+        // Credit Card Balance Info (2025-12-15)
+        creditCardInfo: document.getElementById('credit-card-info'),
+        creditBalanceLabel: document.getElementById('credit-balance-label'),
+        creditBalanceValue: document.getElementById('credit-balance-value'),
+        creditLimitLabel: document.getElementById('credit-limit-label'),
+        creditLimitValue: document.getElementById('credit-limit-value'),
+        creditDatesLabel: document.getElementById('credit-dates-label'),
+        creditDatesValue: document.getElementById('credit-dates-value'),
+
         // Form
         addTransactionTitle: document.getElementById('add-transaction-title'),
         inputDesc: document.getElementById('input-desc'),
@@ -89,13 +98,25 @@
         emptyState: document.getElementById('empty-state'),
         btnExport: document.getElementById('btn-export'),
 
-        // Modal
+        // Account Modal
         accountModal: document.getElementById('account-modal'),
         modalTitle: document.getElementById('modal-title'),
+        selectAccountType: document.getElementById('select-account-type'),
+        labelAccountType: document.getElementById('label-account-type'),
         labelAccountName: document.getElementById('label-account-name'),
         inputAccountName: document.getElementById('input-account-name'),
         labelCurrency: document.getElementById('label-currency'),
         selectCurrency: document.getElementById('select-currency'),
+
+        // Credit Card Modal Fields (2025-12-15)
+        creditCardFields: document.getElementById('credit-card-fields'),
+        labelCreditLimit: document.getElementById('label-credit-limit'),
+        inputCreditLimit: document.getElementById('input-credit-limit'),
+        labelPaymentDueDay: document.getElementById('label-payment-due-day'),
+        selectPaymentDueDay: document.getElementById('select-payment-due-day'),
+        labelStatementCloseDay: document.getElementById('label-statement-close-day'),
+        selectStatementCloseDay: document.getElementById('select-statement-close-day'),
+
         btnCancelAccount: document.getElementById('btn-cancel-account'),
         btnCreateAccount: document.getElementById('btn-create-account'),
 
@@ -120,8 +141,38 @@
         setupLanguage();
         setupEventListeners();
         setupDragAndDrop();
+        setupCreditCardUI();  // 2025-12-15: Credit card setup
         await checkForRecentFile();
         updateUILanguage();
+    }
+
+    /**
+     * Setup credit card UI elements
+     * 2025-12-15: Populates day dropdowns (1-31) for payment due and statement close
+     */
+    function setupCreditCardUI() {
+        // Populate day dropdowns (1-31)
+        for (let day = 1; day <= 31; day++) {
+            const option1 = document.createElement('option');
+            option1.value = day;
+            option1.textContent = day;
+            elements.selectPaymentDueDay.appendChild(option1);
+
+            const option2 = document.createElement('option');
+            option2.value = day;
+            option2.textContent = day;
+            elements.selectStatementCloseDay.appendChild(option2);
+        }
+
+        // Default: due day 15, statement close day 28
+        elements.selectPaymentDueDay.value = '15';
+        elements.selectStatementCloseDay.value = '28';
+
+        // Toggle credit card fields visibility based on account type
+        elements.selectAccountType.addEventListener('change', () => {
+            const isCredit = elements.selectAccountType.value === 'credit';
+            elements.creditCardFields.style.display = isCredit ? 'block' : 'none';
+        });
     }
 
     function setupLanguage() {
@@ -166,17 +217,30 @@
 
         // Modal
         elements.modalTitle.textContent = t('newAccount');
+        elements.labelAccountType.textContent = t('accountType');
         elements.labelAccountName.textContent = t('accountName');
         elements.inputAccountName.placeholder = t('accountNamePlaceholder');
         elements.labelCurrency.textContent = t('currency');
         elements.btnCancelAccount.querySelector('[data-i18n="cancel"]').textContent = t('cancel');
         elements.btnCreateAccount.querySelector('[data-i18n="createAccount"]').textContent = t('createAccount');
 
+        // Account type options (2025-12-15)
+        elements.selectAccountType.innerHTML = `
+            <option value="checking">${t('accountTypeChecking')}</option>
+            <option value="credit">${t('accountTypeCreditCard')}</option>
+        `;
+
         // Currency options
         elements.selectCurrency.innerHTML = `
             <option value="USD">${t('currencyUSD')}</option>
             <option value="MXN">${t('currencyMXN')}</option>
         `;
+
+        // Credit card modal labels (2025-12-15)
+        elements.labelCreditLimit.textContent = t('creditLimit');
+        elements.inputCreditLimit.placeholder = t('creditLimitPlaceholder');
+        elements.labelPaymentDueDay.textContent = t('paymentDueDay');
+        elements.labelStatementCloseDay.textContent = t('statementCloseDay');
 
         // Balance Modal
         elements.balanceModalTitle.textContent = t('editBalance');
@@ -351,8 +415,15 @@
     // --- Account Operations ---
 
     function openAccountModal() {
+        // Reset form fields
+        elements.selectAccountType.value = 'checking';
         elements.inputAccountName.value = '';
         elements.selectCurrency.value = 'USD';
+        elements.creditCardFields.style.display = 'none';  // 2025-12-15: Hide credit fields
+        elements.inputCreditLimit.value = '';
+        elements.selectPaymentDueDay.value = '15';
+        elements.selectStatementCloseDay.value = '28';
+
         elements.accountModal.style.display = 'flex';
         elements.inputAccountName.focus();
     }
@@ -418,6 +489,7 @@
     }
 
     function handleCreateAccount() {
+        const accountType = elements.selectAccountType.value;
         const name = elements.inputAccountName.value.trim();
         const currency = elements.selectCurrency.value;
 
@@ -427,7 +499,21 @@
             return;
         }
 
-        const newAccount = Accounts.createAccount(name, currency);
+        let newAccount;
+
+        // 2025-12-15: Create credit card or checking account based on type
+        if (accountType === 'credit') {
+            const creditLimit = elements.inputCreditLimit.value;
+            const paymentDueDay = elements.selectPaymentDueDay.value;
+            const statementCloseDay = elements.selectStatementCloseDay.value;
+
+            newAccount = Accounts.createCreditCardAccount(
+                name, currency, creditLimit, paymentDueDay, statementCloseDay
+            );
+        } else {
+            newAccount = Accounts.createAccount(name, currency);
+        }
+
         data.accounts.push(newAccount);
         currentAccountId = newAccount.id;
 
@@ -562,12 +648,38 @@
         if (!currentAccount) {
             elements.balanceDisplay.textContent = '$0.00';
             elements.accountCurrency.textContent = '';
+            elements.creditCardInfo.style.display = 'none';
             return;
         }
 
         const balance = Accounts.calculateBalance(data.transactions, currentAccountId);
-        elements.balanceDisplay.textContent = Accounts.formatCurrency(balance, currentAccount.currency);
-        elements.balanceDisplay.classList.toggle('negative', balance < 0);
+        const t = I18n.t;
+
+        // 2025-12-15: Different display for credit cards vs checking
+        if (currentAccount.type === 'credit') {
+            // Credit card: Show available credit as main number
+            const availableCredit = Accounts.calculateAvailableCredit(currentAccount, data.transactions);
+
+            elements.balanceLabel.textContent = t('availableCredit');
+            elements.balanceDisplay.textContent = Accounts.formatCurrency(availableCredit, currentAccount.currency);
+            elements.balanceDisplay.classList.toggle('negative', availableCredit < 0);
+
+            // Show credit card details
+            elements.creditCardInfo.style.display = 'block';
+            elements.creditBalanceLabel.textContent = t('currentBalance') + ':';
+            elements.creditBalanceValue.textContent = Accounts.formatCurrency(balance, currentAccount.currency);
+            elements.creditLimitLabel.textContent = t('creditLimit') + ':';
+            elements.creditLimitValue.textContent = Accounts.formatCurrency(currentAccount.creditLimit, currentAccount.currency);
+            elements.creditDatesLabel.textContent = `${t('dueDay')}: ${currentAccount.paymentDueDay}`;
+            elements.creditDatesValue.textContent = `${t('closesDay')}: ${currentAccount.statementCloseDay}`;
+        } else {
+            // Checking account: Show balance
+            elements.balanceLabel.textContent = t('balanceLabel');
+            elements.balanceDisplay.textContent = Accounts.formatCurrency(balance, currentAccount.currency);
+            elements.balanceDisplay.classList.toggle('negative', balance < 0);
+            elements.creditCardInfo.style.display = 'none';
+        }
+
         elements.accountCurrency.textContent = currentAccount.currency;
     }
 

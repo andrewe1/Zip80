@@ -63,13 +63,37 @@ const Accounts = (() => {
     }
 
     /**
-     * Create a new account object
+     * Create a new checking account object
+     * 2025-12-15: Added type field to differentiate from credit cards
      */
     function createAccount(name, currency = 'USD') {
         return {
             id: generateId(),
+            type: 'checking',
             name: name.trim(),
             currency: currency,
+            createdAt: new Date().toISOString()
+        };
+    }
+
+    /**
+     * Create a new credit card account object
+     * 2025-12-15: Added for credit card support with limit and billing dates
+     * @param {string} name - Account name
+     * @param {string} currency - Currency code (USD, MXN)
+     * @param {number} creditLimit - Total credit limit
+     * @param {number} paymentDueDay - Day of month payment is due (1-31)
+     * @param {number} statementCloseDay - Day of month statement closes (1-31)
+     */
+    function createCreditCardAccount(name, currency, creditLimit, paymentDueDay, statementCloseDay) {
+        return {
+            id: generateId(),
+            type: 'credit',
+            name: name.trim(),
+            currency: currency,
+            creditLimit: parseFloat(creditLimit) || 0,
+            paymentDueDay: parseInt(paymentDueDay) || 1,
+            statementCloseDay: parseInt(statementCloseDay) || 1,
             createdAt: new Date().toISOString()
         };
     }
@@ -96,16 +120,19 @@ const Accounts = (() => {
     }
 
     /**
-     * Format amount with currency symbol
+     * Format amount with currency symbol and thousand separators
+     * 2025-12-14: Removed suffix - currency code displayed separately below balance
+     * 2025-12-15: Added thousand separators using toLocaleString
      */
     function formatCurrency(amount, currencyCode) {
         const currency = getCurrency(currencyCode);
-        const absAmount = Math.abs(amount).toFixed(2);
-
-        if (currency.suffix) {
-            return `${currency.symbol}${absAmount}${currency.suffix}`;
-        }
-        return `${currency.symbol}${absAmount}`;
+        const absAmount = Math.abs(amount);
+        // Format with thousand separators and 2 decimal places
+        const formatted = absAmount.toLocaleString('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+        return `${currency.symbol}${formatted}`;
     }
 
     /**
@@ -115,6 +142,19 @@ const Accounts = (() => {
         return transactions
             .filter(t => t.accountId === accountId)
             .reduce((sum, t) => sum + t.amt, 0);
+    }
+
+    /**
+     * Calculate available credit for a credit card account
+     * 2025-12-15: Added for credit card support
+     * For credit cards: balance is negative (amount owed)
+     * Available = creditLimit - |balance|
+     */
+    function calculateAvailableCredit(account, transactions) {
+        if (account.type !== 'credit') return 0;
+        const balance = calculateBalance(transactions, account.id);
+        // Balance is negative (expenses), so we use Math.abs
+        return account.creditLimit - Math.abs(balance);
     }
 
     /**
@@ -176,11 +216,13 @@ const Accounts = (() => {
         CURRENCIES,
         generateId,
         createAccount,
+        createCreditCardAccount,
         createDefaultAccount,
         getAvailableCurrencies,
         getCurrency,
         formatCurrency,
         calculateBalance,
+        calculateAvailableCredit,
         getAccountTransactions,
         migrateData,
         createEmptyData

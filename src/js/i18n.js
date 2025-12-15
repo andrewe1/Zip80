@@ -133,7 +133,20 @@ const I18n = (() => {
             balanceAdjustment: 'Balance Adjustment',
             adjustmentReason: 'Reason for Adjustment',
             adjustmentReasonPlaceholder: 'e.g. Bank reconciliation, Error correction',
-            toastBalanceUpdated: '✅ Balance updated!'
+            toastBalanceUpdated: '✅ Balance updated!',
+
+            // Credit Card Accounts (2025-12-15)
+            accountType: 'Account Type',
+            accountTypeChecking: 'Checking Account',
+            accountTypeCreditCard: 'Credit Card',
+            creditLimit: 'Credit Limit',
+            creditLimitPlaceholder: 'e.g. 5000',
+            paymentDueDay: 'Payment Due Day',
+            statementCloseDay: 'Statement Close Day',
+            availableCredit: 'Available Credit',
+            currentBalance: 'Current Balance',
+            dueDay: 'Due',
+            closesDay: 'Closes'
         },
 
         es: {
@@ -215,7 +228,20 @@ const I18n = (() => {
             balanceAdjustment: 'Ajuste de Saldo',
             adjustmentReason: 'Razón del Ajuste',
             adjustmentReasonPlaceholder: 'ej. Conciliación bancaria, Corrección de error',
-            toastBalanceUpdated: '✅ ¡Saldo actualizado!'
+            toastBalanceUpdated: '✅ ¡Saldo actualizado!',
+
+            // Credit Card Accounts (2025-12-15)
+            accountType: 'Tipo de Cuenta',
+            accountTypeChecking: 'Cuenta de Cheques',
+            accountTypeCreditCard: 'Tarjeta de Crédito',
+            creditLimit: 'Límite de Crédito',
+            creditLimitPlaceholder: 'ej. 5000',
+            paymentDueDay: 'Día de Pago',
+            statementCloseDay: 'Día de Corte',
+            availableCredit: 'Crédito Disponible',
+            currentBalance: 'Saldo Actual',
+            dueDay: 'Pago',
+            closesDay: 'Corte'
         }
     };
 
