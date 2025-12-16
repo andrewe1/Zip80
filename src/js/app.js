@@ -120,7 +120,8 @@
         addTransactionTitle: document.getElementById('add-transaction-title'),
         inputDesc: document.getElementById('input-desc'),
         inputAmount: document.getElementById('input-amount'),
-        btnToggleIncome: document.getElementById('btn-toggle-income'),
+        btnModeExpense: document.getElementById('btn-mode-expense'),
+        btnModeIncome: document.getElementById('btn-mode-income'),
         categoryIcons: document.getElementById('category-icons'),
         btnAddTransaction: document.getElementById('btn-add-transaction'),
 
@@ -333,13 +334,12 @@
         elements.inputDesc.placeholder = t('inputDescPlaceholder');
         elements.inputAmount.placeholder = t('inputAmountPlaceholder');
 
-        // Transaction mode toggle (2025-12-15)
-        const modeBtn = elements.btnToggleIncome;
-        modeBtn.querySelector('.mode-expense').textContent = t('modeExpense');
-        modeBtn.querySelector('.mode-income').textContent = t('modeIncome');
+        // Transaction mode buttons (2025-12-16)
+        elements.btnModeExpense.querySelector('[data-i18n="modeExpense"]').textContent = t('modeExpense');
+        elements.btnModeIncome.querySelector('[data-i18n="modeIncome"]').textContent = t('modeIncome');
 
         // Update add button based on current mode
-        const currentMode = modeBtn.dataset.mode;
+        const currentMode = getCurrentMode();
         elements.btnAddTransaction.querySelector('span').textContent =
             currentMode === 'income' ? t('btnAddIncome') : t('btnAddExpense');
 
@@ -445,8 +445,9 @@
         elements.btnAddTransaction.addEventListener('click', handleAddTransaction);
         elements.btnExport.addEventListener('click', handleExport);
 
-        // Transaction mode toggle
-        elements.btnToggleIncome.addEventListener('click', toggleTransactionMode);
+        // Transaction mode buttons (2025-12-16)
+        elements.btnModeExpense.addEventListener('click', () => setTransactionMode('expense'));
+        elements.btnModeIncome.addEventListener('click', () => setTransactionMode('income'));
 
         // Category icon selection
         elements.categoryIcons.addEventListener('click', (e) => {
@@ -1206,31 +1207,30 @@
      * Toggle between expense and income mode
      * 2025-12-15: New mode toggle for simplified transaction entry
      */
-    function toggleTransactionMode() {
-        const btn = elements.btnToggleIncome;
-        const currentMode = btn.dataset.mode;
-        const newMode = currentMode === 'expense' ? 'income' : 'expense';
-
-        btn.dataset.mode = newMode;
-
-        // Toggle visibility of mode labels
-        btn.querySelector('.mode-expense').style.display = newMode === 'expense' ? 'inline' : 'none';
-        btn.querySelector('.mode-income').style.display = newMode === 'income' ? 'inline' : 'none';
+    function setTransactionMode(mode) {
+        // Update button active states
+        if (mode === 'expense') {
+            elements.btnModeExpense.classList.add('active');
+            elements.btnModeIncome.classList.remove('active');
+        } else {
+            elements.btnModeExpense.classList.remove('active');
+            elements.btnModeIncome.classList.add('active');
+        }
 
         // Show/hide category icons (only for expense mode)
-        elements.categoryIcons.style.display = newMode === 'expense' ? 'flex' : 'none';
+        elements.categoryIcons.style.display = mode === 'expense' ? 'flex' : 'none';
 
         // Show/hide recurring toggle (only for expense mode)
-        elements.recurringToggleRow.style.display = newMode === 'expense' ? 'block' : 'none';
+        elements.recurringToggleRow.style.display = mode === 'expense' ? 'block' : 'none';
         // Reset recurring when switching to income
-        if (newMode === 'income') {
+        if (mode === 'income') {
             elements.checkboxRecurring.checked = false;
             elements.recurringFrequencyRow.style.display = 'none';
         }
 
         // Update submit button style and text
         const addBtn = elements.btnAddTransaction;
-        if (newMode === 'income') {
+        if (mode === 'income') {
             addBtn.classList.remove('btn-danger');
             addBtn.classList.add('btn-success');
             addBtn.querySelector('span').textContent = I18n.t('btnAddIncome');
@@ -1239,6 +1239,14 @@
             addBtn.classList.add('btn-danger');
             addBtn.querySelector('span').textContent = I18n.t('btnAddExpense');
         }
+    }
+
+    /**
+     * Get current transaction mode from button active state
+     * 2025-12-16: Helper to determine current mode
+     */
+    function getCurrentMode() {
+        return elements.btnModeExpense.classList.contains('active') ? 'expense' : 'income';
     }
 
     /**
@@ -1263,7 +1271,7 @@
         const desc = elements.inputDesc.value.trim();
         const amountStr = elements.inputAmount.value.replace(/,/g, '');
         const amount = parseFloat(amountStr);
-        const mode = elements.btnToggleIncome.dataset.mode;
+        const mode = getCurrentMode();
         const category = mode === 'expense' ? getSelectedCategory() : null;
         const isRecurring = mode === 'expense' && elements.checkboxRecurring.checked;
         const frequencyMonths = isRecurring ? parseInt(elements.inputRecurringMonths.value) || 1 : null;

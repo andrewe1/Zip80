@@ -906,14 +906,28 @@ h3 {
     border-color: var(--color-primary);
 }
 
-.btn-mode-toggle[data-mode="expense"] {
+/* Expense button - active state */
+.btn-mode-toggle[data-mode="expense"].active {
     border-color: var(--color-danger);
-    color: var(--color-danger);
+    background-color: var(--color-danger);
+    color: white;
 }
 
-.btn-mode-toggle[data-mode="income"] {
+.btn-mode-toggle[data-mode="expense"]:not(.active) {
+    border-color: var(--color-border);
+    color: var(--color-text-muted);
+}
+
+/* Income button - active state */
+.btn-mode-toggle[data-mode="income"].active {
     border-color: var(--color-success);
-    color: var(--color-success);
+    background-color: var(--color-success);
+    color: white;
+}
+
+.btn-mode-toggle[data-mode="income"]:not(.active) {
+    border-color: var(--color-border);
+    color: var(--color-text-muted);
 }
 
 .category-icons-row {
