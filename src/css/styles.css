@@ -63,6 +63,9 @@
  * - 2025-12-15: Added calendar widget styles with today highlighting
  * - 2025-12-15: Added dark theme variables and theme toggle button styles
  * - 2025-12-15: Fixed toast notification styling for dark mode
+ * - 2025-12-15: Fixed modal z-index for input fields (modal-content z-index: 1)
+ * - 2025-12-15: Changed account-tabs from horizontal scroll to flex-wrap
+ * - 2025-12-15: Increased workspace-sidebar width from 380px to 450px
  * ============================================================================
  */
 
@@ -474,7 +477,7 @@ h3 {
 }
 
 .workspace-sidebar {
-    width: 380px;
+    width: 450px;
     flex-shrink: 0;
     position: sticky;
     top: var(--space-lg);
@@ -866,8 +869,8 @@ h3 {
 
 .account-tabs {
     display: flex;
+    flex-wrap: wrap;
     gap: var(--space-sm);
-    overflow-x: auto;
     padding-bottom: var(--space-xs);
 }
 
@@ -940,6 +943,8 @@ h3 {
 
 .modal-content {
     position: relative;
+    z-index: 1;
+    /* Ensure content is above the backdrop for click events */
     background-color: var(--color-surface);
     border-radius: var(--radius-lg);
     padding: var(--space-xl);

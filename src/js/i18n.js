@@ -61,6 +61,9 @@
  * - 2025-12-15: Changed vault modal to use vaultName instead of vaultAccountName
  * - 2025-12-15: Added LANGUAGES config, LANGUAGE_CURRENCY_MAP, and extensibility helpers
  * - 2025-12-15: Added cash account type translations
+ * - 2025-12-15: Added account edit modal translations (accountEditModalTitle, accountEditModalDesc, toastAccountUpdated)
+ * - 2025-12-15: Added custom confirm modal translations (confirm, confirmTitle)
+ * - 2025-12-15: Added adjustAmount translation, renamed editCreditSettings to 'Edit Account'/'Editar Cuenta'
  */
 
 const I18n = (() => {
@@ -217,7 +220,8 @@ const I18n = (() => {
             accountsCredit: 'Credit Cards',
 
             // Credit Card Edit Modal (2025-12-15)
-            editCreditSettings: 'Edit Settings',
+            editCreditSettings: 'Edit Account',
+            adjustAmount: 'Adjust Amount',
             creditModalTitle: '⚙️ Credit Card Settings',
             creditModalDesc: 'Edit your credit card account settings.',
             saveChanges: 'Save Changes',
@@ -230,7 +234,16 @@ const I18n = (() => {
             vaultCurrency: 'Default Currency',
             vaultName: 'Vault Name',
             vaultNamePlaceholder: 'e.g. Personal, Business, Savings',
-            createVault: 'Create Vault'
+            createVault: 'Create Vault',
+
+            // Account Edit Modal (2025-12-15)
+            accountEditModalTitle: '⚙️ Account Settings',
+            accountEditModalDesc: 'Edit your account settings.',
+            toastAccountUpdated: '✅ Account updated!',
+
+            // Custom Confirm Modal (2025-12-15)
+            confirm: 'Confirm',
+            confirmTitle: '⚠️ Confirm'
         },
 
         es: {
@@ -340,7 +353,8 @@ const I18n = (() => {
             accountsCredit: 'Tarjetas',
 
             // Credit Card Edit Modal (2025-12-15)
-            editCreditSettings: 'Editar Configuración',
+            editCreditSettings: 'Editar Cuenta',
+            adjustAmount: 'Ajustar Monto',
             creditModalTitle: '⚙️ Configuración de Tarjeta',
             creditModalDesc: 'Edita la configuración de tu tarjeta de crédito.',
             saveChanges: 'Guardar Cambios',
@@ -353,7 +367,16 @@ const I18n = (() => {
             vaultCurrency: 'Moneda Predeterminada',
             vaultName: 'Nombre de la Bóveda',
             vaultNamePlaceholder: 'ej. Personal, Negocio, Ahorros',
-            createVault: 'Crear Bóveda'
+            createVault: 'Crear Bóveda',
+
+            // Account Edit Modal (2025-12-15)
+            accountEditModalTitle: '⚙️ Configuración de Cuenta',
+            accountEditModalDesc: 'Edita la configuración de tu cuenta.',
+            toastAccountUpdated: '✅ ¡Cuenta actualizada!',
+
+            // Custom Confirm Modal (2025-12-15)
+            confirm: 'Confirmar',
+            confirmTitle: '⚠️ Confirmar'
         }
     };
 

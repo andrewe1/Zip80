@@ -59,6 +59,10 @@
  * - 2025-12-15: Refactored to use I18n.getDefaultCurrency() for extensibility
  * - 2025-12-15: Added cash account type support
  * - 2025-12-15: Updated resume button and workspace handling for Electron compatibility
+ * - 2025-12-15: Added comma formatting for number inputs (setupCommaFormatting, formatWithCommas, parseFormattedNumber)
+ * - 2025-12-15: Added account edit modal for checking/cash accounts (name and currency editing)
+ * - 2025-12-15: Replaced native confirm() dialogs with custom styled showConfirm() modal
+ * - 2025-12-15: UI improvements: account tabs wrap instead of scroll, wider sidebar, adjusted button labels
  */
 
 (() => {
@@ -106,6 +110,10 @@
         creditLimitValue: document.getElementById('credit-limit-value'),
         creditDatesLabel: document.getElementById('credit-dates-label'),
         creditDatesValue: document.getElementById('credit-dates-value'),
+
+        // Account Settings Info (2025-12-15: for checking/cash accounts)
+        accountSettingsInfo: document.getElementById('account-settings-info'),
+        btnEditAccountSettings: document.getElementById('btn-edit-account-settings'),
 
         // Form
         addTransactionTitle: document.getElementById('add-transaction-title'),
@@ -191,7 +199,25 @@
         labelEditStatementClose: document.getElementById('label-edit-statement-close'),
         selectEditStatementClose: document.getElementById('select-edit-statement-close'),
         btnCancelCredit: document.getElementById('btn-cancel-credit'),
-        btnSaveCredit: document.getElementById('btn-save-credit')
+        btnSaveCredit: document.getElementById('btn-save-credit'),
+
+        // Account Edit Modal (2025-12-15: for checking/cash accounts)
+        accountEditModal: document.getElementById('account-edit-modal'),
+        accountEditModalTitle: document.getElementById('account-edit-modal-title'),
+        accountEditModalDesc: document.getElementById('account-edit-modal-desc'),
+        labelEditAccountName: document.getElementById('label-edit-account-name'),
+        inputEditAccountName: document.getElementById('input-edit-account-name'),
+        labelEditAccountCurrency: document.getElementById('label-edit-account-currency'),
+        selectEditAccountCurrency: document.getElementById('select-edit-account-currency'),
+        btnCancelAccountEdit: document.getElementById('btn-cancel-account-edit'),
+        btnSaveAccountEdit: document.getElementById('btn-save-account-edit'),
+
+        // Custom Confirm Modal (2025-12-15)
+        confirmModal: document.getElementById('confirm-modal'),
+        confirmModalTitle: document.getElementById('confirm-modal-title'),
+        confirmModalMessage: document.getElementById('confirm-modal-message'),
+        btnConfirmCancel: document.getElementById('btn-confirm-cancel'),
+        btnConfirmOk: document.getElementById('btn-confirm-ok')
     };
 
     // --- Initialization ---
@@ -203,7 +229,9 @@
         setupDragAndDrop();
         setupCreditCardUI();  // 2025-12-15: Credit card setup
         setupCreditEditModal();  // 2025-12-15: Credit edit modal
+        setupAccountEditModal();  // 2025-12-15: Account edit modal
         setupVaultLanguageSync();  // 2025-12-15: Vault language-currency sync
+        setupCommaFormatting();  // 2025-12-15: Comma separators for number inputs
         await checkForRecentFile();
         updateUILanguage();
     }
@@ -436,6 +464,9 @@
         elements.btnCancelCredit.addEventListener('click', closeCreditModal);
         elements.btnSaveCredit.addEventListener('click', handleSaveCredit);
         elements.creditModal.querySelector('.modal-backdrop').addEventListener('click', closeCreditModal);
+
+        // Account settings edit button (2025-12-15: for checking/cash accounts)
+        elements.btnEditAccountSettings.addEventListener('click', openAccountEditModal);
     }
 
     function setupDragAndDrop() {
@@ -623,9 +654,11 @@
     /**
      * Close the current vault and return to startup screen
      * 2025-12-15: Added close vault functionality
+     * 2025-12-15: Updated to use custom confirm modal
      */
-    function handleCloseVault() {
-        if (!confirm(I18n.t('confirmCloseVault'))) {
+    async function handleCloseVault() {
+        const confirmed = await showConfirm(I18n.t('confirmCloseVault'));
+        if (!confirmed) {
             return;
         }
 
@@ -682,7 +715,7 @@
     }
 
     function handleApplyBalance() {
-        const newBalanceStr = elements.inputNewBalance.value;
+        const newBalanceStr = elements.inputNewBalance.value.replace(/,/g, '');
         const newBalance = parseFloat(newBalanceStr);
 
         if (isNaN(newBalance)) {
@@ -788,6 +821,248 @@
         showToast(I18n.t('toastCreditUpdated'));
     }
 
+    // --- Account Edit Operations (2025-12-15: for checking/cash accounts) ---
+
+    /**
+     * Setup account edit modal event listeners
+     */
+    function setupAccountEditModal() {
+        elements.btnCancelAccountEdit.addEventListener('click', closeAccountEditModal);
+        elements.btnSaveAccountEdit.addEventListener('click', handleSaveAccountEdit);
+        elements.accountEditModal.querySelector('.modal-backdrop').addEventListener('click', closeAccountEditModal);
+    }
+
+    /**
+     * Open account edit modal for checking/cash accounts
+     */
+    function openAccountEditModal() {
+        const currentAccount = data.accounts.find(a => a.id === currentAccountId);
+        if (!currentAccount || currentAccount.type === 'credit') return;
+
+        const t = I18n.t;
+
+        // Update modal labels
+        elements.accountEditModalTitle.textContent = t('accountEditModalTitle');
+        elements.accountEditModalDesc.textContent = t('accountEditModalDesc');
+        elements.labelEditAccountName.textContent = t('accountName');
+        elements.labelEditAccountCurrency.textContent = t('currency');
+        elements.btnCancelAccountEdit.querySelector('[data-i18n="cancel"]').textContent = t('cancel');
+        elements.btnSaveAccountEdit.querySelector('[data-i18n="saveChanges"]').textContent = t('saveChanges');
+
+        // Update currency options with translations
+        elements.selectEditAccountCurrency.innerHTML = `
+            <option value="USD">${t('currencyUSD')}</option>
+            <option value="MXN">${t('currencyMXN')}</option>
+        `;
+
+        // Populate current values
+        elements.inputEditAccountName.value = currentAccount.name || '';
+        elements.selectEditAccountCurrency.value = currentAccount.currency || 'USD';
+
+        elements.accountEditModal.style.display = 'flex';
+        elements.inputEditAccountName.focus();
+        elements.inputEditAccountName.select();
+    }
+
+    function closeAccountEditModal() {
+        elements.accountEditModal.style.display = 'none';
+    }
+
+    function handleSaveAccountEdit() {
+        const currentAccount = data.accounts.find(a => a.id === currentAccountId);
+        if (!currentAccount) return;
+
+        const newName = elements.inputEditAccountName.value.trim();
+        const newCurrency = elements.selectEditAccountCurrency.value;
+
+        if (!newName) {
+            showToast(I18n.t('toastErrorAccountName'), false);
+            elements.inputEditAccountName.focus();
+            return;
+        }
+
+        // Update account
+        currentAccount.name = newName;
+        currentAccount.currency = newCurrency;
+
+        closeAccountEditModal();
+        render();
+        handleSave();
+        showToast(I18n.t('toastAccountUpdated'));
+    }
+
+    // --- Comma Formatting (2025-12-15) ---
+
+    /**
+     * Setup comma formatting for number input fields
+     * Applies to: balance input, transaction amount, credit limit inputs
+     * Uses a text input with formatting to show commas while maintaining number value
+     */
+    function setupCommaFormatting() {
+        // Apply to edit balance input
+        applyCommaFormatting(elements.inputNewBalance);
+
+        // Apply to transaction amount input
+        applyCommaFormatting(elements.inputAmount);
+
+        // Apply to credit limit inputs
+        applyCommaFormatting(elements.inputCreditLimit);
+        applyCommaFormatting(elements.inputEditCreditLimit);
+    }
+
+    /**
+     * Apply comma formatting to a number input
+     * Shows formatted number with commas while editing
+     * @param {HTMLInputElement} input - The input element to format
+     */
+    function applyCommaFormatting(input) {
+        if (!input) return;
+
+        // Store the raw value as a data attribute
+        input.addEventListener('input', (e) => {
+            const cursorPosition = e.target.selectionStart;
+            const oldValue = e.target.value;
+            const oldLength = oldValue.length;
+
+            // Remove all non-numeric characters except decimal and minus
+            let rawValue = oldValue.replace(/[^0-9.\-]/g, '');
+
+            // Handle multiple decimals - keep only first
+            const parts = rawValue.split('.');
+            if (parts.length > 2) {
+                rawValue = parts[0] + '.' + parts.slice(1).join('');
+            }
+
+            // Format with commas
+            const formatted = formatWithCommas(rawValue);
+
+            // Update the input value
+            e.target.value = formatted;
+
+            // Adjust cursor position based on added/removed characters
+            const newLength = formatted.length;
+            const diff = newLength - oldLength;
+            const newCursorPos = Math.max(0, cursorPosition + diff);
+            e.target.setSelectionRange(newCursorPos, newCursorPos);
+        });
+
+        // On focus, select all for easy editing
+        input.addEventListener('focus', (e) => {
+            // Short delay to ensure selection works
+            setTimeout(() => e.target.select(), 10);
+        });
+
+        // On blur, clean up formatting
+        input.addEventListener('blur', (e) => {
+            const rawValue = parseFormattedNumber(e.target.value);
+            if (!isNaN(rawValue) && rawValue !== 0) {
+                e.target.value = formatWithCommas(rawValue.toString());
+            }
+        });
+    }
+
+    /**
+     * Format a number string with commas as thousand separators
+     * @param {string} numStr - Number string to format
+     * @returns {string} Formatted string with commas
+     */
+    function formatWithCommas(numStr) {
+        if (!numStr) return '';
+
+        // Split on decimal
+        const parts = numStr.split('.');
+        let intPart = parts[0] || '';
+        const decPart = parts[1];
+
+        // Handle negative
+        const isNegative = intPart.startsWith('-');
+        if (isNegative) intPart = intPart.substring(1);
+
+        // Add commas to integer part
+        intPart = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+
+        // Reconstruct
+        let result = isNegative ? '-' + intPart : intPart;
+        if (decPart !== undefined) {
+            result += '.' + decPart;
+        }
+
+        return result;
+    }
+
+    /**
+     * Parse a formatted number string back to a float
+     * @param {string} formattedStr - Formatted string with commas
+     * @returns {number} Parsed number
+     */
+    function parseFormattedNumber(formattedStr) {
+        if (!formattedStr) return 0;
+        // Remove commas and parse
+        const cleaned = formattedStr.replace(/,/g, '');
+        return parseFloat(cleaned) || 0;
+    }
+
+    // --- Custom Confirm Modal (2025-12-15) ---
+
+    /**
+     * Show a custom confirmation dialog that matches the app's design
+     * @param {string} message - The confirmation message to display
+     * @param {object} options - Optional settings { title, confirmText, cancelText, isDanger }
+     * @returns {Promise<boolean>} Resolves true if confirmed, false if cancelled
+     */
+    function showConfirm(message, options = {}) {
+        return new Promise((resolve) => {
+            const t = I18n.t;
+            const title = options.title || t('confirmTitle');
+            const confirmText = options.confirmText || t('confirm');
+            const cancelText = options.cancelText || t('cancel');
+            const isDanger = options.isDanger !== false; // Default to danger style
+
+            // Set modal content
+            elements.confirmModalTitle.textContent = title;
+            elements.confirmModalMessage.textContent = message;
+            elements.btnConfirmCancel.querySelector('span').textContent = cancelText;
+            elements.btnConfirmOk.querySelector('span').textContent = confirmText;
+
+            // Set button style (danger or primary)
+            elements.btnConfirmOk.className = isDanger
+                ? 'btn btn-danger'
+                : 'btn btn-primary';
+
+            // Clean up any previous handlers
+            const newCancelBtn = elements.btnConfirmCancel.cloneNode(true);
+            const newOkBtn = elements.btnConfirmOk.cloneNode(true);
+            const newBackdrop = elements.confirmModal.querySelector('.modal-backdrop').cloneNode(true);
+
+            elements.btnConfirmCancel.parentNode.replaceChild(newCancelBtn, elements.btnConfirmCancel);
+            elements.btnConfirmOk.parentNode.replaceChild(newOkBtn, elements.btnConfirmOk);
+            elements.confirmModal.querySelector('.modal-backdrop').replaceWith(newBackdrop);
+
+            // Update element references
+            elements.btnConfirmCancel = newCancelBtn;
+            elements.btnConfirmOk = newOkBtn;
+
+            // Add handlers
+            const handleCancel = () => {
+                elements.confirmModal.style.display = 'none';
+                resolve(false);
+            };
+
+            const handleConfirm = () => {
+                elements.confirmModal.style.display = 'none';
+                resolve(true);
+            };
+
+            elements.btnConfirmCancel.addEventListener('click', handleCancel);
+            elements.btnConfirmOk.addEventListener('click', handleConfirm);
+            elements.confirmModal.querySelector('.modal-backdrop').addEventListener('click', handleCancel);
+
+            // Show modal
+            elements.confirmModal.style.display = 'flex';
+            elements.btnConfirmOk.focus();
+        });
+    }
+
     function handleCreateAccount() {
         const accountType = elements.selectAccountType.value;
         const name = elements.inputAccountName.value.trim();
@@ -830,12 +1105,13 @@
         render();
     }
 
-    function deleteAccount(accountId) {
+    async function deleteAccount(accountId) {
         if (data.accounts.length <= 1) {
             return; // Don't delete the last account
         }
 
-        if (!confirm(I18n.t('confirmDeleteAccount'))) {
+        const confirmed = await showConfirm(I18n.t('confirmDeleteAccount'));
+        if (!confirmed) {
             return;
         }
 
@@ -861,7 +1137,7 @@
         }
 
         const desc = elements.inputDesc.value.trim();
-        const amountStr = elements.inputAmount.value;
+        const amountStr = elements.inputAmount.value.replace(/,/g, '');
         const amount = parseFloat(amountStr);
 
         if (!desc) {
@@ -894,8 +1170,9 @@
         handleSave();
     }
 
-    function deleteTransaction(id) {
-        if (confirm(I18n.t('confirmDelete'))) {
+    async function deleteTransaction(id) {
+        const confirmed = await showConfirm(I18n.t('confirmDelete'));
+        if (confirmed) {
             data.transactions = data.transactions.filter(t => t.id !== id);
             render();
             handleSave();
@@ -984,15 +1261,25 @@
 
             // 2025-12-15: Translate edit settings button
             elements.btnEditCredit.querySelector('[data-i18n="editCreditSettings"]').textContent = t('editCreditSettings');
+
+            // Hide account settings for credit cards
+            elements.accountSettingsInfo.style.display = 'none';
         } else {
-            // Checking account: Show balance
+            // Checking/cash account: Show balance
             elements.balanceLabel.textContent = t('balanceLabel');
             elements.balanceDisplay.textContent = Accounts.formatCurrency(balance, currentAccount.currency);
             elements.balanceDisplay.classList.toggle('negative', balance < 0);
             elements.creditCardInfo.style.display = 'none';
+
+            // 2025-12-15: Show account settings for checking/cash accounts
+            elements.accountSettingsInfo.style.display = 'block';
+            elements.btnEditAccountSettings.querySelector('[data-i18n="editCreditSettings"]').textContent = t('editCreditSettings');
         }
 
         elements.accountCurrency.textContent = currentAccount.currency;
+
+        // 2025-12-15: Translate adjust amount button
+        elements.btnEditBalance.querySelector('[data-i18n="adjustAmount"]').textContent = t('adjustAmount');
     }
 
     function renderHistory() {

@@ -148,11 +148,12 @@ CHANGE LOG:
                     <div id="balance-label" class="balance-label">Current Balance</div>
                     <div class="balance-row">
                         <div id="balance-display" class="balance-value">$0.00</div>
-                        <button id="btn-edit-balance" class="btn-edit-balance" title="Edit Balance">
-                            ✏️
-                        </button>
                     </div>
                     <div id="account-currency" class="account-currency">USD</div>
+                    <button id="btn-edit-balance" class="btn btn-secondary btn-sm"
+                        style="margin-top: var(--space-sm); width: 100%;">
+                        ✏️ <span data-i18n="adjustAmount">Adjust Amount</span>
+                    </button>
 
                     <!-- Credit Card Info (shown for credit accounts) -->
                     <div id="credit-card-info" class="credit-card-info" style="display: none;">
@@ -174,6 +175,13 @@ CHANGE LOG:
                             ⚙️ <span data-i18n="editCreditSettings">Edit Settings</span>
                         </button>
                     </div>
+
+                    <!-- Account Settings (shown for checking/cash accounts) -->
+                    <div id="account-settings-info" class="credit-card-info" style="display: none;">
+                        <button id="btn-edit-account-settings" class="btn btn-secondary btn-sm" style="width: 100%;">
+                            ⚙️ <span data-i18n="editCreditSettings">Edit Settings</span>
+                        </button>
+                    </div>
                 </section>
 
                 <!-- Add Transaction Card -->
@@ -184,8 +192,8 @@ CHANGE LOG:
                             placeholder="Description (e.g. Rent, Groceries)">
                     </div>
                     <div class="form-group">
-                        <input type="number" id="input-amount" class="input" placeholder="Amount (0.00)" step="0.01"
-                            min="0">
+                        <input type="text" inputmode="decimal" id="input-amount" class="input"
+                            placeholder="Amount (0.00)" min="0">
                     </div>
                     <div class="form-row">
                         <button id="btn-income" class="btn btn-success btn-action">
@@ -288,7 +296,7 @@ CHANGE LOG:
             <div id="credit-card-fields" class="credit-card-fields" style="display: none;">
                 <div class="form-group">
                     <label id="label-credit-limit" for="input-credit-limit">Credit Limit</label>
-                    <input type="number" id="input-credit-limit" class="input" placeholder="e.g. 5000" step="0.01"
+                    <input type="text" inputmode="decimal" id="input-credit-limit" class="input" placeholder="e.g. 5000"
                         min="0">
                 </div>
                 <div class="form-row">
@@ -328,7 +336,7 @@ CHANGE LOG:
                 created.</p>
             <div class="form-group">
                 <label id="label-new-balance" for="input-new-balance">New Balance</label>
-                <input type="number" id="input-new-balance" class="input" placeholder="0.00" step="0.01">
+                <input type="text" inputmode="decimal" id="input-new-balance" class="input" placeholder="0.00">
             </div>
             <div class="form-group">
                 <label id="label-adjustment-reason" for="input-adjustment-reason">Reason for Adjustment</label>
@@ -355,8 +363,8 @@ CHANGE LOG:
 
             <div class="form-group">
                 <label id="label-edit-credit-limit" for="input-edit-credit-limit">Credit Limit</label>
-                <input type="number" id="input-edit-credit-limit" class="input" placeholder="e.g. 5000" step="0.01"
-                    min="0">
+                <input type="text" inputmode="decimal" id="input-edit-credit-limit" class="input"
+                    placeholder="e.g. 5000" min="0">
             </div>
 
             <div class="form-row">
@@ -375,6 +383,37 @@ CHANGE LOG:
                     <span data-i18n="cancel">Cancel</span>
                 </button>
                 <button id="btn-save-credit" class="btn btn-primary">
+                    <span data-i18n="saveChanges">Save Changes</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2025-12-15: Edit Account Modal (for checking/cash accounts) -->
+    <div id="account-edit-modal" class="modal" style="display: none;">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <h2 id="account-edit-modal-title" class="modal-title">⚙️ Account Settings</h2>
+            <p id="account-edit-modal-desc" class="modal-desc">Edit your account settings.</p>
+
+            <div class="form-group">
+                <label id="label-edit-account-name" for="input-edit-account-name">Account Name</label>
+                <input type="text" id="input-edit-account-name" class="input" placeholder="Account Name">
+            </div>
+
+            <div class="form-group">
+                <label id="label-edit-account-currency" for="select-edit-account-currency">Currency</label>
+                <select id="select-edit-account-currency" class="input">
+                    <option value="USD">USD - US Dollar ($)</option>
+                    <option value="MXN">MXN - Mexican Peso ($MXN)</option>
+                </select>
+            </div>
+
+            <div class="modal-actions">
+                <button id="btn-cancel-account-edit" class="btn btn-secondary">
+                    <span data-i18n="cancel">Cancel</span>
+                </button>
+                <button id="btn-save-account-edit" class="btn btn-primary">
                     <span data-i18n="saveChanges">Save Changes</span>
                 </button>
             </div>
@@ -418,6 +457,23 @@ CHANGE LOG:
                 </button>
                 <button id="btn-create-vault" class="btn btn-primary">
                     <span data-i18n="createVault">Create Vault</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2025-12-15: Custom Confirm Modal (replaces native confirm dialog) -->
+    <div id="confirm-modal" class="modal" style="display: none;">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <h2 id="confirm-modal-title" class="modal-title">⚠️ Confirm</h2>
+            <p id="confirm-modal-message" class="modal-desc">Are you sure?</p>
+            <div class="modal-actions">
+                <button id="btn-confirm-cancel" class="btn btn-secondary">
+                    <span data-i18n="cancel">Cancel</span>
+                </button>
+                <button id="btn-confirm-ok" class="btn btn-danger">
+                    <span data-i18n="confirm">Confirm</span>
                 </button>
             </div>
         </div>
