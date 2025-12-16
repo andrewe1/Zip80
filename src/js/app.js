@@ -120,8 +120,18 @@
         addTransactionTitle: document.getElementById('add-transaction-title'),
         inputDesc: document.getElementById('input-desc'),
         inputAmount: document.getElementById('input-amount'),
-        btnIncome: document.getElementById('btn-income'),
-        btnExpense: document.getElementById('btn-expense'),
+        btnToggleIncome: document.getElementById('btn-toggle-income'),
+        categoryIcons: document.getElementById('category-icons'),
+        btnAddTransaction: document.getElementById('btn-add-transaction'),
+
+        // Recurring (2025-12-15)
+        recurringToggleRow: document.getElementById('recurring-toggle-row'),
+        checkboxRecurring: document.getElementById('checkbox-recurring'),
+        recurringFrequencyRow: document.getElementById('recurring-frequency-row'),
+        inputRecurringMonths: document.getElementById('input-recurring-months'),
+        recurringWidgetTitle: document.getElementById('recurring-widget-title'),
+        recurringList: document.getElementById('recurring-list'),
+        recurringEmpty: document.getElementById('recurring-empty'),
 
         // History
         historyTitle: document.getElementById('history-title'),
@@ -322,8 +332,22 @@
         elements.addTransactionTitle.textContent = t('addTransactionTitle');
         elements.inputDesc.placeholder = t('inputDescPlaceholder');
         elements.inputAmount.placeholder = t('inputAmountPlaceholder');
-        elements.btnIncome.querySelector('[data-i18n="btnIncome"]').textContent = t('btnIncome');
-        elements.btnExpense.querySelector('[data-i18n="btnExpense"]').textContent = t('btnExpense');
+
+        // Transaction mode toggle (2025-12-15)
+        const modeBtn = elements.btnToggleIncome;
+        modeBtn.querySelector('.mode-expense').textContent = t('modeExpense');
+        modeBtn.querySelector('.mode-income').textContent = t('modeIncome');
+
+        // Update add button based on current mode
+        const currentMode = modeBtn.dataset.mode;
+        elements.btnAddTransaction.querySelector('span').textContent =
+            currentMode === 'income' ? t('btnAddIncome') : t('btnAddExpense');
+
+        // Recurring toggle (2025-12-15)
+        elements.recurringToggleRow.querySelector('[data-i18n="recurringToggle"]').textContent = t('recurringToggle');
+        elements.recurringFrequencyRow.querySelector('[data-i18n="recurringEvery"]').textContent = t('recurringEvery');
+        elements.recurringFrequencyRow.querySelector('[data-i18n="recurringMonths"]').textContent = t('recurringMonths');
+        elements.recurringEmpty.textContent = t('recurringEmpty');
 
         // History
         elements.historyTitle.textContent = t('historyTitle');
@@ -418,9 +442,26 @@
         // Workspace buttons
         elements.btnSave.addEventListener('click', handleSave);
         elements.btnCloseVault.addEventListener('click', handleCloseVault);
-        elements.btnIncome.addEventListener('click', () => addTransaction('income'));
-        elements.btnExpense.addEventListener('click', () => addTransaction('expense'));
+        elements.btnAddTransaction.addEventListener('click', handleAddTransaction);
         elements.btnExport.addEventListener('click', handleExport);
+
+        // Transaction mode toggle
+        elements.btnToggleIncome.addEventListener('click', toggleTransactionMode);
+
+        // Category icon selection
+        elements.categoryIcons.addEventListener('click', (e) => {
+            const icon = e.target.closest('.category-icon');
+            if (icon) {
+                // Remove active from all, add to clicked
+                elements.categoryIcons.querySelectorAll('.category-icon').forEach(i => i.classList.remove('active'));
+                icon.classList.add('active');
+            }
+        });
+
+        // Recurring toggle (2025-12-15)
+        elements.checkboxRecurring.addEventListener('change', (e) => {
+            elements.recurringFrequencyRow.style.display = e.target.checked ? 'flex' : 'none';
+        });
 
         // Account buttons
         elements.btnNewAccount.addEventListener('click', openAccountModal);
@@ -430,7 +471,7 @@
 
         // Enter key on inputs
         elements.inputAmount.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') addTransaction('expense');
+            if (e.key === 'Enter') handleAddTransaction();
         });
 
         elements.inputAccountName.addEventListener('keypress', (e) => {
@@ -464,6 +505,25 @@
 
         // Account settings edit button (2025-12-15: for checking/cash accounts)
         elements.btnEditAccountSettings.addEventListener('click', openAccountEditModal);
+
+        // 2025-12-15: Background click to deselect accounts
+        // Uses closest() to detect clicks outside of any card or interactive element
+        elements.workspace.addEventListener('click', (e) => {
+            // Don't deselect if clicking inside a card, button, or modal
+            const clickedInsideCard = e.target.closest('.card, .account-tab, button, .modal, .header');
+            if (!clickedInsideCard) {
+                deselectAccount();
+            }
+        });
+
+        // 2025-12-15: Also handle clicks on body (outside workspace) for side areas
+        document.body.addEventListener('click', (e) => {
+            // Only deselect if clicking directly on body (the dark side areas)
+            // and workspace is visible
+            if (e.target === document.body && elements.workspace.style.display !== 'none') {
+                deselectAccount();
+            }
+        });
     }
 
     function setupDragAndDrop() {
@@ -590,7 +650,8 @@
                 data.accounts[0].currency = selectedCurrency;
             }
 
-            currentAccountId = data.accounts[0]?.id || null;
+            // 2025-12-15: Start with no account selected (deselected state is default)
+            currentAccountId = null;
             await Storage.writeFile(fileHandle, data);
 
             closeVaultModal();
@@ -622,8 +683,8 @@
     async function loadFileAndShow() {
         try {
             data = await Storage.readFile(fileHandle);
-            // Set current account to first one
-            currentAccountId = data.accounts[0]?.id || null;
+            // 2025-12-15: Start with no account selected (deselected state is default)
+            currentAccountId = null;
             showWorkspace();
             render();
         } catch (err) {
@@ -1104,6 +1165,17 @@
         render();
     }
 
+    /**
+     * Deselect current account (hide account details widget)
+     * 2025-12-15: Added for background click deselection
+     */
+    function deselectAccount() {
+        if (currentAccountId !== null) {
+            currentAccountId = null;
+            render();
+        }
+    }
+
     async function deleteAccount(accountId) {
         if (data.accounts.length <= 1) {
             return; // Don't delete the last account
@@ -1130,7 +1202,60 @@
 
     // --- Transaction Operations ---
 
-    function addTransaction(type) {
+    /**
+     * Toggle between expense and income mode
+     * 2025-12-15: New mode toggle for simplified transaction entry
+     */
+    function toggleTransactionMode() {
+        const btn = elements.btnToggleIncome;
+        const currentMode = btn.dataset.mode;
+        const newMode = currentMode === 'expense' ? 'income' : 'expense';
+
+        btn.dataset.mode = newMode;
+
+        // Toggle visibility of mode labels
+        btn.querySelector('.mode-expense').style.display = newMode === 'expense' ? 'inline' : 'none';
+        btn.querySelector('.mode-income').style.display = newMode === 'income' ? 'inline' : 'none';
+
+        // Show/hide category icons (only for expense mode)
+        elements.categoryIcons.style.display = newMode === 'expense' ? 'flex' : 'none';
+
+        // Show/hide recurring toggle (only for expense mode)
+        elements.recurringToggleRow.style.display = newMode === 'expense' ? 'block' : 'none';
+        // Reset recurring when switching to income
+        if (newMode === 'income') {
+            elements.checkboxRecurring.checked = false;
+            elements.recurringFrequencyRow.style.display = 'none';
+        }
+
+        // Update submit button style and text
+        const addBtn = elements.btnAddTransaction;
+        if (newMode === 'income') {
+            addBtn.classList.remove('btn-danger');
+            addBtn.classList.add('btn-success');
+            addBtn.querySelector('span').textContent = I18n.t('btnAddIncome');
+        } else {
+            addBtn.classList.remove('btn-success');
+            addBtn.classList.add('btn-danger');
+            addBtn.querySelector('span').textContent = I18n.t('btnAddExpense');
+        }
+    }
+
+    /**
+     * Get currently selected category
+     * 2025-12-15: Returns category data attribute of active icon
+     */
+    function getSelectedCategory() {
+        const activeIcon = elements.categoryIcons.querySelector('.category-icon.active');
+        return activeIcon ? activeIcon.dataset.category : 'general';
+    }
+
+    /**
+     * Handle adding a transaction with current mode and category
+     * 2025-12-15: Unified handler replacing separate income/expense buttons
+     * 2025-12-15: Added recurring transaction support
+     */
+    function handleAddTransaction() {
         if (!currentAccountId) {
             return;
         }
@@ -1138,6 +1263,10 @@
         const desc = elements.inputDesc.value.trim();
         const amountStr = elements.inputAmount.value.replace(/,/g, '');
         const amount = parseFloat(amountStr);
+        const mode = elements.btnToggleIncome.dataset.mode;
+        const category = mode === 'expense' ? getSelectedCategory() : null;
+        const isRecurring = mode === 'expense' && elements.checkboxRecurring.checked;
+        const frequencyMonths = isRecurring ? parseInt(elements.inputRecurringMonths.value) || 1 : null;
 
         if (!desc) {
             showToast(I18n.t('toastErrorDesc'), false);
@@ -1151,18 +1280,43 @@
             return;
         }
 
-        const transaction = {
-            id: Date.now(),
-            accountId: currentAccountId,
-            desc: desc,
-            amt: type === 'income' ? amount : -amount,
-            date: new Date().toISOString()
-        };
+        if (isRecurring) {
+            // Create recurring transaction
+            const recurringTransaction = {
+                id: Date.now(),
+                accountId: currentAccountId,
+                desc: desc,
+                amt: -amount,  // Always negative for expenses
+                category: category,
+                frequencyMonths: frequencyMonths,
+                startDate: new Date().toISOString(),
+                active: true
+            };
 
-        data.transactions.push(transaction);
+            // Initialize recurring array if needed
+            if (!data.recurringTransactions) {
+                data.recurringTransactions = [];
+            }
+            data.recurringTransactions.push(recurringTransaction);
+            showToast(I18n.t('toastRecurringCreated'));
+        } else {
+            // Create regular transaction
+            const transaction = {
+                id: Date.now(),
+                accountId: currentAccountId,
+                desc: desc,
+                amt: mode === 'income' ? amount : -amount,
+                category: category,
+                date: new Date().toISOString()
+            };
+            data.transactions.push(transaction);
+        }
 
+        // Reset form
         elements.inputDesc.value = '';
         elements.inputAmount.value = '';
+        elements.checkboxRecurring.checked = false;
+        elements.recurringFrequencyRow.style.display = 'none';
         elements.inputDesc.focus();
 
         render();
@@ -1175,6 +1329,23 @@
             data.transactions = data.transactions.filter(t => t.id !== id);
             render();
             handleSave();
+        }
+    }
+
+    /**
+     * Cancel a recurring transaction
+     * 2025-12-15: Sets active to false instead of deleting
+     */
+    async function cancelRecurring(id) {
+        const confirmed = await showConfirm(I18n.t('confirmCancelRecurring'));
+        if (confirmed) {
+            const recurring = data.recurringTransactions?.find(r => r.id === id);
+            if (recurring) {
+                recurring.active = false;
+                render();
+                handleSave();
+                showToast(I18n.t('toastRecurringCanceled'));
+            }
         }
     }
 
@@ -1193,6 +1364,7 @@
         renderBalance();
         renderHistory();
         renderBalanceOverview();  // 2025-12-15: Balance overview widget
+        renderRecurringWidget();  // 2025-12-15: Recurring expenses widget
         Calendar.renderCalendarWidget();  // 2025-12-15: Calendar widget
     }
 
@@ -1230,12 +1402,16 @@
 
     function renderBalance() {
         const currentAccount = data.accounts.find(a => a.id === currentAccountId);
+        const balanceCard = document.querySelector('.balance-card');
+
+        // 2025-12-15: Hide entire balance card when no account is selected
         if (!currentAccount) {
-            elements.balanceDisplay.textContent = '$0.00';
-            elements.accountCurrency.textContent = '';
-            elements.creditCardInfo.style.display = 'none';
+            if (balanceCard) balanceCard.style.display = 'none';
             return;
         }
+
+        // Show balance card when account is selected
+        if (balanceCard) balanceCard.style.display = 'block';
 
         const balance = Accounts.calculateBalance(data.transactions, currentAccountId);
         const t = I18n.t;
@@ -1412,6 +1588,74 @@
                 });
             }
         }
+    }
+
+    /**
+     * Render the recurring expenses sidebar widget
+     * 2025-12-15: Shows active recurring transactions for current account
+     */
+    function renderRecurringWidget() {
+        const t = I18n.t;
+
+        // Update widget title
+        if (elements.recurringWidgetTitle) {
+            elements.recurringWidgetTitle.textContent = '🔁 ' + t('recurringWidgetTitle');
+        }
+
+        // Get active recurring transactions for all accounts (or current if selected)
+        const recurringList = (data.recurringTransactions || []).filter(r => r.active);
+
+        // Render list
+        if (elements.recurringList) {
+            elements.recurringList.innerHTML = '';
+
+            if (recurringList.length === 0) {
+                elements.recurringEmpty.style.display = 'block';
+            } else {
+                elements.recurringEmpty.style.display = 'none';
+
+                recurringList.forEach(r => {
+                    const account = data.accounts.find(a => a.id === r.accountId);
+                    const currency = account?.currency || 'USD';
+                    const categoryIcon = getCategoryIcon(r.category);
+
+                    const item = document.createElement('div');
+                    item.className = 'recurring-item';
+                    item.innerHTML = `
+                        <div class="recurring-item-info">
+                            <span class="recurring-item-desc">${categoryIcon} ${escapeHtml(r.desc)}</span>
+                            <span class="recurring-item-freq">${t('recurringEvery')} ${r.frequencyMonths} ${t('recurringMonths')}</span>
+                        </div>
+                        <span class="recurring-item-amount">${Accounts.formatCurrency(r.amt, currency)}</span>
+                        <button class="btn-cancel-recurring" data-id="${r.id}" title="${t('btnCancelRecurring')}">✕</button>
+                    `;
+
+                    item.querySelector('.btn-cancel-recurring').addEventListener('click', () => {
+                        cancelRecurring(r.id);
+                    });
+
+                    elements.recurringList.appendChild(item);
+                });
+            }
+        }
+    }
+
+    /**
+     * Get category icon for display
+     * 2025-12-15: Maps category codes to emoji icons
+     */
+    function getCategoryIcon(category) {
+        const icons = {
+            general: '💸',
+            food: '🍔',
+            utilities: '💡',
+            transport: '🚗',
+            housing: '🏠',
+            health: '🏥',
+            fun: '🎮',
+            work: '💼'
+        };
+        return icons[category] || icons.general;
     }
 
     // --- Utilities ---

@@ -143,7 +143,7 @@ CHANGE LOG:
                     </div>
                 </section>
 
-                <!-- Balance Card (2025-12-15: Added credit card info section) -->
+                <!-- Balance Card (2025-12-15: Added credit card info section, combined with transaction form) -->
                 <section class="card balance-card">
                     <div id="balance-label" class="balance-label">Current Balance</div>
                     <div class="balance-row">
@@ -182,11 +182,47 @@ CHANGE LOG:
                             ⚙️ <span data-i18n="editCreditSettings">Edit Settings</span>
                         </button>
                     </div>
-                </section>
 
-                <!-- Add Transaction Card -->
-                <section class="card">
-                    <h2 id="add-transaction-title" class="card-title">Add Transaction</h2>
+                    <!-- 2025-12-15: Add Transaction Form (combined into balance card) -->
+                    <div class="transaction-form-divider"></div>
+                    <h3 id="add-transaction-title" class="transaction-form-title">Add Transaction</h3>
+
+                    <!-- Transaction Mode Toggle -->
+                    <div class="transaction-mode-row">
+                        <button id="btn-toggle-income" class="btn btn-mode-toggle" data-mode="expense">
+                            <span class="mode-expense">➖ Expense</span>
+                            <span class="mode-income" style="display:none;">➕ Income</span>
+                        </button>
+                    </div>
+
+                    <!-- Category Icons (shown only for expense mode) -->
+                    <div id="category-icons" class="category-icons-row">
+                        <button class="category-icon active" data-category="general" title="General">💸</button>
+                        <button class="category-icon" data-category="food" title="Food">🍔</button>
+                        <button class="category-icon" data-category="utilities" title="Utilities">💡</button>
+                        <button class="category-icon" data-category="transport" title="Transportation">🚗</button>
+                        <button class="category-icon" data-category="housing" title="Housing">🏠</button>
+                        <button class="category-icon" data-category="health" title="Health">🏥</button>
+                        <button class="category-icon" data-category="fun" title="Entertainment">🎮</button>
+                        <button class="category-icon" data-category="work" title="Work/Employee">💼</button>
+                    </div>
+
+                    <!-- Recurring Toggle (shown only for expense mode) -->
+                    <div id="recurring-toggle-row" class="recurring-toggle-row">
+                        <label class="recurring-toggle-label">
+                            <input type="checkbox" id="checkbox-recurring" class="recurring-checkbox">
+                            <span data-i18n="recurringToggle">🔁 Recurring?</span>
+                        </label>
+                    </div>
+
+                    <!-- Recurring Frequency Row (shown when recurring is checked) -->
+                    <div id="recurring-frequency-row" class="recurring-frequency-row" style="display: none;">
+                        <span data-i18n="recurringEvery">Every</span>
+                        <input type="number" id="input-recurring-months" class="input input-sm" value="1" min="1"
+                            max="12">
+                        <span data-i18n="recurringMonths">month(s)</span>
+                    </div>
+
                     <div class="form-group">
                         <input type="text" id="input-desc" class="input"
                             placeholder="Description (e.g. Rent, Groceries)">
@@ -195,14 +231,9 @@ CHANGE LOG:
                         <input type="text" inputmode="decimal" id="input-amount" class="input"
                             placeholder="Amount (0.00)" min="0">
                     </div>
-                    <div class="form-row">
-                        <button id="btn-income" class="btn btn-success btn-action">
-                            <span data-i18n="btnIncome">➕ Add Income</span>
-                        </button>
-                        <button id="btn-expense" class="btn btn-danger btn-action">
-                            <span data-i18n="btnExpense">➖ Add Expense</span>
-                        </button>
-                    </div>
+                    <button id="btn-add-transaction" class="btn btn-danger btn-action btn-full">
+                        <span data-i18n="btnAddTransaction">💸 Add Expense</span>
+                    </button>
                 </section>
 
                 <!-- History Card -->
@@ -254,6 +285,15 @@ CHANGE LOG:
                             <!-- Days rendered by JS -->
                         </div>
                     </div>
+                </div>
+
+                <!-- 2025-12-15: Recurring Expenses Widget -->
+                <div class="card recurring-widget-card">
+                    <h3 id="recurring-widget-title" class="widget-title">🔁 Recurring Expenses</h3>
+                    <div id="recurring-list" class="recurring-list">
+                        <!-- Recurring items rendered by JS -->
+                    </div>
+                    <p id="recurring-empty" class="recurring-empty">No recurring expenses</p>
                 </div>
             </aside>
         </div><!-- end workspace-layout -->

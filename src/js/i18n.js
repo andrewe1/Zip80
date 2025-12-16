@@ -140,6 +140,10 @@ const I18n = (() => {
             inputAmountPlaceholder: 'Amount (0.00)',
             btnIncome: '➕ Add Income',
             btnExpense: '➖ Add Expense',
+            btnAddExpense: '💸 Add Expense',
+            btnAddIncome: '💰 Add Income',
+            modeExpense: '➖ Expense',
+            modeIncome: '➕ Income',
 
             // History
             historyTitle: 'History',
@@ -244,7 +248,18 @@ const I18n = (() => {
 
             // Custom Confirm Modal (2025-12-15)
             confirm: 'Confirm',
-            confirmTitle: '⚠️ Confirm'
+            confirmTitle: '⚠️ Confirm',
+
+            // Recurring Transactions (2025-12-15)
+            recurringToggle: '🔁 Recurring?',
+            recurringEvery: 'Every',
+            recurringMonths: 'month(s)',
+            recurringWidgetTitle: 'Recurring Expenses',
+            recurringEmpty: 'No recurring expenses',
+            btnCancelRecurring: 'Cancel',
+            confirmCancelRecurring: 'Cancel this recurring expense?',
+            toastRecurringCreated: '🔁 Recurring expense added!',
+            toastRecurringCanceled: '✅ Recurring expense canceled'
         },
 
         es: {
@@ -273,6 +288,10 @@ const I18n = (() => {
             inputAmountPlaceholder: 'Monto (0.00)',
             btnIncome: '➕ Agregar Ingreso',
             btnExpense: '➖ Agregar Gasto',
+            btnAddExpense: '💸 Agregar Gasto',
+            btnAddIncome: '💰 Agregar Ingreso',
+            modeExpense: '➖ Gasto',
+            modeIncome: '➕ Ingreso',
 
             // History
             historyTitle: 'Historial',
@@ -377,7 +396,18 @@ const I18n = (() => {
 
             // Custom Confirm Modal (2025-12-15)
             confirm: 'Confirmar',
-            confirmTitle: '⚠️ Confirmar'
+            confirmTitle: '⚠️ Confirmar',
+
+            // Recurring Transactions (2025-12-15)
+            recurringToggle: '🔁 ¿Recurrente?',
+            recurringEvery: 'Cada',
+            recurringMonths: 'mes(es)',
+            recurringWidgetTitle: 'Gastos Recurrentes',
+            recurringEmpty: 'Sin gastos recurrentes',
+            btnCancelRecurring: 'Cancelar',
+            confirmCancelRecurring: '¿Cancelar este gasto recurrente?',
+            toastRecurringCreated: '🔁 ¡Gasto recurrente agregado!',
+            toastRecurringCanceled: '✅ Gasto recurrente cancelado'
         }
     };
 
