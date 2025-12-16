@@ -301,18 +301,27 @@ CHANGE LOG:
                 <!-- 2025-12-16: Exchange Rate Widget -->
                 <div class="card exchange-widget-card">
                     <h3 id="exchange-widget-title" class="widget-title">💱 Exchange Rates</h3>
-                    <div id="exchange-rates" class="exchange-rates">
-                        <div class="exchange-rate-row">
-                            <span class="exchange-from">1 USD</span>
-                            <span class="exchange-arrow">=</span>
-                            <span id="rate-usd-mxn" class="exchange-to">--</span>
-                            <span class="exchange-currency">MXN</span>
+                    <div class="exchange-content">
+                        <div id="exchange-rates" class="exchange-rates">
+                            <div class="exchange-rate-row">
+                                <span class="exchange-from">1 USD</span>
+                                <span class="exchange-arrow">=</span>
+                                <span id="rate-usd-mxn" class="exchange-to">--</span>
+                                <span class="exchange-currency">MXN</span>
+                            </div>
+                            <div class="exchange-rate-row">
+                                <span class="exchange-from">1 MXN</span>
+                                <span class="exchange-arrow">=</span>
+                                <span id="rate-mxn-usd" class="exchange-to">--</span>
+                                <span class="exchange-currency">USD</span>
+                            </div>
                         </div>
-                        <div class="exchange-rate-row">
-                            <span class="exchange-from">1 MXN</span>
-                            <span class="exchange-arrow">=</span>
-                            <span id="rate-mxn-usd" class="exchange-to">--</span>
-                            <span class="exchange-currency">USD</span>
+                        <div class="exchange-chart">
+                            <svg id="exchange-sparkline" viewBox="0 0 80 40" preserveAspectRatio="none">
+                                <polyline id="sparkline-path" fill="none" stroke="#22c55e" stroke-width="1.5" points="">
+                                </polyline>
+                            </svg>
+                            <span class="chart-label">7 días</span>
                         </div>
                     </div>
                     <p id="exchange-updated" class="exchange-updated">Loading...</p>

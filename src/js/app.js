@@ -356,6 +356,11 @@
         elements.recurringFrequencyRow.querySelector('[data-i18n="recurringMonths"]').textContent = t('recurringMonths');
         elements.recurringEmpty.textContent = t('recurringEmpty');
 
+        // Exchange Rate Widget (2025-12-16)
+        if (elements.exchangeWidgetTitle) {
+            elements.exchangeWidgetTitle.textContent = '💱 ' + t('exchangeWidgetTitle');
+        }
+
         // History
         elements.historyTitle.textContent = t('historyTitle');
         elements.btnExport.querySelector('[data-i18n="btnExport"]').textContent = t('btnExport');
@@ -1698,12 +1703,76 @@
                     elements.exchangeUpdated.textContent = `${I18n.t('exchangeUpdated')} ${now.toLocaleTimeString()}`;
                 }
             }
+
+            // Fetch 7-day history for sparkline from frankfurter.app (free, no key)
+            fetchExchangeHistory();
+
         } catch (error) {
             console.error('Failed to fetch exchange rates:', error);
             if (elements.exchangeUpdated) {
                 elements.exchangeUpdated.textContent = I18n.t('exchangeError');
             }
         }
+    }
+
+    /**
+     * Fetch 7-day exchange rate history and render sparkline
+     * 2025-12-16: Uses frankfurter.app API for historical data
+     */
+    async function fetchExchangeHistory() {
+        try {
+            // Calculate date range (last 7 days)
+            const endDate = new Date();
+            const startDate = new Date();
+            startDate.setDate(startDate.getDate() - 7);
+
+            const formatDate = (d) => d.toISOString().split('T')[0];
+            const url = `https://api.frankfurter.app/${formatDate(startDate)}..${formatDate(endDate)}?from=USD&to=MXN`;
+
+            const response = await fetch(url);
+            const data = await response.json();
+
+            if (data && data.rates) {
+                // Extract rates into array
+                const rates = Object.keys(data.rates)
+                    .sort()
+                    .map(date => data.rates[date].MXN);
+
+                // Draw sparkline
+                drawSparkline(rates);
+            }
+        } catch (error) {
+            console.error('Failed to fetch exchange history:', error);
+        }
+    }
+
+    /**
+     * Draw SVG sparkline from rate values
+     * 2025-12-16: Renders polyline into the exchange sparkline SVG
+     */
+    function drawSparkline(values) {
+        const sparklinePath = document.getElementById('sparkline-path');
+        if (!sparklinePath || values.length < 2) return;
+
+        const width = 80;
+        const height = 40;
+        const padding = 2;
+
+        const min = Math.min(...values);
+        const max = Math.max(...values);
+        const range = max - min || 1;
+
+        const points = values.map((val, i) => {
+            const x = padding + (i / (values.length - 1)) * (width - 2 * padding);
+            const y = height - padding - ((val - min) / range) * (height - 2 * padding);
+            return `${x.toFixed(1)},${y.toFixed(1)}`;
+        }).join(' ');
+
+        sparklinePath.setAttribute('points', points);
+
+        // Color based on trend (green if up, red if down)
+        const trend = values[values.length - 1] - values[0];
+        sparklinePath.setAttribute('stroke', trend >= 0 ? '#22c55e' : '#ef4444');
     }
 
     // --- Utilities ---
