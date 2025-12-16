@@ -1547,7 +1547,7 @@
             item.innerHTML = `
                 <span class="widget-account-name">${icon} ${escapeHtml(account.name)}</span>
                 <span class="widget-account-balance ${balance >= 0 ? 'positive' : 'negative'}">
-                    ${Accounts.formatCurrency(balance, account.currency)}
+                    ${Accounts.formatCurrency(balance, account.currency)} <span class="widget-currency">${account.currency}</span>
                 </span>
             `;
             item.addEventListener('click', () => selectAccount(account.id));
@@ -1565,7 +1565,7 @@
             item.innerHTML = `
                 <span class="widget-account-name">💳 ${escapeHtml(account.name)}</span>
                 <div class="widget-cc-details">
-                    <div class="widget-cc-balance">${Accounts.formatCurrency(balance, account.currency)}</div>
+                    <div class="widget-cc-balance">${Accounts.formatCurrency(balance, account.currency)} <span class="widget-currency">${account.currency}</span></div>
                     <div class="widget-cc-available">${t('availableCredit')}: ${Accounts.formatCurrency(availableCredit, account.currency)}</div>
                 </div>
             `;

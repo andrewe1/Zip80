@@ -516,12 +516,17 @@ h3 {
 
 .widget-account-item {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-end;
     align-items: flex-start;
+    gap: var(--space-sm);
     padding: var(--space-xs) var(--space-sm);
     border-radius: var(--radius-sm);
     cursor: pointer;
     transition: background-color 0.15s ease;
+}
+
+.widget-account-item .widget-account-name {
+    flex: 1;
 }
 
 .widget-account-item:hover {
@@ -541,10 +546,22 @@ h3 {
     white-space: nowrap;
 }
 
+.widget-currency {
+    font-size: 0.65rem;
+    font-weight: 400;
+    color: var(--color-text-muted);
+    margin-left: 4px;
+    display: inline-block;
+    min-width: 26px;
+    text-align: left;
+}
+
 .widget-account-balance {
     font-size: var(--font-size-base);
     font-weight: 600;
     text-align: right;
+    flex-shrink: 0;
+    white-space: nowrap;
 }
 
 .widget-account-balance.positive {
@@ -886,11 +903,13 @@ h3 {
 
 /* 2025-12-15: Transaction mode toggle and category icons */
 .transaction-mode-row {
+    display: flex;
+    gap: var(--space-sm);
     margin-bottom: var(--space-md);
 }
 
 .btn-mode-toggle {
-    width: 100%;
+    flex: 1;
     min-height: 44px;
     padding: var(--space-sm) var(--space-md);
     background-color: var(--color-surface);
