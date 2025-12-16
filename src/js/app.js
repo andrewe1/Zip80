@@ -537,6 +537,19 @@
                 deselectAccount();
             }
         });
+
+        // 2025-12-16: Exchange rate chart range buttons
+        document.querySelectorAll('.chart-range-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                // Update active state
+                document.querySelectorAll('.chart-range-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+
+                // Fetch new data for selected range
+                const days = parseInt(btn.dataset.days);
+                fetchExchangeHistory(days);
+            });
+        });
     }
 
     function setupDragAndDrop() {
@@ -1716,15 +1729,16 @@
     }
 
     /**
-     * Fetch 7-day exchange rate history and render sparkline
+     * Fetch exchange rate history and render sparkline
      * 2025-12-16: Uses frankfurter.app API for historical data
+     * @param {number} days - Number of days of history to fetch
      */
-    async function fetchExchangeHistory() {
+    async function fetchExchangeHistory(days = 7) {
         try {
-            // Calculate date range (last 7 days)
+            // Calculate date range
             const endDate = new Date();
             const startDate = new Date();
-            startDate.setDate(startDate.getDate() - 7);
+            startDate.setDate(startDate.getDate() - days);
 
             const formatDate = (d) => d.toISOString().split('T')[0];
             const url = `https://api.frankfurter.app/${formatDate(startDate)}..${formatDate(endDate)}?from=USD&to=MXN`;
