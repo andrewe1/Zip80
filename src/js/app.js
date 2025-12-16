@@ -1768,7 +1768,7 @@
         const sparklinePath = document.getElementById('sparkline-path');
         if (!sparklinePath || values.length < 2) return;
 
-        const width = 80;
+        const width = 120;
         const height = 40;
         const padding = 2;
 
