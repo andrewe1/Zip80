@@ -158,8 +158,8 @@ CHANGE LOG:
                     <!-- Credit Card Info (shown for credit accounts) -->
                     <div id="credit-card-info" class="credit-card-info" style="display: none;">
                         <div class="credit-info-row">
-                            <span id="credit-balance-label">Balance:</span>
-                            <span id="credit-balance-value">-$0.00</span>
+                            <span id="credit-available-label">Available Credit:</span>
+                            <span id="credit-available-value">$0.00</span>
                         </div>
                         <div class="credit-info-row">
                             <span id="credit-limit-label">Limit:</span>
@@ -222,23 +222,21 @@ CHANGE LOG:
 
             <!-- 2025-12-15: Balance Overview Sidebar Widget -->
             <aside class="workspace-sidebar">
-                <div class="card balance-overview-card">
-                    <h3 id="balance-overview-title" class="card-title">Balance Overview</h3>
-                    <div id="balance-overview-list" class="balance-overview-list">
-                        <!-- Balance items rendered here by JS -->
+                <!-- Two-column layout for account widgets -->
+                <div class="balance-widgets-row">
+                    <!-- Bank/Cash Widget -->
+                    <div class="card balance-widget-card">
+                        <h3 id="bank-widget-title" class="widget-title">🏦 Bank/Cash</h3>
+                        <div id="bank-accounts-list" class="widget-accounts-list">
+                            <!-- Bank/Cash items rendered by JS -->
+                        </div>
                     </div>
-                    <div class="balance-overview-totals">
-                        <div class="overview-totals-row positive">
-                            <span id="total-positive-label">Positive:</span>
-                            <span id="total-positive-value">$0.00</span>
-                        </div>
-                        <div class="overview-totals-row negative">
-                            <span id="total-negative-label">Negative:</span>
-                            <span id="total-negative-value">$0.00</span>
-                        </div>
-                        <div class="overview-totals-row net">
-                            <span id="total-net-label">Net:</span>
-                            <span id="total-net-value">$0.00</span>
+
+                    <!-- Credit Cards Widget -->
+                    <div class="card balance-widget-card">
+                        <h3 id="credit-widget-title" class="widget-title">💳 Credit Cards</h3>
+                        <div id="credit-accounts-list" class="widget-accounts-list">
+                            <!-- Credit card items rendered by JS -->
                         </div>
                     </div>
                 </div>

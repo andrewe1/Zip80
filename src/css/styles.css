@@ -65,7 +65,9 @@
  * - 2025-12-15: Fixed toast notification styling for dark mode
  * - 2025-12-15: Fixed modal z-index for input fields (modal-content z-index: 1)
  * - 2025-12-15: Changed account-tabs from horizontal scroll to flex-wrap
- * - 2025-12-15: Increased workspace-sidebar width from 380px to 450px
+ * - 2025-12-15: Increased workspace-sidebar width from 380px to 580px
+ * - 2025-12-15: Added two-widget side-by-side layout for Bank/Cash and Credit Cards
+ * - 2025-12-15: Added widget-account-item, widget-account-name, widget-cc-details styles
  * ============================================================================
  */
 
@@ -477,13 +479,99 @@ h3 {
 }
 
 .workspace-sidebar {
-    width: 450px;
+    width: 580px;
     flex-shrink: 0;
     position: sticky;
     top: var(--space-lg);
 }
 
-/* Balance Overview Widget */
+/* 2025-12-15: Two-widget side-by-side layout */
+.balance-widgets-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-md);
+    margin-bottom: var(--space-md);
+}
+
+.balance-widget-card {
+    padding: var(--space-md);
+}
+
+.widget-title {
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--color-text-muted);
+    margin-bottom: var(--space-sm);
+    padding-bottom: var(--space-xs);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.widget-accounts-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+}
+
+.widget-account-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: var(--space-xs) var(--space-sm);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.widget-account-item:hover {
+    background-color: var(--color-bg);
+}
+
+.widget-account-item.active {
+    background-color: var(--color-primary);
+    color: white;
+}
+
+.widget-account-name {
+    font-size: var(--font-size-base);
+    font-weight: 500;
+    flex-shrink: 1;
+    min-width: 0;
+    white-space: nowrap;
+}
+
+.widget-account-balance {
+    font-size: var(--font-size-base);
+    font-weight: 600;
+    text-align: right;
+}
+
+.widget-account-balance.positive {
+    color: var(--color-success);
+}
+
+.widget-account-balance.negative {
+    color: var(--color-danger);
+}
+
+/* Credit card specific - show balance and available credit */
+.widget-cc-details {
+    text-align: right;
+    font-size: var(--font-size-base);
+}
+
+.widget-cc-balance {
+    font-weight: 600;
+    color: var(--color-danger);
+}
+
+.widget-cc-available {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+}
+
+/* Legacy balance overview styles (keeping for compatibility) */
 .balance-overview-card {
     padding: var(--space-lg);
 }
@@ -506,7 +594,7 @@ h3 {
 .balance-overview-columns {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: var(--space-md);
+    gap: var(--space-xl);
 }
 
 .balance-overview-column {
@@ -573,13 +661,49 @@ h3 {
 
 /* 2025-12-15: Amount owed for credit cards */
 .balance-account-owed {
-    font-size: 0.7rem;
+    font-size: var(--font-size-sm);
     color: var(--color-text-muted);
+    text-align: right;
 }
 
 .balance-account-owed .negative {
     color: var(--color-danger);
     font-weight: 600;
+}
+
+/* 2025-12-15: Balance line styling for credit cards - bigger and bolder */
+.balance-account-balance {
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+/* 2025-12-15: Credit card layout - name on left, values on right */
+.balance-credit-layout {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    width: 100%;
+}
+
+.balance-credit-values {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+}
+
+.balance-credit-row {
+    text-align: right;
+}
+
+.balance-credit-row:first-child {
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+
+.balance-credit-row .negative {
+    color: var(--color-danger);
 }
 
 .balance-account-value {
@@ -607,6 +731,7 @@ h3 {
     display: flex;
     justify-content: space-between;
     padding: var(--space-xs) 0;
+    padding-left: calc(50% + var(--space-xl) / 2);
     font-size: var(--font-size-sm);
 }
 

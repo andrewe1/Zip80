@@ -64,6 +64,7 @@
  * - 2025-12-15: Added account edit modal translations (accountEditModalTitle, accountEditModalDesc, toastAccountUpdated)
  * - 2025-12-15: Added custom confirm modal translations (confirm, confirmTitle)
  * - 2025-12-15: Added adjustAmount translation, renamed editCreditSettings to 'Edit Account'/'Editar Cuenta'
+ * - 2025-12-15: Updated accountsCredit to 'Tarjetas de Crédito' in Spanish
  */
 
 const I18n = (() => {
@@ -215,7 +216,7 @@ const I18n = (() => {
             totalPositive: 'Positive:',
             totalNegative: 'Negative:',
             totalNet: 'Net:',
-            amountOwed: 'Owed',
+            amountOwed: 'Balance',
             accountsBank: 'Bank/Cash',
             accountsCredit: 'Credit Cards',
 
@@ -348,9 +349,9 @@ const I18n = (() => {
             totalPositive: 'Positivo:',
             totalNegative: 'Negativo:',
             totalNet: 'Neto:',
-            amountOwed: 'Deuda',
+            amountOwed: 'Saldo',
             accountsBank: 'Banco/Efectivo',
-            accountsCredit: 'Tarjetas',
+            accountsCredit: 'Tarjetas de Crédito',
 
             // Credit Card Edit Modal (2025-12-15)
             editCreditSettings: 'Editar Cuenta',

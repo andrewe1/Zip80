@@ -63,6 +63,7 @@
  * - 2025-12-15: Added account edit modal for checking/cash accounts (name and currency editing)
  * - 2025-12-15: Replaced native confirm() dialogs with custom styled showConfirm() modal
  * - 2025-12-15: UI improvements: account tabs wrap instead of scroll, wider sidebar, adjusted button labels
+ * - 2025-12-15: Restructured balance overview into two separate Bank/Cash and Credit Cards widgets
  */
 
 (() => {
@@ -104,8 +105,8 @@
 
         // Credit Card Balance Info (2025-12-15)
         creditCardInfo: document.getElementById('credit-card-info'),
-        creditBalanceLabel: document.getElementById('credit-balance-label'),
-        creditBalanceValue: document.getElementById('credit-balance-value'),
+        creditAvailableLabel: document.getElementById('credit-available-label'),
+        creditAvailableValue: document.getElementById('credit-available-value'),
         creditLimitLabel: document.getElementById('credit-limit-label'),
         creditLimitValue: document.getElementById('credit-limit-value'),
         creditDatesLabel: document.getElementById('credit-dates-label'),
@@ -164,15 +165,11 @@
         // Toast
         toast: document.getElementById('toast'),
 
-        // Balance Overview Widget (2025-12-15)
-        balanceOverviewTitle: document.getElementById('balance-overview-title'),
-        balanceOverviewList: document.getElementById('balance-overview-list'),
-        totalPositiveLabel: document.getElementById('total-positive-label'),
-        totalPositiveValue: document.getElementById('total-positive-value'),
-        totalNegativeLabel: document.getElementById('total-negative-label'),
-        totalNegativeValue: document.getElementById('total-negative-value'),
-        totalNetLabel: document.getElementById('total-net-label'),
-        totalNetValue: document.getElementById('total-net-value'),
+        // Balance Widgets (2025-12-15: Two separate widgets for Bank/Cash and Credit Cards)
+        bankWidgetTitle: document.getElementById('bank-widget-title'),
+        bankAccountsList: document.getElementById('bank-accounts-list'),
+        creditWidgetTitle: document.getElementById('credit-widget-title'),
+        creditAccountsList: document.getElementById('credit-accounts-list'),
 
         // Vault Modal (2025-12-15)
         vaultModal: document.getElementById('vault-modal'),
@@ -1078,7 +1075,9 @@
 
         // 2025-12-15: Create account based on type selection
         if (accountType === 'credit') {
-            const creditLimit = elements.inputCreditLimit.value;
+            // Strip commas from credit limit before parsing
+            const creditLimitRaw = elements.inputCreditLimit.value.replace(/,/g, '');
+            const creditLimit = parseFloat(creditLimitRaw) || 0;
             const paymentDueDay = elements.selectPaymentDueDay.value;
             const statementCloseDay = elements.selectStatementCloseDay.value;
 
@@ -1243,17 +1242,17 @@
 
         // 2025-12-15: Different display for credit cards vs checking
         if (currentAccount.type === 'credit') {
-            // Credit card: Show available credit as main number
+            // Credit card: Show balance (amount owed) as main number
             const availableCredit = Accounts.calculateAvailableCredit(currentAccount, data.transactions);
 
-            elements.balanceLabel.textContent = t('availableCredit');
-            elements.balanceDisplay.textContent = Accounts.formatCurrency(availableCredit, currentAccount.currency);
-            elements.balanceDisplay.classList.toggle('negative', availableCredit < 0);
+            elements.balanceLabel.textContent = t('amountOwed');
+            elements.balanceDisplay.textContent = Accounts.formatCurrency(balance, currentAccount.currency);
+            elements.balanceDisplay.classList.toggle('negative', balance < 0);
 
-            // Show credit card details
+            // Show credit card details with available credit at top
             elements.creditCardInfo.style.display = 'block';
-            elements.creditBalanceLabel.textContent = t('currentBalance') + ':';
-            elements.creditBalanceValue.textContent = Accounts.formatCurrency(balance, currentAccount.currency);
+            elements.creditAvailableLabel.textContent = t('availableCredit') + ':';
+            elements.creditAvailableValue.textContent = Accounts.formatCurrency(availableCredit, currentAccount.currency);
             elements.creditLimitLabel.textContent = t('creditLimit') + ':';
             elements.creditLimitValue.textContent = Accounts.formatCurrency(currentAccount.creditLimit, currentAccount.currency);
             elements.creditDatesLabel.textContent = `${t('dueDay')}: ${currentAccount.paymentDueDay}`;
@@ -1340,134 +1339,78 @@
      */
     function renderBalanceOverview() {
         const t = I18n.t;
-        const list = elements.balanceOverviewList;
-        list.innerHTML = '';
 
-        // Update title
-        if (elements.balanceOverviewTitle) {
-            elements.balanceOverviewTitle.textContent = t('balanceOverview');
+        // Update widget titles
+        if (elements.bankWidgetTitle) {
+            elements.bankWidgetTitle.textContent = '🏦 ' + t('accountsBank');
+        }
+        if (elements.creditWidgetTitle) {
+            elements.creditWidgetTitle.textContent = '💳 ' + t('accountsCredit');
         }
 
         // Separate accounts by type
         const bankAccounts = data.accounts.filter(a => a.type !== 'credit');
         const creditAccounts = data.accounts.filter(a => a.type === 'credit');
 
-        // Track totals
-        let totalPositive = 0;
-        let totalNegative = 0;
-
-        // Helper function to render a single account item
-        function createAccountItem(account) {
+        // Helper: Create bank/cash account item
+        function createBankItem(account) {
             const balance = Accounts.calculateBalance(data.transactions, account.id);
             const isActive = account.id === currentAccountId;
-
-            let displayValue;
-            let amountOwed = 0;
-            if (account.type === 'credit') {
-                displayValue = Accounts.calculateAvailableCredit(account, data.transactions);
-                amountOwed = Math.abs(balance);
-            } else {
-                displayValue = balance;
-            }
-
-            // Track totals
-            if (displayValue >= 0) {
-                totalPositive += displayValue;
-            } else {
-                totalNegative += displayValue;
-            }
-
-            // 2025-12-15: Account type icons (credit=card, cash=bills, checking=bank)
-            const accountIcon = account.type === 'credit' ? '💳' : account.type === 'cash' ? '💵' : '🏦';
+            const icon = account.type === 'cash' ? '💵' : '🏦';
 
             const item = document.createElement('div');
-            item.className = `balance-overview-item${isActive ? ' active' : ''}`;
-
-            const owedHtml = account.type === 'credit'
-                ? `<span class="balance-account-owed">${t('amountOwed')}: <span class="negative">${Accounts.formatCurrency(amountOwed, account.currency)}</span></span>`
-                : '';
-
+            item.className = `widget-account-item${isActive ? ' active' : ''}`;
             item.innerHTML = `
-                <div class="balance-account-info">
-                    <span class="balance-account-name">${accountIcon} ${escapeHtml(account.name)}</span>
-                    <span class="balance-account-currency">${account.currency}</span>
-                    ${owedHtml}
-                </div>
-                <span class="balance-account-value ${displayValue >= 0 ? 'positive' : 'negative'}">
-                    ${displayValue >= 0 ? '' : '-'}${Accounts.formatCurrency(displayValue, account.currency)}
+                <span class="widget-account-name">${icon} ${escapeHtml(account.name)}</span>
+                <span class="widget-account-balance ${balance >= 0 ? 'positive' : 'negative'}">
+                    ${Accounts.formatCurrency(balance, account.currency)}
                 </span>
             `;
-
-            item.style.cursor = 'pointer';
             item.addEventListener('click', () => selectAccount(account.id));
-
             return item;
         }
 
-        // 2025-12-15: Create two-column layout
-        const columnsContainer = document.createElement('div');
-        columnsContainer.className = 'balance-overview-columns';
+        // Helper: Create credit card item
+        function createCreditItem(account) {
+            const balance = Accounts.calculateBalance(data.transactions, account.id);
+            const availableCredit = Accounts.calculateAvailableCredit(account, data.transactions);
+            const isActive = account.id === currentAccountId;
 
-        // Left column: Checking/Cash accounts
-        const leftColumn = document.createElement('div');
-        leftColumn.className = 'balance-overview-column';
-
-        const leftHeader = document.createElement('div');
-        leftHeader.className = 'balance-column-header';
-        leftHeader.textContent = '🏦 ' + t('accountsBank');
-        leftColumn.appendChild(leftHeader);
-
-        bankAccounts.forEach(account => {
-            leftColumn.appendChild(createAccountItem(account));
-        });
-
-        if (bankAccounts.length === 0) {
-            const emptyMsg = document.createElement('div');
-            emptyMsg.className = 'balance-column-empty';
-            emptyMsg.textContent = '—';
-            leftColumn.appendChild(emptyMsg);
+            const item = document.createElement('div');
+            item.className = `widget-account-item${isActive ? ' active' : ''}`;
+            item.innerHTML = `
+                <span class="widget-account-name">💳 ${escapeHtml(account.name)}</span>
+                <div class="widget-cc-details">
+                    <div class="widget-cc-balance">${Accounts.formatCurrency(balance, account.currency)}</div>
+                    <div class="widget-cc-available">${t('availableCredit')}: ${Accounts.formatCurrency(availableCredit, account.currency)}</div>
+                </div>
+            `;
+            item.addEventListener('click', () => selectAccount(account.id));
+            return item;
         }
 
-        // Right column: Credit Card accounts
-        const rightColumn = document.createElement('div');
-        rightColumn.className = 'balance-overview-column';
-
-        const rightHeader = document.createElement('div');
-        rightHeader.className = 'balance-column-header';
-        rightHeader.textContent = '💳 ' + t('accountsCredit');
-        rightColumn.appendChild(rightHeader);
-
-        creditAccounts.forEach(account => {
-            rightColumn.appendChild(createAccountItem(account));
-        });
-
-        if (creditAccounts.length === 0) {
-            const emptyMsg = document.createElement('div');
-            emptyMsg.className = 'balance-column-empty';
-            emptyMsg.textContent = '—';
-            rightColumn.appendChild(emptyMsg);
+        // Render Bank/Cash accounts
+        if (elements.bankAccountsList) {
+            elements.bankAccountsList.innerHTML = '';
+            if (bankAccounts.length === 0) {
+                elements.bankAccountsList.innerHTML = '<div class="widget-empty">—</div>';
+            } else {
+                bankAccounts.forEach(account => {
+                    elements.bankAccountsList.appendChild(createBankItem(account));
+                });
+            }
         }
 
-        columnsContainer.appendChild(leftColumn);
-        columnsContainer.appendChild(rightColumn);
-        list.appendChild(columnsContainer);
-
-        // Update totals
-        if (elements.totalPositiveLabel) {
-            elements.totalPositiveLabel.textContent = t('totalPositive');
-            elements.totalPositiveValue.textContent = `$${totalPositive.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-        }
-
-        if (elements.totalNegativeLabel) {
-            elements.totalNegativeLabel.textContent = t('totalNegative');
-            elements.totalNegativeValue.textContent = `$${Math.abs(totalNegative).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-        }
-
-        if (elements.totalNetLabel) {
-            const netTotal = totalPositive + totalNegative;
-            elements.totalNetLabel.textContent = t('totalNet');
-            elements.totalNetValue.textContent = `${netTotal >= 0 ? '' : '-'}$${Math.abs(netTotal).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-            elements.totalNetValue.className = netTotal >= 0 ? '' : 'negative';
+        // Render Credit Card accounts
+        if (elements.creditAccountsList) {
+            elements.creditAccountsList.innerHTML = '';
+            if (creditAccounts.length === 0) {
+                elements.creditAccountsList.innerHTML = '<div class="widget-empty">—</div>';
+            } else {
+                creditAccounts.forEach(account => {
+                    elements.creditAccountsList.appendChild(createCreditItem(account));
+                });
+            }
         }
     }
 
