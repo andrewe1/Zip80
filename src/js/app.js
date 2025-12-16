@@ -134,6 +134,12 @@
         recurringList: document.getElementById('recurring-list'),
         recurringEmpty: document.getElementById('recurring-empty'),
 
+        // Exchange Rate Widget (2025-12-16)
+        exchangeWidgetTitle: document.getElementById('exchange-widget-title'),
+        rateUsdMxn: document.getElementById('rate-usd-mxn'),
+        rateMxnUsd: document.getElementById('rate-mxn-usd'),
+        exchangeUpdated: document.getElementById('exchange-updated'),
+
         // History
         historyTitle: document.getElementById('history-title'),
         historyList: document.getElementById('history-list'),
@@ -242,6 +248,7 @@
         setupCommaFormatting();  // 2025-12-15: Comma separators for number inputs
         await checkForRecentFile();
         updateUILanguage();
+        fetchExchangeRates();  // 2025-12-16: Load exchange rates
     }
 
     /**
@@ -1664,6 +1671,39 @@
             work: '💼'
         };
         return icons[category] || icons.general;
+    }
+
+    /**
+     * Fetch live exchange rates from ExchangeRate-API
+     * 2025-12-16: Updates the exchange rate widget in sidebar
+     */
+    async function fetchExchangeRates() {
+        try {
+            const response = await fetch('https://open.er-api.com/v6/latest/USD');
+            const data = await response.json();
+
+            if (data && data.rates && data.rates.MXN) {
+                const usdToMxn = data.rates.MXN;
+                const mxnToUsd = 1 / usdToMxn;
+
+                // Update DOM
+                if (elements.rateUsdMxn) {
+                    elements.rateUsdMxn.textContent = usdToMxn.toFixed(2);
+                }
+                if (elements.rateMxnUsd) {
+                    elements.rateMxnUsd.textContent = mxnToUsd.toFixed(4);
+                }
+                if (elements.exchangeUpdated) {
+                    const now = new Date();
+                    elements.exchangeUpdated.textContent = `${I18n.t('exchangeUpdated')} ${now.toLocaleTimeString()}`;
+                }
+            }
+        } catch (error) {
+            console.error('Failed to fetch exchange rates:', error);
+            if (elements.exchangeUpdated) {
+                elements.exchangeUpdated.textContent = I18n.t('exchangeError');
+            }
+        }
     }
 
     // --- Utilities ---

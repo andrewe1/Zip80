@@ -259,7 +259,12 @@ const I18n = (() => {
             btnCancelRecurring: 'Cancel',
             confirmCancelRecurring: 'Cancel this recurring expense?',
             toastRecurringCreated: '🔁 Recurring expense added!',
-            toastRecurringCanceled: '✅ Recurring expense canceled'
+            toastRecurringCanceled: '✅ Recurring expense canceled',
+
+            // Exchange Rate Widget (2025-12-16)
+            exchangeWidgetTitle: 'Exchange Rates',
+            exchangeUpdated: 'Updated:',
+            exchangeError: 'Failed to load rates'
         },
 
         es: {
@@ -407,7 +412,12 @@ const I18n = (() => {
             btnCancelRecurring: 'Cancelar',
             confirmCancelRecurring: '¿Cancelar este gasto recurrente?',
             toastRecurringCreated: '🔁 ¡Gasto recurrente agregado!',
-            toastRecurringCanceled: '✅ Gasto recurrente cancelado'
+            toastRecurringCanceled: '✅ Gasto recurrente cancelado',
+
+            // Exchange Rate Widget (2025-12-16)
+            exchangeWidgetTitle: 'Tipos de Cambio',
+            exchangeUpdated: 'Actualizado:',
+            exchangeError: 'Error al cargar tasas'
         }
     };
 
