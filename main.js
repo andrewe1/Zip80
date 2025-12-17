@@ -8,6 +8,10 @@
  * operations via IPC (Inter-Process Communication).
  * 
  * CHANGE LOG:
+ * - 2025-12-16: Added local HTTP server (port 17280) for Google OAuth compatibility
+ * - 2025-12-16: Changed loadFile() to loadURL() for OAuth to work in Electron
+ * - 2025-12-16: Added getMimeType() and startServer() for serving src directory
+ * - 2025-12-16: Server shuts down cleanly on app close
  * - 2025-12-15: Changed to windowed fullscreen (maximized)
  * - 2025-12-15: Added fullscreen launch
  * - 2025-12-15: Initial creation
@@ -36,6 +40,7 @@
 const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const http = require('http');
 
 // Fix for crash: GPU process isn't usable
 app.disableHardwareAcceleration();
@@ -45,6 +50,82 @@ const userDataPath = app.getPath('userData');
 const configPath = path.join(userDataPath, 'config.json');
 
 let mainWindow;
+let server;
+const SERVER_PORT = 17280; // Unique port for Zip80
+
+// --- Local HTTP Server ---
+// Required for Google OAuth - OAuth doesn't work with file:// URLs
+
+/**
+ * Get MIME type for file extension
+ */
+function getMimeType(filePath) {
+    const ext = path.extname(filePath).toLowerCase();
+    const mimeTypes = {
+        '.html': 'text/html',
+        '.css': 'text/css',
+        '.js': 'application/javascript',
+        '.json': 'application/json',
+        '.png': 'image/png',
+        '.jpg': 'image/jpeg',
+        '.jpeg': 'image/jpeg',
+        '.gif': 'image/gif',
+        '.svg': 'image/svg+xml',
+        '.ico': 'image/x-icon',
+        '.woff': 'font/woff',
+        '.woff2': 'font/woff2',
+        '.ttf': 'font/ttf'
+    };
+    return mimeTypes[ext] || 'application/octet-stream';
+}
+
+/**
+ * Start local HTTP server to serve the src directory
+ */
+function startServer() {
+    return new Promise((resolve, reject) => {
+        const srcPath = path.join(__dirname, 'src');
+
+        server = http.createServer((req, res) => {
+            // Parse URL, default to index.html
+            let urlPath = req.url === '/' ? '/index.html' : req.url;
+
+            // Remove query string if any
+            urlPath = urlPath.split('?')[0];
+
+            // Security: prevent directory traversal
+            const safePath = path.normalize(urlPath).replace(/^(\.\.[\/\\])+/, '');
+            const filePath = path.join(srcPath, safePath);
+
+            // Check if file exists and is within src directory
+            if (!filePath.startsWith(srcPath)) {
+                res.writeHead(403);
+                res.end('Forbidden');
+                return;
+            }
+
+            fs.readFile(filePath, (err, data) => {
+                if (err) {
+                    res.writeHead(404);
+                    res.end('Not Found');
+                    return;
+                }
+                res.writeHead(200, { 'Content-Type': getMimeType(filePath) });
+                res.end(data);
+            });
+        });
+
+        server.listen(SERVER_PORT, '127.0.0.1', () => {
+            console.log(`Local server running at http://127.0.0.1:${SERVER_PORT}`);
+            resolve();
+        });
+
+        server.on('error', (err) => {
+            console.error('Server error:', err);
+            reject(err);
+        });
+    });
+}
 
 function createWindow() {
     mainWindow = new BrowserWindow({
@@ -66,16 +147,19 @@ function createWindow() {
     mainWindow.maximize();
     mainWindow.show();
 
-    mainWindow.loadFile('src/index.html');
+    // Load from local HTTP server instead of file:// for OAuth compatibility
+    mainWindow.loadURL(`http://127.0.0.1:${SERVER_PORT}/index.html`);
 
     // Open DevTools in development
     // mainWindow.webContents.openDevTools();
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
+    // Start local server first (required for OAuth)
+    await startServer();
     createWindow();
 
-    app.on('activate', () => {
+    app.on('activate', async () => {
         if (BrowserWindow.getAllWindows().length === 0) {
             createWindow();
         }
@@ -83,6 +167,10 @@ app.whenReady().then(() => {
 });
 
 app.on('window-all-closed', () => {
+    // Shut down HTTP server
+    if (server) {
+        server.close();
+    }
     if (process.platform !== 'darwin') {
         app.quit();
     }

@@ -65,6 +65,10 @@
  * - 2025-12-15: Added custom confirm modal translations (confirm, confirmTitle)
  * - 2025-12-15: Added adjustAmount translation, renamed editCreditSettings to 'Edit Account'/'Editar Cuenta'
  * - 2025-12-15: Updated accountsCredit to 'Tarjetas de Crédito' in Spanish
+ * - 2025-12-16: Added Google Drive integration translations (cloudDivider, btnGoogleSignIn, etc.)
+ * - 2025-12-16: Added cloud vault picker translations (gdrivePickerTitle, gdriveNoVaults, gdriveShared)
+ * - 2025-12-16: Added Google auth toast messages (toastGoogleSignedIn, toastGoogleSignedOut, toastGoogleError)
+ * - 2025-12-16: Added cloud save toast messages (toastCloudSaved, toastCloudError)
  */
 
 const I18n = (() => {
@@ -264,7 +268,23 @@ const I18n = (() => {
             // Exchange Rate Widget (2025-12-16)
             exchangeWidgetTitle: 'Exchange Rates',
             exchangeUpdated: 'Updated:',
-            exchangeError: 'Failed to load rates'
+            exchangeError: 'Failed to load rates',
+
+            // Google Drive Integration (2025-12-16)
+            cloudDivider: 'or use cloud storage',
+            btnGoogleSignIn: 'Sign in with Google',
+            btnGoogleSignOut: 'Sign out',
+            btnOpenCloudVault: 'Open Cloud Vault',
+            btnNewCloudVault: 'New Cloud Vault',
+            gdrivePickerTitle: 'Your Cloud Vaults',
+            gdriveNoVaults: 'No cloud vaults yet. Create your first one!',
+            gdriveLoading: 'Loading vaults...',
+            gdriveShared: 'Shared',
+            toastGoogleSignedIn: 'Signed in as ${name}',
+            toastGoogleSignedOut: 'Signed out of Google',
+            toastGoogleError: 'Google sign-in failed. Please try again.',
+            toastCloudSaved: '☁️ Saved to Google Drive',
+            toastCloudError: 'Could not save to Google Drive'
         },
 
         es: {
@@ -417,7 +437,23 @@ const I18n = (() => {
             // Exchange Rate Widget (2025-12-16)
             exchangeWidgetTitle: 'Tipos de Cambio',
             exchangeUpdated: 'Actualizado:',
-            exchangeError: 'Error al cargar tasas'
+            exchangeError: 'Error al cargar tasas',
+
+            // Google Drive Integration (2025-12-16)
+            cloudDivider: 'o usa almacenamiento en la nube',
+            btnGoogleSignIn: 'Iniciar sesión con Google',
+            btnGoogleSignOut: 'Cerrar sesión',
+            btnOpenCloudVault: 'Abrir Bóveda en la Nube',
+            btnNewCloudVault: 'Nueva Bóveda en la Nube',
+            gdrivePickerTitle: 'Tus Bóvedas en la Nube',
+            gdriveNoVaults: '¡Aún no hay bóvedas. Crea tu primera!',
+            gdriveLoading: 'Cargando bóvedas...',
+            gdriveShared: 'Compartida',
+            toastGoogleSignedIn: 'Sesión iniciada como ${name}',
+            toastGoogleSignedOut: 'Sesión de Google cerrada',
+            toastGoogleError: 'Error al iniciar sesión. Intenta de nuevo.',
+            toastCloudSaved: '☁️ Guardado en Google Drive',
+            toastCloudError: 'No se pudo guardar en Google Drive'
         }
     };
 

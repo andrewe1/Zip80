@@ -64,6 +64,12 @@
  * - 2025-12-15: Replaced native confirm() dialogs with custom styled showConfirm() modal
  * - 2025-12-15: UI improvements: account tabs wrap instead of scroll, wider sidebar, adjusted button labels
  * - 2025-12-15: Restructured balance overview into two separate Bank/Cash and Credit Cards widgets
+ * - 2025-12-16: Added Google Drive integration with setupGoogleDrive() and related handlers
+ * - 2025-12-16: Added storageBackend state for local/gdrive switching
+ * - 2025-12-16: Updated handleSave() to support both local and cloud backends
+ * - 2025-12-16: Added handleGoogleAuthChange(), handleOpenCloudVault(), handleNewCloudVault()
+ * - 2025-12-16: Added createCloudVault(), loadCloudVault(), renderVaultPicker()
+ * - 2025-12-16: Updated showWorkspace() to show cloud badge for Drive vaults
  */
 
 (() => {
@@ -71,6 +77,10 @@
     let fileHandle = null;
     let data = { version: 2, accounts: [], transactions: [] };
     let currentAccountId = null;
+
+    // 2025-12-16: Google Drive state
+    let storageBackend = 'local';  // 'local' or 'gdrive'
+    let gdriveFileId = null;       // Current cloud vault file ID
 
     // DOM Elements
     const elements = {
@@ -231,7 +241,20 @@
         confirmModalTitle: document.getElementById('confirm-modal-title'),
         confirmModalMessage: document.getElementById('confirm-modal-message'),
         btnConfirmCancel: document.getElementById('btn-confirm-cancel'),
-        btnConfirmOk: document.getElementById('btn-confirm-ok')
+        btnConfirmOk: document.getElementById('btn-confirm-ok'),
+
+        // Google Drive (2025-12-16)
+        btnGoogleSignIn: document.getElementById('btn-google-signin'),
+        btnGoogleSignOut: document.getElementById('btn-google-signout'),
+        googleUserSection: document.getElementById('google-user-section'),
+        googleUserAvatar: document.getElementById('google-user-avatar'),
+        googleUserName: document.getElementById('google-user-name'),
+        btnGoogleOpen: document.getElementById('btn-google-open'),
+        btnGoogleNew: document.getElementById('btn-google-new'),
+        gdrivePickerModal: document.getElementById('gdrive-picker-modal'),
+        gdrivePickerTitle: document.getElementById('gdrive-picker-title'),
+        gdriveVaultList: document.getElementById('gdrive-vault-list'),
+        btnGdriveCancel: document.getElementById('btn-gdrive-cancel')
     };
 
     // --- Initialization ---
@@ -246,6 +269,7 @@
         setupAccountEditModal();  // 2025-12-15: Account edit modal
         setupVaultLanguageSync();  // 2025-12-15: Vault language-currency sync
         setupCommaFormatting();  // 2025-12-15: Comma separators for number inputs
+        setupGoogleDrive();  // 2025-12-16: Google Drive integration
         await checkForRecentFile();
         updateUILanguage();
         fetchExchangeRates();  // 2025-12-16: Load exchange rates
@@ -656,12 +680,18 @@
         // 2025-12-15: Vault name is used as suggested filename
         const vaultName = elements.inputVaultName.value.trim() || 'zip80_expenses';
 
-        // Default account name based on language
-        const defaultAccountName = selectedLanguage === 'es' ? 'Cuenta Principal' : 'Main Account';
-
         // Apply language selection
         I18n.setLanguage(selectedLanguage);
         elements.langSelect.value = selectedLanguage;
+
+        // 2025-12-16: Check if creating cloud vault
+        if (storageBackend === 'gdrive') {
+            await createCloudVault(vaultName, selectedLanguage, selectedCurrency);
+            return;
+        }
+
+        // Default account name based on language
+        const defaultAccountName = selectedLanguage === 'es' ? 'Cuenta Principal' : 'Main Account';
 
         try {
             // Pass vault name as suggested filename
@@ -719,13 +749,23 @@
     }
 
     async function handleSave() {
-        if (!fileHandle) return;
-
-        try {
-            await Storage.writeFile(fileHandle, data);
-            showToast(I18n.t('toastSaved'));
-        } catch (err) {
-            showToast(I18n.t('toastErrorSave'), false);
+        // 2025-12-16: Support both local and cloud backends
+        if (storageBackend === 'gdrive') {
+            if (!gdriveFileId) return;
+            try {
+                await GDrive.writeVault(gdriveFileId, data);
+                showToast(I18n.t('toastCloudSaved'));
+            } catch (err) {
+                showToast(I18n.t('toastCloudError'), false);
+            }
+        } else {
+            if (!fileHandle) return;
+            try {
+                await Storage.writeFile(fileHandle, data);
+                showToast(I18n.t('toastSaved'));
+            } catch (err) {
+                showToast(I18n.t('toastErrorSave'), false);
+            }
         }
     }
 
@@ -748,12 +788,234 @@
 
         // Reset state
         fileHandle = null;
+        gdriveFileId = null;  // 2025-12-16: Reset cloud file ID
+        storageBackend = 'local';  // 2025-12-16: Reset to local backend
         data = { version: 2, accounts: [], transactions: [] };
         currentAccountId = null;
 
         // Show startup screen
         elements.workspace.style.display = 'none';
         elements.startupScreen.style.display = 'flex';
+    }
+
+    // --- Google Drive Integration (2025-12-16) ---
+
+    /**
+     * Setup Google Drive integration
+     * Initializes GDrive module and sets up event listeners
+     */
+    function setupGoogleDrive() {
+        // Initialize GDrive module with auth change callback
+        if (typeof GDrive !== 'undefined') {
+            GDrive.init(handleGoogleAuthChange);
+        }
+
+        // Event listeners for Google buttons
+        if (elements.btnGoogleSignIn) {
+            elements.btnGoogleSignIn.addEventListener('click', handleGoogleSignIn);
+        }
+        if (elements.btnGoogleSignOut) {
+            elements.btnGoogleSignOut.addEventListener('click', handleGoogleSignOut);
+        }
+        if (elements.btnGoogleOpen) {
+            elements.btnGoogleOpen.addEventListener('click', handleOpenCloudVault);
+        }
+        if (elements.btnGoogleNew) {
+            elements.btnGoogleNew.addEventListener('click', handleNewCloudVault);
+        }
+        if (elements.btnGdriveCancel) {
+            elements.btnGdriveCancel.addEventListener('click', closeVaultPickerModal);
+        }
+        if (elements.gdrivePickerModal) {
+            elements.gdrivePickerModal.querySelector('.modal-backdrop')
+                .addEventListener('click', closeVaultPickerModal);
+        }
+    }
+
+    /**
+     * Handle Google auth state changes
+     * Called when user signs in or out
+     */
+    function handleGoogleAuthChange(isSignedIn, user) {
+        if (isSignedIn && user) {
+            // Show signed-in state
+            elements.btnGoogleSignIn.style.display = 'none';
+            elements.googleUserSection.style.display = 'flex';
+            elements.googleUserAvatar.src = user.picture || '';
+            elements.googleUserName.textContent = user.name || user.email || '';
+        } else {
+            // Show signed-out state
+            elements.btnGoogleSignIn.style.display = 'flex';
+            elements.googleUserSection.style.display = 'none';
+        }
+    }
+
+    /**
+     * Handle Google sign-in button click
+     */
+    function handleGoogleSignIn() {
+        if (typeof GDrive !== 'undefined') {
+            GDrive.signIn();
+        }
+    }
+
+    /**
+     * Handle Google sign-out button click
+     */
+    function handleGoogleSignOut() {
+        if (typeof GDrive !== 'undefined') {
+            GDrive.signOut();
+            showToast(I18n.t('toastGoogleSignedOut'));
+        }
+    }
+
+    /**
+     * Handle opening a cloud vault
+     * Shows vault picker modal with list of user's vaults
+     */
+    async function handleOpenCloudVault() {
+        if (!GDrive.isSignedIn()) {
+            showToast(I18n.t('toastGoogleError'), false);
+            return;
+        }
+
+        // Show loading state
+        elements.gdriveVaultList.innerHTML = `
+            <div class="gdrive-loading">${I18n.t('gdriveLoading')}</div>
+        `;
+        elements.gdrivePickerModal.style.display = 'flex';
+
+        try {
+            const vaults = await GDrive.listVaults();
+            renderVaultPicker(vaults);
+        } catch (err) {
+            console.error('Failed to list vaults:', err);
+            elements.gdriveVaultList.innerHTML = `
+                <div class="gdrive-empty">${I18n.t('toastGoogleError')}</div>
+            `;
+        }
+    }
+
+    /**
+     * Render vault picker list
+     */
+    function renderVaultPicker(vaults) {
+        if (!vaults || vaults.length === 0) {
+            elements.gdriveVaultList.innerHTML = `
+                <div class="gdrive-empty">${I18n.t('gdriveNoVaults')}</div>
+            `;
+            return;
+        }
+
+        const user = GDrive.getUser();
+        const userEmail = user ? user.email : '';
+
+        elements.gdriveVaultList.innerHTML = vaults.map(vault => {
+            const date = new Date(vault.modifiedTime);
+            const dateStr = date.toLocaleDateString(I18n.getLocale(), {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+
+            // Check if vault is shared (owner is not current user)
+            const isShared = vault.owners && vault.owners[0] &&
+                vault.owners[0].emailAddress !== userEmail;
+            const sharedBadge = isShared ?
+                `<span class="gdrive-vault-shared">${I18n.t('gdriveShared')}</span>` : '';
+
+            return `
+                <div class="gdrive-vault-item" data-file-id="${vault.id}">
+                    <span class="gdrive-vault-icon">📁</span>
+                    <div class="gdrive-vault-info">
+                        <div class="gdrive-vault-name">${vault.name}</div>
+                        <div class="gdrive-vault-date">${dateStr}</div>
+                    </div>
+                    ${sharedBadge}
+                </div>
+            `;
+        }).join('');
+
+        // Add click handlers to vault items
+        elements.gdriveVaultList.querySelectorAll('.gdrive-vault-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const fileId = item.dataset.fileId;
+                loadCloudVault(fileId);
+            });
+        });
+    }
+
+    /**
+     * Load a cloud vault by file ID
+     */
+    async function loadCloudVault(fileId) {
+        closeVaultPickerModal();
+
+        try {
+            data = await GDrive.readVault(fileId);
+            gdriveFileId = fileId;
+            storageBackend = 'gdrive';
+            currentAccountId = null;
+            showWorkspace();
+            render();
+        } catch (err) {
+            console.error('Failed to load cloud vault:', err);
+            showToast(I18n.t('toastGoogleError'), false);
+        }
+    }
+
+    /**
+     * Handle creating a new cloud vault
+     * Opens vault creation modal, then creates vault in Drive
+     */
+    async function handleNewCloudVault() {
+        if (!GDrive.isSignedIn()) {
+            showToast(I18n.t('toastGoogleError'), false);
+            return;
+        }
+
+        // Use the same vault modal as local files
+        // but set a flag to indicate cloud creation
+        storageBackend = 'gdrive';
+        openVaultModal();
+    }
+
+    /**
+     * Create cloud vault after vault modal submission
+     * Called from handleCreateVault when storageBackend is 'gdrive'
+     */
+    async function createCloudVault(vaultName, selectedLanguage, selectedCurrency) {
+        const defaultAccountName = selectedLanguage === 'es' ? 'Cuenta Principal' : 'Main Account';
+
+        // Create initial data
+        data = Accounts.createEmptyData();
+        if (data.accounts.length > 0) {
+            data.accounts[0].name = defaultAccountName;
+            data.accounts[0].currency = selectedCurrency;
+        }
+
+        try {
+            // Create file in Google Drive
+            gdriveFileId = await GDrive.createVault(vaultName, data);
+            currentAccountId = null;
+
+            closeVaultModal();
+            updateUILanguage();
+            showWorkspace();
+            render();
+            showToast(I18n.t('toastNewFile'));
+        } catch (err) {
+            console.error('Failed to create cloud vault:', err);
+            showToast(I18n.t('toastGoogleError'), false);
+            storageBackend = 'local';  // Reset on failure
+        }
+    }
+
+    /**
+     * Close vault picker modal
+     */
+    function closeVaultPickerModal() {
+        elements.gdrivePickerModal.style.display = 'none';
     }
 
     // --- Account Operations ---
@@ -1387,9 +1649,18 @@
     async function showWorkspace() {
         elements.startupScreen.style.display = 'none';
         elements.workspace.style.display = 'block';
-        // getFileName may be async in Electron
-        const filename = await Promise.resolve(Storage.getFileName(fileHandle));
-        elements.fileBadge.textContent = I18n.t('fileBadge', { filename });
+
+        // 2025-12-16: Get filename based on backend
+        let filename;
+        if (storageBackend === 'gdrive') {
+            filename = await GDrive.getVaultName(gdriveFileId);
+            elements.fileBadge.classList.add('cloud');
+            elements.fileBadge.textContent = `☁️ ${filename}`;
+        } else {
+            filename = await Promise.resolve(Storage.getFileName(fileHandle));
+            elements.fileBadge.classList.remove('cloud');
+            elements.fileBadge.textContent = I18n.t('fileBadge', { filename });
+        }
     }
 
     function render() {
