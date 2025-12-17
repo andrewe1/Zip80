@@ -69,6 +69,7 @@ CHANGE LOG:
 - 2025-12-16: Added Google sign-in button with official Google branding
 - 2025-12-16: Added cloud vault picker modal for selecting Drive vaults
 - 2025-12-16: Added gdrive.js script reference
+- 2025-12-17: Added menu bar framework with view mode toggles and options dropdown
 -->
 <!DOCTYPE html>
 <html lang="en">
@@ -153,6 +154,10 @@ CHANGE LOG:
                             ✨ <span data-i18n="btnNewCloudVault">New Cloud Vault</span>
                         </button>
                     </div>
+                    <!-- 2025-12-17: Reopen last cloud vault link -->
+                    <a id="link-google-reopen" href="#" class="reopen-link cloud-reopen-link" style="display: none;">
+                        <span data-i18n="btnReopenBase">Reopen</span> '<span id="google-reopen-filename"></span>'
+                    </a>
                 </div>
             </div>
         </div>
@@ -161,16 +166,77 @@ CHANGE LOG:
     <!-- Main Application -->
     <main id="app-workspace" class="workspace" style="display: none;">
         <header class="header">
-            <span id="file-badge" class="file-badge">📄 Loading...</span>
+            <div class="header-vault">
+                <span class="vault-label" data-i18n="vaultLabel">Vault:</span>
+                <span id="file-badge" class="file-badge">📄 Loading...</span>
+            </div>
+            <h1 id="header-title" class="header-title">💸 Zip80</h1>
             <div class="header-actions">
+                <!-- 2025-12-17: Save Status Indicator - flashes on save, hidden otherwise -->
+                <div id="save-status" class="save-status save-status-saved" title="All changes saved">
+                    <span class="save-status-icon">✓</span>
+                    <span class="save-status-text" data-i18n="statusSaved">Saved</span>
+                </div>
                 <button id="btn-close-vault" class="btn btn-secondary btn-save">
                     <span data-i18n="btnCloseVault">🚪 Close</span>
                 </button>
-                <button id="btn-save" class="btn btn-primary btn-save">
-                    <span data-i18n="btnSave">💾 Save</span>
-                </button>
             </div>
         </header>
+
+        <!-- 2025-12-17: Menu Bar Framework - toolbar for view modes and options (below header) -->
+        <nav id="menu-bar" class="menu-bar">
+            <div class="menu-bar-left">
+                <!-- View Mode Toggles -->
+                <div class="view-mode-group">
+                    <span class="view-mode-label" data-i18n="viewMode">View:</span>
+                    <button id="btn-view-standard" class="menu-btn menu-btn-view active" data-view="standard"
+                        title="Standard View">
+                        📋 <span data-i18n="viewStandard">Standard</span>
+                    </button>
+                    <button id="btn-view-compact" class="menu-btn menu-btn-view" data-view="compact"
+                        title="Compact View">
+                        📊 <span data-i18n="viewCompact">Compact</span>
+                    </button>
+                </div>
+
+                <!-- 2025-12-17: Undo/Redo Buttons (session-based history) -->
+                <div class="undo-redo-group">
+                    <button id="btn-undo" class="menu-btn menu-btn-icon disabled" disabled title="Undo">
+                        ↶
+                    </button>
+                    <button id="btn-redo" class="menu-btn menu-btn-icon disabled" disabled title="Redo">
+                        ↷
+                    </button>
+                </div>
+            </div>
+            <div class="menu-bar-right">
+                <!-- Options Button -->
+                <button id="btn-options" class="menu-btn menu-btn-options" aria-haspopup="true" aria-expanded="false">
+                    ⚙️ <span data-i18n="options">Options</span>
+                </button>
+                <!-- Options Dropdown Menu (hidden by default) -->
+                <div id="options-dropdown" class="options-dropdown" style="display: none;">
+                    <button class="dropdown-item" data-action="export-csv">
+                        📄 <span data-i18n="exportCSV">Export as CSV</span>
+                    </button>
+                    <button class="dropdown-item" data-action="export-json">
+                        📥 <span data-i18n="exportJSON">Export as JSON</span>
+                    </button>
+                    <!-- 2025-12-17: Change password (only for encrypted vaults) -->
+                    <button id="btn-change-password" class="dropdown-item" data-action="change-password"
+                        style="display: none;">
+                        🔑 <span data-i18n="changePassword">Change Password</span>
+                    </button>
+                    <div class="dropdown-divider"></div>
+                    <button class="dropdown-item" data-action="settings">
+                        🛠️ <span data-i18n="settings">Settings</span>
+                    </button>
+                    <button class="dropdown-item" data-action="about">
+                        ℹ️ <span data-i18n="about">About</span>
+                    </button>
+                </div>
+            </div>
+        </nav>
 
         <!-- 2025-12-15: Added workspace layout with sidebar for balance overview -->
         <div class="workspace-layout">
@@ -228,6 +294,13 @@ CHANGE LOG:
                         <button id="btn-edit-account-settings" class="btn btn-secondary btn-sm" style="width: 100%;">
                             ⚙️ <span data-i18n="editCreditSettings">Edit Settings</span>
                         </button>
+                    </div>
+
+                    <!-- 2025-12-16: Crypto account info (shows crypto balance below USD value) -->
+                    <div id="crypto-account-info" class="crypto-account-info" style="display: none;">
+                        <div class="crypto-balance-row">
+                            <span id="crypto-balance-value">0.00000000 BTC</span>
+                        </div>
                     </div>
 
                     <!-- 2025-12-15: Add Transaction Form (combined into balance card) -->
@@ -301,81 +374,139 @@ CHANGE LOG:
             </div><!-- end workspace-main -->
 
             <!-- 2025-12-15: Balance Overview Sidebar Widget -->
+            <!-- 2025-12-16: Updated with widget system for drag/drop and collapse -->
             <aside class="workspace-sidebar">
                 <!-- Two-column layout for account widgets -->
                 <div class="balance-widgets-row">
                     <!-- Bank/Cash Widget -->
-                    <div class="card balance-widget-card">
-                        <h3 id="bank-widget-title" class="widget-title">🏦 Bank/Cash</h3>
-                        <div id="bank-accounts-list" class="widget-accounts-list">
-                            <!-- Bank/Cash items rendered by JS -->
+                    <div class="card widget-card balance-widget-card" data-widget-id="balance-bank">
+                        <div class="widget-header">
+                            <h3 id="bank-widget-title" class="widget-title">🏦 Bank/Cash</h3>
+                        </div>
+                        <div class="widget-content">
+                            <div id="bank-accounts-list" class="widget-accounts-list">
+                                <!-- Bank/Cash items rendered by JS -->
+                            </div>
                         </div>
                     </div>
 
                     <!-- Credit Cards Widget -->
-                    <div class="card balance-widget-card">
-                        <h3 id="credit-widget-title" class="widget-title">💳 Credit Cards</h3>
-                        <div id="credit-accounts-list" class="widget-accounts-list">
-                            <!-- Credit card items rendered by JS -->
+                    <div class="card widget-card balance-widget-card" data-widget-id="balance-credit">
+                        <div class="widget-header">
+                            <h3 id="credit-widget-title" class="widget-title">💳 Credit Cards</h3>
+                        </div>
+                        <div class="widget-content">
+                            <div id="credit-accounts-list" class="widget-accounts-list">
+                                <!-- Credit card items rendered by JS -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 2025-12-16: Crypto Widget -->
+                    <div id="crypto-widget-card" class="card widget-card balance-widget-card"
+                        data-widget-id="balance-crypto" style="display: none;">
+                        <div class="widget-header">
+                            <h3 id="crypto-widget-title" class="widget-title">🪙 Crypto</h3>
+                        </div>
+                        <div class="widget-content">
+                            <div id="crypto-accounts-list" class="widget-accounts-list">
+                                <!-- Crypto items rendered by JS -->
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- 2025-12-15: Calendar Widget -->
-                <div class="card calendar-widget-card">
-                    <div id="calendar-full-date" class="calendar-full-date">
-                        <!-- Full date rendered by JS -->
+                <div class="card widget-card calendar-widget-card" data-widget-id="calendar">
+                    <div class="widget-header">
+                        <h3 id="calendar-widget-title" class="widget-title">📅 Calendar</h3>
                     </div>
-                    <div class="calendar-grid">
-                        <div class="calendar-weekdays">
-                            <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
+                    <div class="widget-content">
+                        <div id="calendar-full-date" class="calendar-full-date">
+                            <!-- Full date rendered by JS -->
                         </div>
-                        <div id="calendar-days" class="calendar-days">
-                            <!-- Days rendered by JS -->
+                        <div class="calendar-grid">
+                            <div class="calendar-weekdays">
+                                <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
+                            </div>
+                            <div id="calendar-days" class="calendar-days">
+                                <!-- Days rendered by JS -->
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- 2025-12-15: Recurring Expenses Widget -->
-                <div class="card recurring-widget-card">
-                    <h3 id="recurring-widget-title" class="widget-title">🔁 Recurring Expenses</h3>
-                    <div id="recurring-list" class="recurring-list">
-                        <!-- Recurring items rendered by JS -->
+                <!-- 2025-12-16: Two-column layout for recurring and exchange widgets -->
+                <div class="balance-widgets-row">
+                    <!-- 2025-12-15: Recurring Expenses Widget -->
+                    <div class="card widget-card recurring-widget-card" data-widget-id="recurring">
+                        <div class="widget-header">
+                            <h3 id="recurring-widget-title" class="widget-title">🔁 Recurring Expenses</h3>
+                        </div>
+                        <div class="widget-content">
+                            <div id="recurring-list" class="recurring-list">
+                                <!-- Recurring items rendered by JS -->
+                            </div>
+                            <p id="recurring-empty" class="recurring-empty">No recurring expenses</p>
+                            <!-- 2025-12-16: Total Monthly Expenses -->
+                            <p id="recurring-total" class="recurring-total" style="display: none;"></p>
+                        </div>
                     </div>
-                    <p id="recurring-empty" class="recurring-empty">No recurring expenses</p>
-                </div>
 
-                <!-- 2025-12-16: Exchange Rate Widget -->
-                <div class="card exchange-widget-card">
-                    <h3 id="exchange-widget-title" class="widget-title">💱 Exchange Rates</h3>
-                    <div class="exchange-content">
-                        <div id="exchange-rates" class="exchange-rates">
-                            <div class="exchange-rate-row">
-                                <span class="exchange-from">1 USD</span>
-                                <span class="exchange-arrow">=</span>
-                                <span id="rate-usd-mxn" class="exchange-to">--</span>
-                                <span class="exchange-currency">MXN</span>
-                            </div>
-                            <div class="exchange-rate-row">
-                                <span class="exchange-from">1 MXN</span>
-                                <span class="exchange-arrow">=</span>
-                                <span id="rate-mxn-usd" class="exchange-to">--</span>
-                                <span class="exchange-currency">USD</span>
-                            </div>
+                    <!-- 2025-12-16: Exchange Rate Widget -->
+                    <div class="card widget-card exchange-widget-card" data-widget-id="exchange">
+                        <div class="widget-header">
+                            <h3 id="exchange-widget-title" class="widget-title">💱 Exchange Rates</h3>
                         </div>
-                        <div class="exchange-chart">
-                            <svg id="exchange-sparkline" viewBox="0 0 120 40" preserveAspectRatio="none">
-                                <polyline id="sparkline-path" fill="none" stroke="#22c55e" stroke-width="1.5" points="">
-                                </polyline>
-                            </svg>
-                            <div class="chart-range-btns">
-                                <button class="chart-range-btn active" data-days="7">7d</button>
-                                <button class="chart-range-btn" data-days="30">1m</button>
-                                <button class="chart-range-btn" data-days="180">6m</button>
+                        <div class="widget-content">
+                            <div class="exchange-content">
+                                <div id="exchange-rates" class="exchange-rates">
+                                    <div class="exchange-rate-row">
+                                        <span class="exchange-from">1 USD</span>
+                                        <span class="exchange-arrow">=</span>
+                                        <span id="rate-usd-mxn" class="exchange-to">--</span>
+                                        <span class="exchange-currency">MXN</span>
+                                    </div>
+                                    <div class="exchange-rate-row">
+                                        <span class="exchange-from">1 MXN</span>
+                                        <span class="exchange-arrow">=</span>
+                                        <span id="rate-mxn-usd" class="exchange-to">--</span>
+                                        <span class="exchange-currency">USD</span>
+                                    </div>
+                                </div>
+                                <div class="exchange-chart">
+                                    <!-- 2025-12-16: Enhanced chart with X-axis labels and hover tooltip -->
+                                    <div class="exchange-chart-container">
+                                        <svg id="exchange-sparkline" viewBox="0 0 120 55" preserveAspectRatio="none">
+                                            <!-- Chart line -->
+                                            <polyline id="sparkline-path" fill="none" stroke="#22c55e"
+                                                stroke-width="1.5" points="">
+                                            </polyline>
+                                            <!-- Hover circles (added dynamically) -->
+                                            <g id="sparkline-dots"></g>
+                                        </svg>
+                                        <!-- X-axis labels -->
+                                        <div id="chart-x-axis" class="chart-x-axis"></div>
+                                        <!-- Hover tooltip -->
+                                        <div id="chart-tooltip" class="chart-tooltip" style="display: none;">
+                                            <span class="tooltip-rate"></span>
+                                            <span class="tooltip-date"></span>
+                                        </div>
+                                    </div>
+                                    <!-- Percentage change indicator -->
+                                    <div class="chart-change-row">
+                                        <span id="chart-change" class="chart-change">--</span>
+                                        <div class="chart-range-btns">
+                                            <button class="chart-range-btn active" data-days="7">7d</button>
+                                            <button class="chart-range-btn" data-days="30">1m</button>
+                                            <button class="chart-range-btn" data-days="180">6m</button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
+                            <p id="exchange-updated" class="exchange-updated">Loading...</p>
                         </div>
                     </div>
-                    <p id="exchange-updated" class="exchange-updated">Loading...</p>
                 </div>
             </aside>
         </div><!-- end workspace-layout -->
@@ -389,12 +520,12 @@ CHANGE LOG:
 
             <!-- Account Type Selector -->
             <div class="form-group">
-                <label id="label-account-type" for="select-account-type">Account Type</label>
-                <select id="select-account-type" class="input">
-                    <option value="checking">Checking Account</option>
-                    <option value="cash">Cash</option>
-                    <option value="credit">Credit Card</option>
-                </select>
+                <label id="label-account-type">Account Type</label>
+                <!-- 2025-12-17: Replaced select with icon buttons -->
+                <input type="hidden" id="select-account-type" value="checking">
+                <div id="account-type-grid" class="account-type-grid">
+                    <!-- Buttons injected by JS -->
+                </div>
             </div>
 
             <!-- Account Name -->
@@ -541,6 +672,7 @@ CHANGE LOG:
     </div>
 
     <!-- 2025-12-15: New Vault Modal - Settings for new data files -->
+    <!-- 2025-12-17: Added encryption option with password fields -->
     <div id="vault-modal" class="modal" style="display: none;">
         <div class="modal-backdrop"></div>
         <div class="modal-content">
@@ -571,12 +703,111 @@ CHANGE LOG:
                 <input type="text" id="input-vault-name" class="input" placeholder="e.g. Personal, Business, Savings">
             </div>
 
+            <!-- 2025-12-17: Encryption Toggle -->
+            <div class="form-group encryption-toggle-group">
+                <label class="encryption-toggle-label">
+                    <input type="checkbox" id="checkbox-encrypt-vault" class="encryption-checkbox">
+                    <span id="label-encrypt-vault" data-i18n="encryptVault">🔒 Encrypt this vault</span>
+                </label>
+            </div>
+
+            <!-- Encryption Password Fields (shown when encrypt checkbox is checked) -->
+            <div id="encryption-fields" class="encryption-fields" style="display: none;">
+                <p id="encryption-warning" class="encryption-warning" data-i18n="encryptionWarning">
+                    ⚠️ If you forget your password, your data cannot be recovered.
+                </p>
+                <div class="form-group">
+                    <label id="label-vault-password" for="input-vault-password"
+                        data-i18n="passwordLabel">Password</label>
+                    <input type="password" id="input-vault-password" class="input" placeholder="Enter password">
+                </div>
+                <div class="form-group">
+                    <label id="label-vault-confirm-password" for="input-vault-confirm-password"
+                        data-i18n="confirmPasswordLabel">Confirm Password</label>
+                    <input type="password" id="input-vault-confirm-password" class="input"
+                        placeholder="Confirm password">
+                </div>
+                <div class="form-group">
+                    <label id="label-vault-hint" for="input-vault-hint" data-i18n="hintLabel">Password Hint
+                        (required)</label>
+                    <input type="text" id="input-vault-hint" class="input" placeholder="e.g. My favorite movie">
+                </div>
+            </div>
+
             <div class="modal-actions">
                 <button id="btn-cancel-vault" class="btn btn-secondary">
                     <span data-i18n="cancel">Cancel</span>
                 </button>
                 <button id="btn-create-vault" class="btn btn-primary">
                     <span data-i18n="createVault">Create Vault</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2025-12-17: Password Modal (for opening encrypted vaults) -->
+    <div id="password-modal" class="modal" style="display: none;">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <h2 id="password-modal-title" class="modal-title">🔐 Encrypted Vault</h2>
+            <p id="password-modal-desc" class="modal-desc">This vault is encrypted. Enter your password to unlock it.
+            </p>
+
+            <div class="form-group">
+                <label id="label-unlock-password" for="input-unlock-password" data-i18n="passwordLabel">Password</label>
+                <input type="password" id="input-unlock-password" class="input" placeholder="Enter password">
+            </div>
+
+            <!-- 2025-12-17: Password hint display (shown after 2 failed attempts) -->
+            <div id="password-hint-display" class="password-hint-display" style="display: none;">
+                <span id="hint-label" data-i18n="hintLabel">Hint:</span>
+                <span id="hint-text"></span>
+            </div>
+
+            <div class="modal-actions">
+                <button id="btn-cancel-unlock" class="btn btn-secondary">
+                    <span data-i18n="cancel">Cancel</span>
+                </button>
+                <button id="btn-unlock-vault" class="btn btn-primary">
+                    <span data-i18n="unlockVault">🔓 Unlock</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2025-12-17: Change Password Modal (for encrypted vaults) -->
+    <div id="change-password-modal" class="modal" style="display: none;">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <h2 id="change-password-modal-title" class="modal-title">🔑 Change Password</h2>
+            <p id="change-password-modal-desc" class="modal-desc">Enter your current password and choose a new one.</p>
+
+            <div class="form-group">
+                <label id="label-current-password" for="input-current-password" data-i18n="currentPasswordLabel">Current
+                    Password</label>
+                <input type="password" id="input-current-password" class="input" placeholder="Enter current password">
+            </div>
+            <div class="form-group">
+                <label id="label-new-password" for="input-new-password" data-i18n="newPasswordLabel">New
+                    Password</label>
+                <input type="password" id="input-new-password" class="input" placeholder="Enter new password">
+            </div>
+            <div class="form-group">
+                <label id="label-confirm-new-password" for="input-confirm-new-password"
+                    data-i18n="confirmNewPasswordLabel">Confirm New Password</label>
+                <input type="password" id="input-confirm-new-password" class="input" placeholder="Confirm new password">
+            </div>
+            <div class="form-group">
+                <label id="label-new-hint" for="input-new-hint" data-i18n="newHintLabel">New Password Hint</label>
+                <input type="text" id="input-new-hint" class="input" placeholder="e.g. My favorite movie">
+            </div>
+
+            <div class="modal-actions">
+                <button id="btn-cancel-change-password" class="btn btn-secondary">
+                    <span data-i18n="cancel">Cancel</span>
+                </button>
+                <button id="btn-confirm-change-password" class="btn btn-primary">
+                    <span data-i18n="changePassword">🔑 Change Password</span>
                 </button>
             </div>
         </div>
@@ -620,9 +851,18 @@ CHANGE LOG:
 
     <script src="js/i18n.js"></script>
     <script src="js/accounts.js"></script>
+    <!-- 2025-12-17: Crypto module for vault encryption (must load before storage.js) -->
+    <script src="js/crypto.js"></script>
     <script src="js/storage.js"></script>
     <script src="js/gdrive.js"></script>
     <script src="js/calendar.js"></script>
+    <!-- 2025-12-16: Widget system with SortableJS for drag-and-drop -->
+    <script src="js/Sortable.min.js"></script>
+    <script src="js/widgets.js"></script>
+    <!-- 2025-12-17: Menu bar controller for view modes and options -->
+    <!-- 2025-12-17: History module for undo/redo -->
+    <script src="js/history.js"></script>
+    <script src="js/menubar.js"></script>
     <script src="js/app.js"></script>
 </body>
 

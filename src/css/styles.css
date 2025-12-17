@@ -72,6 +72,7 @@
  * - 2025-12-16: Added Google-branded button styling per Google guidelines
  * - 2025-12-16: Added vault picker modal styles (vault list, shared badge)
  * - 2025-12-16: Added cloud badge styling for header when using Drive vault
+ * - 2025-12-17: Added menu bar styles with view mode toggles and options dropdown
  * ============================================================================
  */
 
@@ -398,7 +399,8 @@ h3 {
     border-radius: var(--radius-lg);
     padding: var(--space-lg);
     box-shadow: var(--shadow-md);
-    margin-bottom: var(--space-lg);
+    margin-bottom: var(--space-md);
+    /* 2025-12-16: tighter spacing to match sidebar */
 }
 
 .card-title {
@@ -461,6 +463,312 @@ h3 {
     margin-bottom: var(--space-lg);
 }
 
+/* --- MENU BAR (2025-12-17) --- */
+/* Top toolbar for view modes and global options */
+.menu-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-md);
+    padding: var(--space-sm) var(--space-md);
+    background-color: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    margin-bottom: var(--space-lg);
+    position: relative;
+    z-index: 1000;
+    /* 2025-12-17: Above sticky sidebar for dropdown visibility */
+}
+
+html.dark .menu-bar {
+    background-color: rgba(30, 41, 59, 0.85);
+}
+
+.menu-bar-left,
+.menu-bar-right {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.menu-bar-right {
+    position: relative;
+    z-index: 1000;
+    /* 2025-12-17: Ensure dropdown appears above sidebar widgets */
+}
+
+/* View Mode Group */
+.view-mode-group {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+}
+
+.view-mode-label {
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    color: var(--color-text-muted);
+    margin-right: var(--space-xs);
+}
+
+/* Menu Bar Buttons */
+.menu-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-xs);
+    padding: var(--space-xs) var(--space-sm);
+    font-family: inherit;
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    color: var(--color-text);
+    background-color: transparent;
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+}
+
+.menu-btn:hover {
+    background-color: var(--color-bg);
+    border-color: var(--color-border);
+}
+
+.menu-btn:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
+/* View Mode Toggle Buttons */
+.menu-btn-view {
+    min-height: 32px;
+    border-radius: var(--radius-full);
+}
+
+.menu-btn-view.active {
+    background-color: var(--color-primary);
+    color: white;
+    border-color: var(--color-primary);
+}
+
+.menu-btn-view.active:hover {
+    background-color: var(--color-primary-hover);
+    border-color: var(--color-primary-hover);
+}
+
+/* 2025-12-17: Undo/Redo Button Group */
+.undo-redo-group {
+    display: flex;
+    gap: 2px;
+    margin-left: var(--space-md);
+    padding-left: var(--space-md);
+    border-left: 1px solid var(--color-border);
+}
+
+/* Icon-only buttons (undo/redo) */
+.menu-btn-icon {
+    min-height: 32px;
+    min-width: 36px;
+    padding: 0 var(--space-sm);
+    font-size: 1.1rem;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.menu-btn-icon:hover:not(.disabled) {
+    background-color: var(--color-bg);
+    border-color: var(--color-border);
+}
+
+.menu-btn-icon.disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.menu-btn-icon.disabled:hover {
+    background-color: transparent;
+    border-color: transparent;
+}
+
+/* Options Button */
+.menu-btn-options {
+    min-height: 32px;
+    border: 1px solid var(--color-border);
+    background-color: var(--color-surface);
+}
+
+.menu-btn-options:hover,
+.menu-btn-options[aria-expanded="true"] {
+    background-color: var(--color-bg);
+    border-color: var(--color-primary);
+}
+
+/* Options Dropdown */
+.options-dropdown {
+    position: absolute;
+    top: calc(100% + var(--space-xs));
+    right: 0;
+    min-width: 180px;
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+    z-index: 1000;
+    /* 2025-12-17: Elevated to appear above sidebar widgets */
+    overflow: hidden;
+    animation: dropdownFadeIn 0.15s ease;
+}
+
+@keyframes dropdownFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    width: 100%;
+    padding: var(--space-sm) var(--space-md);
+    font-family: inherit;
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    color: var(--color-text);
+    background: none;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.1s ease;
+    text-align: left;
+}
+
+.dropdown-item:hover {
+    background-color: var(--color-bg);
+}
+
+.dropdown-item:focus-visible {
+    background-color: var(--color-bg);
+    outline: none;
+}
+
+.dropdown-divider {
+    height: 1px;
+    background-color: var(--color-border);
+    margin: var(--space-xs) 0;
+}
+
+/* --- HEADER VAULT LABEL (2025-12-17) --- */
+.header-vault {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.vault-label {
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    color: var(--color-text-muted);
+}
+
+/* --- SAVE STATUS INDICATOR (2025-12-17) --- */
+/* Hidden by default, flashes briefly on successful save */
+.save-status {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    padding: var(--space-xs) var(--space-sm);
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    border-radius: var(--radius-full);
+    opacity: 0;
+    pointer-events: none;
+}
+
+.save-status-icon {
+    font-size: 0.9rem;
+}
+
+/* Flash animation - fades in briefly then fades out */
+.save-status.flash {
+    animation: saveFlash 1.5s ease-out forwards;
+}
+
+@keyframes saveFlash {
+    0% {
+        opacity: 0;
+    }
+
+    15% {
+        opacity: 1;
+    }
+
+    75% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0;
+    }
+}
+
+/* Saved state - green checkmark */
+.save-status-saved {
+    color: var(--color-success);
+    background-color: rgba(22, 163, 74, 0.1);
+}
+
+html.dark .save-status-saved {
+    background-color: rgba(34, 197, 94, 0.15);
+}
+
+/* Saving state - stays visible while saving */
+.save-status-saving {
+    opacity: 1;
+    pointer-events: auto;
+    color: var(--color-primary);
+    background-color: rgba(37, 99, 235, 0.1);
+    animation: savePulse 1s ease-in-out infinite;
+}
+
+html.dark .save-status-saving {
+    background-color: rgba(59, 130, 246, 0.15);
+}
+
+@keyframes savePulse {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.6;
+    }
+}
+
+/* Error state - stays visible */
+.save-status-error {
+    opacity: 1;
+    pointer-events: auto;
+    color: var(--color-danger);
+    background-color: rgba(220, 38, 38, 0.1);
+}
+
+html.dark .save-status-error {
+    background-color: rgba(239, 68, 68, 0.15);
+}
+
 /* --- WORKSPACE --- */
 .workspace {
     max-width: 1200px;
@@ -490,15 +798,129 @@ h3 {
 }
 
 /* 2025-12-15: Two-widget side-by-side layout */
+/* 2025-12-16: Default stretch for matching heights, collapsed widgets shrink via align-self */
 .balance-widgets-row {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: var(--space-md);
-    margin-bottom: var(--space-md);
+    /* margin handled by sidebar flex gap */
+}
+
+/* Remove margin from cards inside sidebar to prevent double spacing */
+.workspace-sidebar .card {
+    margin-bottom: 0;
+}
+
+/* Add consistent gap between all sidebar widgets */
+.workspace-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
 }
 
 .balance-widget-card {
     padding: var(--space-md);
+}
+
+/* 2025-12-16: Widget System Styles */
+.widget-card {
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+/* Collapsed widgets shrink instead of stretching */
+.widget-card.collapsed {
+    align-self: start;
+}
+
+/* 2025-12-17: Calendar widget stays full width when collapsed (only collapses vertically) */
+.workspace-sidebar .calendar-widget-card.collapsed {
+    align-self: stretch;
+    width: 100%;
+}
+
+.widget-header {
+    display: flex;
+    align-items: center;
+    user-select: none;
+    padding-bottom: var(--space-xs);
+    border-bottom: 1px solid var(--color-border);
+    margin-bottom: var(--space-sm);
+}
+
+.widget-drag-handle {
+    color: var(--color-text-muted);
+    opacity: 0.5;
+    font-size: 1rem;
+    margin-right: var(--space-sm);
+    transition: opacity 0.15s ease, color 0.15s ease;
+    letter-spacing: -2px;
+    cursor: grab;
+    padding: var(--space-xs);
+}
+
+.widget-drag-handle:active {
+    cursor: grabbing;
+}
+
+.widget-header:hover .widget-drag-handle {
+    opacity: 1;
+    color: var(--color-primary);
+}
+
+.widget-collapse-btn {
+    margin-left: auto;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: var(--space-xs);
+    color: var(--color-text-muted);
+    font-size: 0.7rem;
+    transition: transform 0.2s ease, color 0.15s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.widget-collapse-btn:hover {
+    color: var(--color-text);
+}
+
+.widget-card.collapsed .widget-collapse-btn .collapse-icon {
+    transform: rotate(-90deg);
+}
+
+.widget-content {
+    overflow: hidden;
+    transition: max-height 0.3s ease, opacity 0.2s ease;
+    max-height: 1000px;
+    opacity: 1;
+}
+
+.widget-card.collapsed .widget-content {
+    max-height: 0;
+    opacity: 0;
+}
+
+/* SortableJS drag states */
+.widget-ghost {
+    opacity: 0.4;
+    background-color: var(--color-primary);
+    border: 2px dashed var(--color-primary);
+}
+
+.widget-chosen {
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    transform: scale(1.02);
+}
+
+.widget-drag {
+    opacity: 0.9;
+}
+
+/* When drag is in progress on rows, make them accept drops */
+.balance-widgets-row.sortable-fallback,
+.workspace-sidebar.sortable-fallback {
+    min-height: 50px;
 }
 
 .widget-title {
@@ -507,9 +929,8 @@ h3 {
     text-transform: uppercase;
     letter-spacing: 0.5px;
     color: var(--color-text-muted);
-    margin-bottom: var(--space-sm);
-    padding-bottom: var(--space-xs);
-    border-bottom: 1px solid var(--color-border);
+    margin: 0;
+    flex: 1;
 }
 
 .widget-accounts-list {
@@ -588,6 +1009,24 @@ h3 {
 }
 
 .widget-cc-available {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+}
+
+/* 2025-12-16: Crypto widget specific styles */
+.widget-crypto-details {
+    text-align: right;
+    font-size: var(--font-size-base);
+}
+
+/* USD value shown prominently */
+.widget-crypto-usd {
+    font-weight: 600;
+    color: var(--color-success);
+}
+
+/* Crypto balance shown smaller below */
+.widget-crypto-balance {
     font-size: var(--font-size-sm);
     color: var(--color-text-muted);
 }
@@ -789,12 +1228,24 @@ h3 {
     justify-content: space-between;
     align-items: center;
     margin-bottom: var(--space-lg);
+    position: relative;
 }
 
 .header-actions {
     display: flex;
     gap: var(--space-sm);
     align-items: center;
+}
+
+/* 2025-12-16: Centered Zip80 title in header */
+.header-title {
+    font-size: var(--font-size-xl);
+    font-weight: 700;
+    color: var(--color-text);
+    margin: 0;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
 }
 
 .file-badge {
@@ -828,6 +1279,21 @@ h3 {
 
 .balance-value.negative {
     color: var(--color-danger);
+}
+
+.balance-value.positive {
+    color: var(--color-success);
+}
+
+/* 2025-12-16: Crypto account info display in balance card */
+.crypto-account-info {
+    text-align: center;
+    margin-top: var(--space-xs);
+}
+
+.crypto-balance-row {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
 }
 
 .balance-row {
@@ -1101,6 +1567,22 @@ h3 {
     margin: 0;
 }
 
+/* 2025-12-16: Total Monthly Expenses in recurring widget */
+.recurring-total {
+    font-size: var(--font-size-sm);
+    color: var(--color-text);
+    text-align: right;
+    padding: var(--space-sm) 0 0 0;
+    margin: var(--space-sm) 0 0 0;
+    border-top: 1px solid var(--color-border);
+}
+
+.recurring-total strong {
+    color: var(--color-text-muted);
+    font-weight: 600;
+    margin-right: var(--space-xs);
+}
+
 /* 2025-12-16: Exchange Rate Widget */
 .exchange-widget-card {
     padding: var(--space-md);
@@ -1147,33 +1629,137 @@ h3 {
     margin: var(--space-sm) 0 0 0;
 }
 
+/* 2025-12-16: Updated to vertical layout for side-by-side widget display */
 .exchange-content {
     display: flex;
-    align-items: center;
-    gap: var(--space-md);
+    flex-direction: column;
+    gap: var(--space-sm);
 }
 
 .exchange-chart {
-    flex: 0 0 120px;
     display: flex;
     flex-direction: column;
     align-items: center;
+    width: 100%;
+}
+
+/* 2025-12-16: Enhanced chart container for labels and tooltip */
+.exchange-chart-container {
+    position: relative;
+    width: 100%;
 }
 
 .exchange-chart svg {
-    width: 120px;
-    height: 40px;
+    width: 100%;
+    height: 45px;
+}
+
+/* X-axis date/week labels */
+.chart-x-axis {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.6rem;
+    color: var(--color-text-muted);
+    padding: 2px 8px 0;
+    margin-top: -2px;
+}
+
+.chart-x-axis span {
+    text-align: center;
+    min-width: 16px;
+}
+
+/* First and last labels: don't clip at edges */
+.chart-x-axis span:first-child {
+    transform: none;
+    text-align: left;
+}
+
+.chart-x-axis span:last-child {
+    transform: none;
+    text-align: right;
+}
+
+/* Hover tooltip */
+.chart-tooltip {
+    position: absolute;
+    top: -35px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    padding: 4px 8px;
+    font-size: 0.7rem;
+    z-index: 10;
+    pointer-events: none;
+    white-space: nowrap;
+    box-shadow: var(--shadow-md);
+}
+
+.chart-tooltip .tooltip-rate {
+    font-weight: 700;
+    color: var(--color-success);
+    display: block;
+}
+
+.chart-tooltip .tooltip-date {
+    color: var(--color-text-muted);
+    font-size: 0.6rem;
+    display: block;
+}
+
+/* Sparkline hover interaction */
+#sparkline-dots .hover-hitbox {
+    cursor: pointer;
+}
+
+#sparkline-dots .hover-dot {
+    fill: transparent;
+    stroke: transparent;
+    stroke-width: 2;
+    transition: all 0.15s ease;
+    pointer-events: none;
+}
+
+#sparkline-dots .hover-dot.active {
+    fill: var(--color-primary);
+    stroke: var(--color-primary);
+}
+
+/* Percentage change indicator row */
+.chart-change-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 4px;
+}
+
+.chart-change {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: var(--radius-sm);
+}
+
+.chart-change.positive {
+    color: #22c55e;
+    background-color: rgba(34, 197, 94, 0.15);
+}
+
+.chart-change.negative {
+    color: #ef4444;
+    background-color: rgba(239, 68, 68, 0.15);
 }
 
 .chart-range-btns {
     display: flex;
     gap: 4px;
-    margin-top: 4px;
 }
 
 .chart-range-btn {
-    font-size: 0.55rem;
-    padding: 2px 6px;
+    font-size: 0.65rem;
+    padding: 3px 8px;
     border: 1px solid var(--color-border);
     border-radius: var(--radius-sm);
     background-color: transparent;
@@ -1546,6 +2132,57 @@ h3 {
     transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
+/* 2025-12-17: Account Type Selection Buttons */
+.account-type-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-sm);
+    margin-bottom: var(--space-sm);
+}
+
+.account-type-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-xs);
+    padding: var(--space-sm);
+    background-color: var(--color-surface);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    min-height: 80px;
+}
+
+.account-type-btn:hover {
+    border-color: var(--color-primary);
+    background-color: var(--color-bg);
+    transform: translateY(-2px);
+}
+
+.account-type-btn.active {
+    background-color: rgba(37, 99, 235, 0.1);
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+    box-shadow: 0 0 0 1px var(--color-primary);
+}
+
+html.dark .account-type-btn.active {
+    background-color: rgba(59, 130, 246, 0.15);
+}
+
+.account-type-icon {
+    font-size: 1.5rem;
+    margin-bottom: 0;
+}
+
+.account-type-label {
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    text-align: center;
+}
+
 .btn-google:hover {
     background: #f8f9fa;
     border-color: #c6c6c6;
@@ -1628,12 +2265,43 @@ html.dark .btn-google:hover {
 /* Google vault action buttons */
 .google-vault-actions {
     display: flex;
+    flex-direction: column;
     gap: var(--space-sm);
     width: 100%;
 }
 
 .google-vault-actions .btn {
-    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-xs);
+    padding: var(--space-md) var(--space-lg);
+}
+
+/* 2025-12-17: First button (Open Cloud Vault) highlighted as primary */
+.google-vault-actions .btn:first-child {
+    background-color: var(--color-primary);
+    color: white;
+    border-color: var(--color-primary);
+}
+
+.google-vault-actions .btn:first-child:hover {
+    background-color: var(--color-primary-hover);
+    border-color: var(--color-primary-hover);
+}
+
+/* 2025-12-17: Cloud reopen link styling */
+.cloud-reopen-link {
+    display: block;
+    text-align: center;
+    margin-top: var(--space-sm);
+    font-size: var(--font-size-sm);
+    color: var(--color-primary);
+    text-decoration: none;
+}
+
+.cloud-reopen-link:hover {
+    text-decoration: underline;
 }
 
 /* Google Drive Vault Picker Modal */
@@ -1717,6 +2385,89 @@ html.dark .btn-google:hover {
 }
 
 html.dark .file-badge.cloud {
+    background-color: #1e3a5f;
+    color: #93c5fd;
+}
+
+/* --- ENCRYPTION UI (2025-12-17) --- */
+/* Encryption toggle checkbox in vault creation modal */
+.encryption-toggle-group {
+    margin-top: var(--space-md);
+    padding-top: var(--space-md);
+    border-top: 1px solid var(--color-border);
+}
+
+.encryption-toggle-label {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    cursor: pointer;
+    font-size: var(--font-size-base);
+    font-weight: 500;
+    color: var(--color-text);
+}
+
+.encryption-toggle-label:hover {
+    color: var(--color-primary);
+}
+
+.encryption-checkbox {
+    width: 20px;
+    height: 20px;
+    accent-color: var(--color-primary);
+    cursor: pointer;
+}
+
+/* Encryption password fields container */
+.encryption-fields {
+    margin-top: var(--space-md);
+    padding: var(--space-md);
+    background-color: var(--color-bg);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-border);
+}
+
+/* Warning message about password recovery */
+.encryption-warning {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-sm);
+    padding: var(--space-sm) var(--space-md);
+    background-color: #fef3c7;
+    color: #92400e;
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    margin-bottom: var(--space-md);
+    line-height: 1.4;
+}
+
+html.dark .encryption-warning {
+    background-color: #422006;
+    color: #fcd34d;
+}
+
+/* Encrypted vault badge in header */
+.file-badge.encrypted::before {
+    content: '🔒 ';
+}
+
+/* Password hint display (shown after failed attempts) */
+.password-hint-display {
+    padding: var(--space-sm) var(--space-md);
+    background-color: #dbeafe;
+    color: #1e40af;
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-sm);
+    margin-bottom: var(--space-md);
+}
+
+.password-hint-display #hint-label {
+    font-weight: 600;
+    margin-right: var(--space-xs);
+}
+
+html.dark .password-hint-display {
     background-color: #1e3a5f;
     color: #93c5fd;
 }

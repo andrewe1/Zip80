@@ -70,6 +70,7 @@
  * - 2025-12-16: Added handleGoogleAuthChange(), handleOpenCloudVault(), handleNewCloudVault()
  * - 2025-12-16: Added createCloudVault(), loadCloudVault(), renderVaultPicker()
  * - 2025-12-16: Updated showWorkspace() to show cloud badge for Drive vaults
+ * - 2025-12-17: Added Menu Bar and Undo/Redo button translations to updateUILanguage()
  */
 
 (() => {
@@ -81,6 +82,12 @@
     // 2025-12-16: Google Drive state
     let storageBackend = 'local';  // 'local' or 'gdrive'
     let gdriveFileId = null;       // Current cloud vault file ID
+
+    // 2025-12-17: Encryption state
+    let vaultPassword = null;      // Current vault password (memory only, never persisted)
+    let isVaultEncrypted = false;  // Whether current vault is encrypted
+    let vaultHint = null;          // Current vault's password hint
+    let failedAttempts = 0;        // Track failed unlock attempts
 
     // DOM Elements
     const elements = {
@@ -99,8 +106,9 @@
         // Workspace
         workspace: document.getElementById('app-workspace'),
         fileBadge: document.getElementById('file-badge'),
+        headerTitle: document.getElementById('header-title'),
         btnCloseVault: document.getElementById('btn-close-vault'),
-        btnSave: document.getElementById('btn-save'),
+        saveStatus: document.getElementById('save-status'),  // 2025-12-17: Replaced btnSave with status indicator
 
         // Accounts
         accountsTitle: document.getElementById('accounts-title'),
@@ -126,6 +134,10 @@
         accountSettingsInfo: document.getElementById('account-settings-info'),
         btnEditAccountSettings: document.getElementById('btn-edit-account-settings'),
 
+        // 2025-12-16: Crypto account info (for crypto accounts)
+        cryptoAccountInfo: document.getElementById('crypto-account-info'),
+        cryptoBalanceValue: document.getElementById('crypto-balance-value'),
+
         // Form
         addTransactionTitle: document.getElementById('add-transaction-title'),
         inputDesc: document.getElementById('input-desc'),
@@ -143,12 +155,16 @@
         recurringWidgetTitle: document.getElementById('recurring-widget-title'),
         recurringList: document.getElementById('recurring-list'),
         recurringEmpty: document.getElementById('recurring-empty'),
+        recurringTotal: document.getElementById('recurring-total'),  // 2025-12-16
 
         // Exchange Rate Widget (2025-12-16)
         exchangeWidgetTitle: document.getElementById('exchange-widget-title'),
         rateUsdMxn: document.getElementById('rate-usd-mxn'),
         rateMxnUsd: document.getElementById('rate-mxn-usd'),
         exchangeUpdated: document.getElementById('exchange-updated'),
+
+        // Calendar Widget (2025-12-16)
+        calendarWidgetTitle: document.getElementById('calendar-widget-title'),
 
         // History
         historyTitle: document.getElementById('history-title'),
@@ -160,6 +176,7 @@
         accountModal: document.getElementById('account-modal'),
         modalTitle: document.getElementById('modal-title'),
         selectAccountType: document.getElementById('select-account-type'),
+        accountTypeGrid: document.getElementById('account-type-grid'), // 2025-12-17: New button grid
         labelAccountType: document.getElementById('label-account-type'),
         labelAccountName: document.getElementById('label-account-name'),
         inputAccountName: document.getElementById('input-account-name'),
@@ -193,10 +210,14 @@
         toast: document.getElementById('toast'),
 
         // Balance Widgets (2025-12-15: Two separate widgets for Bank/Cash and Credit Cards)
+        // 2025-12-16: Added crypto widget
         bankWidgetTitle: document.getElementById('bank-widget-title'),
         bankAccountsList: document.getElementById('bank-accounts-list'),
         creditWidgetTitle: document.getElementById('credit-widget-title'),
         creditAccountsList: document.getElementById('credit-accounts-list'),
+        cryptoWidgetCard: document.getElementById('crypto-widget-card'),
+        cryptoWidgetTitle: document.getElementById('crypto-widget-title'),
+        cryptoAccountsList: document.getElementById('crypto-accounts-list'),
 
         // Vault Modal (2025-12-15)
         vaultModal: document.getElementById('vault-modal'),
@@ -254,7 +275,32 @@
         gdrivePickerModal: document.getElementById('gdrive-picker-modal'),
         gdrivePickerTitle: document.getElementById('gdrive-picker-title'),
         gdriveVaultList: document.getElementById('gdrive-vault-list'),
-        btnGdriveCancel: document.getElementById('btn-gdrive-cancel')
+        btnGdriveCancel: document.getElementById('btn-gdrive-cancel'),
+        linkGoogleReopen: document.getElementById('link-google-reopen'),
+        googleReopenFilename: document.getElementById('google-reopen-filename'),
+
+        // Encryption (2025-12-17)
+        checkboxEncryptVault: document.getElementById('checkbox-encrypt-vault'),
+        encryptionFields: document.getElementById('encryption-fields'),
+        inputVaultPassword: document.getElementById('input-vault-password'),
+        inputVaultConfirmPassword: document.getElementById('input-vault-confirm-password'),
+        inputVaultHint: document.getElementById('input-vault-hint'),
+        passwordModal: document.getElementById('password-modal'),
+        inputUnlockPassword: document.getElementById('input-unlock-password'),
+        btnCancelUnlock: document.getElementById('btn-cancel-unlock'),
+        btnUnlockVault: document.getElementById('btn-unlock-vault'),
+        passwordHintDisplay: document.getElementById('password-hint-display'),
+        hintText: document.getElementById('hint-text'),
+
+        // Change Password Modal (2025-12-17)
+        btnChangePassword: document.getElementById('btn-change-password'),
+        changePasswordModal: document.getElementById('change-password-modal'),
+        inputCurrentPassword: document.getElementById('input-current-password'),
+        inputNewPassword: document.getElementById('input-new-password'),
+        inputConfirmNewPassword: document.getElementById('input-confirm-new-password'),
+        inputNewHint: document.getElementById('input-new-hint'),
+        btnCancelChangePassword: document.getElementById('btn-cancel-change-password'),
+        btnConfirmChangePassword: document.getElementById('btn-confirm-change-password')
     };
 
     // --- Initialization ---
@@ -265,20 +311,48 @@
         setupEventListeners();
         setupDragAndDrop();
         setupCreditCardUI();  // 2025-12-15: Credit card setup
+        setupAccountTypeSelector(); // 2025-12-17: Account type buttons
         setupCreditEditModal();  // 2025-12-15: Credit edit modal
         setupAccountEditModal();  // 2025-12-15: Account edit modal
         setupVaultLanguageSync();  // 2025-12-15: Vault language-currency sync
         setupCommaFormatting();  // 2025-12-15: Comma separators for number inputs
         setupGoogleDrive();  // 2025-12-16: Google Drive integration
+        setupUndoRedo();  // 2025-12-17: Undo/Redo button handlers
         await checkForRecentFile();
         updateUILanguage();
         fetchExchangeRates();  // 2025-12-16: Load exchange rates
     }
 
     /**
-     * Setup credit card UI elements
-     * 2025-12-15: Populates day dropdowns (1-31) for payment due and statement close
+     * Setup account type selection buttons
+     * 2025-12-17: Handles click events on the new icon buttons
      */
+    function setupAccountTypeSelector() {
+        if (!elements.accountTypeGrid) return;
+
+        elements.accountTypeGrid.addEventListener('click', (e) => {
+            const btn = e.target.closest('.account-type-btn');
+            if (!btn) return;
+
+            // Visual update
+            elements.accountTypeGrid.querySelectorAll('.account-type-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            // Logic update
+            const newValue = btn.dataset.value;
+            elements.selectAccountType.value = newValue;
+
+            // Trigger change event for listeners (like credit card fields toggle)
+            const event = new Event('change');
+            elements.selectAccountType.dispatchEvent(event);
+        });
+    }
+
+    /**
+ * Setup credit card UI elements
+ * 2025-12-15: Populates day dropdowns (1-31) for payment due and statement close
+ * 2025-12-16: Added crypto currency switching logic
+ */
     function setupCreditCardUI() {
         // Populate day dropdowns (1-31)
         for (let day = 1; day <= 31; day++) {
@@ -297,11 +371,40 @@
         elements.selectPaymentDueDay.value = '15';
         elements.selectStatementCloseDay.value = '28';
 
-        // Toggle credit card fields visibility based on account type
+        // Toggle credit card fields and currency options based on account type
         elements.selectAccountType.addEventListener('change', () => {
-            const isCredit = elements.selectAccountType.value === 'credit';
+            const accountType = elements.selectAccountType.value;
+            const isCredit = accountType === 'credit';
             elements.creditCardFields.style.display = isCredit ? 'block' : 'none';
+
+            // Update currency options based on account type
+            updateCurrencyOptions();
         });
+    }
+
+    /**
+     * Update currency dropdown based on selected account type
+     * 2025-12-16: Shows crypto currencies for crypto accounts, fiat for others
+     */
+    function updateCurrencyOptions() {
+        const t = I18n.t;
+        const accountType = elements.selectAccountType.value;
+        const isCrypto = accountType === 'crypto';
+
+        if (isCrypto) {
+            // Show crypto currencies
+            elements.selectCurrency.innerHTML = `
+            <option value="BTC">${t('currencyBTC')}</option>
+            <option value="ETH">${t('currencyETH')}</option>
+            <option value="SOL">${t('currencySOL')}</option>
+        `;
+        } else {
+            // Show fiat currencies
+            elements.selectCurrency.innerHTML = `
+            <option value="USD">${t('currencyUSD')}</option>
+            <option value="MXN">${t('currencyMXN')}</option>
+        `;
+        }
     }
 
     /**
@@ -350,7 +453,8 @@
         elements.btnNew.querySelector('[data-i18n="btnNew"]').textContent = t('btnNew');
 
         // Header
-        elements.btnSave.querySelector('[data-i18n="btnSave"]').textContent = t('btnSave');
+        if (elements.headerTitle) elements.headerTitle.textContent = t('headerTitle');
+        document.querySelector('.vault-label').textContent = t('vaultLabel');
         elements.btnCloseVault.querySelector('[data-i18n="btnCloseVault"]').textContent = t('btnCloseVault');
 
         // Accounts
@@ -385,6 +489,11 @@
             elements.exchangeWidgetTitle.textContent = '💱 ' + t('exchangeWidgetTitle');
         }
 
+        // Calendar Widget (2025-12-16)
+        if (elements.calendarWidgetTitle) {
+            elements.calendarWidgetTitle.textContent = '📅 ' + t('calendarWidgetTitle');
+        }
+
         // History
         elements.historyTitle.textContent = t('historyTitle');
         elements.btnExport.querySelector('[data-i18n="btnExport"]').textContent = t('btnExport');
@@ -399,18 +508,32 @@
         elements.btnCancelAccount.querySelector('[data-i18n="cancel"]').textContent = t('cancel');
         elements.btnCreateAccount.querySelector('[data-i18n="createAccount"]').textContent = t('createAccount');
 
-        // Account type options (2025-12-15)
-        elements.selectAccountType.innerHTML = `
-            <option value="checking">${t('accountTypeChecking')}</option>
-            <option value="cash">${t('accountTypeCash')}</option>
-            <option value="credit">${t('accountTypeCreditCard')}</option>
-        `;
+        // Account type options (2025-12-15, 2025-12-16: Added crypto) - 2025-12-17: Render as buttons
+        const accountTypes = [
+            { value: 'checking', icon: '🏦', label: t('accountTypeChecking') },
+            { value: 'cash', icon: '💵', label: t('accountTypeCash') },
+            { value: 'credit', icon: '💳', label: t('accountTypeCreditCard') },
+            { value: 'crypto', icon: '🪙', label: t('accountTypeCrypto') }
+        ];
 
-        // Currency options
-        elements.selectCurrency.innerHTML = `
-            <option value="USD">${t('currencyUSD')}</option>
-            <option value="MXN">${t('currencyMXN')}</option>
-        `;
+        if (elements.accountTypeGrid) {
+            elements.accountTypeGrid.innerHTML = '';
+            const currentType = elements.selectAccountType.value || 'checking';
+
+            accountTypes.forEach(type => {
+                const btn = document.createElement('div');
+                btn.className = `account-type-btn ${type.value === currentType ? 'active' : ''}`;
+                btn.dataset.value = type.value;
+                btn.innerHTML = `
+                <div class="account-type-icon">${type.icon}</div>
+                <div class="account-type-label">${type.label}</div>
+            `;
+                elements.accountTypeGrid.appendChild(btn);
+            });
+        }
+
+        // Currency options (updated based on account type selection)
+        updateCurrencyOptions();
 
         // Credit card modal labels (2025-12-15)
         elements.labelCreditLimit.textContent = t('creditLimit');
@@ -434,6 +557,74 @@
             Promise.resolve(Storage.getFileName(fileHandle)).then(name => {
                 if (name) updateResumeButton(name);
             });
+        }
+
+        // 2025-12-16: Cloud storage section translations
+        const cloudDivider = document.querySelector('[data-i18n="cloudDivider"]');
+        if (cloudDivider) cloudDivider.textContent = t('cloudDivider');
+
+        const btnGoogleSignIn = document.querySelector('[data-i18n="btnGoogleSignIn"]');
+        if (btnGoogleSignIn) btnGoogleSignIn.textContent = t('btnGoogleSignIn');
+
+        const btnGoogleSignOut = document.querySelector('[data-i18n="btnGoogleSignOut"]');
+        if (btnGoogleSignOut) btnGoogleSignOut.textContent = t('btnGoogleSignOut');
+
+        const btnOpenCloudVault = document.querySelector('[data-i18n="btnOpenCloudVault"]');
+        if (btnOpenCloudVault) btnOpenCloudVault.textContent = t('btnOpenCloudVault');
+
+        const btnNewCloudVault = document.querySelector('[data-i18n="btnNewCloudVault"]');
+        if (btnNewCloudVault) btnNewCloudVault.textContent = t('btnNewCloudVault');
+
+        // 2025-12-17: Menu Bar translations
+        const menuBar = document.getElementById('menu-bar');
+        if (menuBar) {
+            const vaultLabel = menuBar.querySelector('.vault-label');
+            if (vaultLabel) vaultLabel.textContent = t('vaultLabel');
+
+            const viewModeLabel = menuBar.querySelector('.view-mode-label');
+            if (viewModeLabel) viewModeLabel.textContent = t('viewMode');
+
+            const btnStandard = document.getElementById('btn-view-standard');
+            if (btnStandard) {
+                btnStandard.title = t('viewStandard');
+                const span = btnStandard.querySelector('[data-i18n="viewStandard"]');
+                if (span) span.textContent = t('viewStandard');
+            }
+
+            const btnCompact = document.getElementById('btn-view-compact');
+            if (btnCompact) {
+                btnCompact.title = t('viewCompact');
+                const span = btnCompact.querySelector('[data-i18n="viewCompact"]');
+                if (span) span.textContent = t('viewCompact');
+            }
+
+            const btnOptions = document.getElementById('btn-options');
+            if (btnOptions) {
+                const span = btnOptions.querySelector('[data-i18n="options"]');
+                if (span) span.textContent = t('options');
+            }
+
+            // Dropdown items
+            const dropdown = document.getElementById('options-dropdown');
+            if (dropdown) {
+                const items = {
+                    'exportCSV': 'export-csv',
+                    'exportJSON': 'export-json',
+                    'changePassword': 'change-password',
+                    'settings': 'settings',
+                    'about': 'about'
+                };
+                Object.entries(items).forEach(([key, action]) => {
+                    const el = dropdown.querySelector(`[data-i18n="${key}"]`);
+                    if (el) el.textContent = t(key);
+                });
+            }
+
+            // Undo/Redo titles
+            const btnUndo = document.getElementById('btn-undo');
+            const btnRedo = document.getElementById('btn-redo');
+            if (btnUndo) btnUndo.title = t('undoTitle');
+            if (btnRedo) btnRedo.title = t('redoTitle');
         }
 
         document.documentElement.lang = I18n.getLanguage();
@@ -476,7 +667,6 @@
         elements.btnResume.addEventListener('click', handleReopen);
 
         // Workspace buttons
-        elements.btnSave.addEventListener('click', handleSave);
         elements.btnCloseVault.addEventListener('click', handleCloseVault);
         elements.btnAddTransaction.addEventListener('click', handleAddTransaction);
         elements.btnExport.addEventListener('click', handleExport);
@@ -533,6 +723,36 @@
         elements.inputVaultName.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') handleCreateVault();
         });
+
+        // 2025-12-17: Encryption checkbox toggle
+        elements.checkboxEncryptVault.addEventListener('change', (e) => {
+            elements.encryptionFields.style.display = e.target.checked ? 'block' : 'none';
+            if (e.target.checked) {
+                elements.inputVaultPassword.focus();
+            }
+        });
+
+        // 2025-12-17: Password modal for opening encrypted vaults
+        elements.btnCancelUnlock.addEventListener('click', closePasswordModal);
+        elements.btnUnlockVault.addEventListener('click', handleUnlockVault);
+        elements.passwordModal.querySelector('.modal-backdrop').addEventListener('click', closePasswordModal);
+        elements.inputUnlockPassword.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') handleUnlockVault();
+        });
+
+        // 2025-12-17: Change password modal
+        if (elements.btnChangePassword) {
+            elements.btnChangePassword.addEventListener('click', openChangePasswordModal);
+        }
+        if (elements.btnCancelChangePassword) {
+            elements.btnCancelChangePassword.addEventListener('click', closeChangePasswordModal);
+        }
+        if (elements.btnConfirmChangePassword) {
+            elements.btnConfirmChangePassword.addEventListener('click', handleChangePassword);
+        }
+        if (elements.changePasswordModal) {
+            elements.changePasswordModal.querySelector('.modal-backdrop').addEventListener('click', closeChangePasswordModal);
+        }
 
         // Credit card edit modal (2025-12-15)
         elements.btnEditCredit.addEventListener('click', openCreditModal);
@@ -654,6 +874,23 @@
         // Set default currency AFTER options are populated (2025-12-15)
         elements.selectVaultCurrency.value = I18n.getDefaultCurrency(currentLang);
 
+        // 2025-12-17: Reset and translate encryption fields
+        elements.checkboxEncryptVault.checked = false;
+        elements.encryptionFields.style.display = 'none';
+        elements.inputVaultPassword.value = '';
+        elements.inputVaultConfirmPassword.value = '';
+
+        // Update encryption labels
+        document.getElementById('label-encrypt-vault').textContent = t('encryptVault');
+        document.getElementById('encryption-warning').textContent = t('encryptionWarning');
+        document.getElementById('label-vault-password').textContent = t('passwordLabel');
+        document.getElementById('label-vault-confirm-password').textContent = t('confirmPasswordLabel');
+        document.getElementById('label-vault-hint').textContent = t('hintLabel');
+        elements.inputVaultPassword.placeholder = t('passwordPlaceholder');
+        elements.inputVaultConfirmPassword.placeholder = t('confirmPasswordPlaceholder');
+        elements.inputVaultHint.value = '';
+        elements.inputVaultHint.placeholder = t('hintPlaceholder');
+
         elements.vaultModal.style.display = 'flex';
         elements.inputVaultName.focus();
     }
@@ -679,6 +916,39 @@
 
         // 2025-12-15: Vault name is used as suggested filename
         const vaultName = elements.inputVaultName.value.trim() || 'zip80_expenses';
+
+        // 2025-12-17: Check if encryption is enabled
+        const encryptionEnabled = elements.checkboxEncryptVault.checked;
+        let password = null;
+
+        if (encryptionEnabled) {
+            password = elements.inputVaultPassword.value;
+            const confirmPassword = elements.inputVaultConfirmPassword.value;
+            const hint = elements.inputVaultHint.value.trim();
+
+            // Validate password
+            if (!password) {
+                showToast(I18n.t('passwordRequired'), false);
+                elements.inputVaultPassword.focus();
+                return;
+            }
+
+            if (password !== confirmPassword) {
+                showToast(I18n.t('passwordMismatch'), false);
+                elements.inputVaultConfirmPassword.focus();
+                return;
+            }
+
+            // Validate hint (required)
+            if (!hint) {
+                showToast(I18n.t('hintRequired'), false);
+                elements.inputVaultHint.focus();
+                return;
+            }
+
+            // Store hint for passing to encrypt
+            vaultHint = hint;
+        }
 
         // Apply language selection
         I18n.setLanguage(selectedLanguage);
@@ -706,9 +976,15 @@
                 data.accounts[0].currency = selectedCurrency;
             }
 
+            // 2025-12-17: Set encryption state
+            isVaultEncrypted = encryptionEnabled;
+            vaultPassword = encryptionEnabled ? password : null;
+
             // 2025-12-15: Start with no account selected (deselected state is default)
             currentAccountId = null;
-            await Storage.writeFile(fileHandle, data);
+
+            // 2025-12-17: Write file with encryption and hint if enabled
+            await Storage.writeFile(fileHandle, data, vaultPassword, vaultHint);
 
             closeVaultModal();
             updateUILanguage();
@@ -736,35 +1012,268 @@
         }
     }
 
+    /**
+     * Load file and show workspace
+     * 2025-12-17: Added encryption detection and password prompt
+     */
     async function loadFileAndShow() {
         try {
-            data = await Storage.readFile(fileHandle);
-            // 2025-12-15: Start with no account selected (deselected state is default)
+            // First, read raw file content to check if encrypted
+            const rawContent = await Storage.readFileRaw(fileHandle);
+
+            // Check if file is encrypted
+            if (Crypto.isEncrypted(rawContent)) {
+                // Store pending file info and show password modal
+                pendingEncryptedFile = { handle: fileHandle, content: rawContent };
+                openPasswordModal();
+                return;
+            }
+
+            // Not encrypted - parse and load normally
+            const parsed = rawContent ? JSON.parse(rawContent) : null;
+            data = Accounts.migrateData(parsed);
+            isVaultEncrypted = false;
+            vaultPassword = null;
             currentAccountId = null;
             showWorkspace();
             render();
         } catch (err) {
+            console.error('Load file error:', err);
             showToast(I18n.t('toastErrorRead'), false);
+        }
+    }
+
+    // 2025-12-17: Pending encrypted file state for password modal
+    let pendingEncryptedFile = null;
+
+    /**
+     * Open password modal for encrypted vault
+     * 2025-12-17: Prompts user for password to decrypt vault
+     */
+    function openPasswordModal() {
+        const t = I18n.t;
+
+        // Update modal labels
+        document.getElementById('password-modal-title').textContent = t('passwordModalTitle');
+        document.getElementById('password-modal-desc').textContent = t('passwordModalDesc');
+        document.getElementById('label-unlock-password').textContent = t('passwordLabel');
+        elements.inputUnlockPassword.placeholder = t('passwordPlaceholder');
+
+        // Update buttons
+        document.querySelector('#btn-cancel-unlock [data-i18n="cancel"]').textContent = t('cancel');
+        document.querySelector('#btn-unlock-vault [data-i18n="unlockVault"]').textContent = t('unlockVault');
+
+        // Reset failed attempts and hide hint
+        failedAttempts = 0;
+        elements.passwordHintDisplay.style.display = 'none';
+
+        // Clear and focus password input
+        elements.inputUnlockPassword.value = '';
+        elements.passwordModal.style.display = 'flex';
+        elements.inputUnlockPassword.focus();
+    }
+
+    function closePasswordModal() {
+        elements.passwordModal.style.display = 'none';
+        elements.passwordHintDisplay.style.display = 'none';
+        pendingEncryptedFile = null;
+        failedAttempts = 0;
+    }
+
+    /**
+     * Handle unlock vault button click
+     * 2025-12-17: Attempts to decrypt vault with entered password
+     * Shows hint after 2 failed attempts
+     */
+    async function handleUnlockVault() {
+        if (!pendingEncryptedFile) return;
+
+        const password = elements.inputUnlockPassword.value;
+        if (!password) {
+            showToast(I18n.t('passwordRequired'), false);
+            return;
+        }
+
+        try {
+            const encryptedData = JSON.parse(pendingEncryptedFile.content);
+            const decrypted = await Crypto.decrypt(encryptedData, password);
+
+            data = Accounts.migrateData(decrypted);
+            isVaultEncrypted = true;
+            vaultPassword = password;
+            vaultHint = encryptedData.hint || '';  // Store hint for future saves
+            fileHandle = pendingEncryptedFile.handle;
+            failedAttempts = 0;  // Reset counter on success
+
+            closePasswordModal();
+            currentAccountId = null;
+            showWorkspace();
+            render();
+        } catch (err) {
+            console.error('Decryption failed:', err);
+            failedAttempts++;
+            console.log('Failed attempts:', failedAttempts);
+
+            // Show hint after 2 failed attempts
+            if (failedAttempts >= 2) {
+                const encryptedData = JSON.parse(pendingEncryptedFile.content);
+                const hint = encryptedData.hint;
+                console.log('Hint from file:', hint);
+                if (hint) {
+                    elements.hintText.textContent = hint;
+                    document.getElementById('hint-label').textContent = I18n.t('hintDisplayLabel');
+                    elements.passwordHintDisplay.style.display = 'block';
+                }
+            }
+
+            showToast(I18n.t('wrongPassword'), false);
+            elements.inputUnlockPassword.value = '';
+            elements.inputUnlockPassword.focus();
+        }
+    }
+
+    // --- Change Password (2025-12-17) ---
+
+    /**
+     * Update visibility of change password button in options menu
+     * Only show for encrypted vaults
+     */
+    function updateChangePasswordVisibility() {
+        if (elements.btnChangePassword) {
+            elements.btnChangePassword.style.display = isVaultEncrypted ? 'flex' : 'none';
+        }
+    }
+
+    /**
+     * Open change password modal
+     */
+    function openChangePasswordModal() {
+        if (!isVaultEncrypted) {
+            showToast(I18n.t('toastError'), false);
+            return;
+        }
+
+        const t = I18n.t;
+
+        // Reset fields
+        elements.inputCurrentPassword.value = '';
+        elements.inputNewPassword.value = '';
+        elements.inputConfirmNewPassword.value = '';
+        elements.inputNewHint.value = vaultHint || '';
+
+        // Apply translations
+        document.getElementById('change-password-modal-title').textContent = t('changePasswordTitle');
+        document.getElementById('change-password-modal-desc').textContent = t('changePasswordDesc');
+        document.getElementById('label-current-password').textContent = t('currentPasswordLabel');
+        document.getElementById('label-new-password').textContent = t('newPasswordLabel');
+        document.getElementById('label-confirm-new-password').textContent = t('confirmNewPasswordLabel');
+        document.getElementById('label-new-hint').textContent = t('newHintLabel');
+        elements.inputCurrentPassword.placeholder = t('currentPasswordPlaceholder');
+        elements.inputNewPassword.placeholder = t('newPasswordPlaceholder');
+        elements.inputConfirmNewPassword.placeholder = t('confirmNewPasswordPlaceholder');
+        elements.inputNewHint.placeholder = t('newHintPlaceholder');
+
+        elements.changePasswordModal.style.display = 'flex';
+        elements.inputCurrentPassword.focus();
+    }
+
+    /**
+     * Close change password modal
+     */
+    function closeChangePasswordModal() {
+        elements.changePasswordModal.style.display = 'none';
+        elements.inputCurrentPassword.value = '';
+        elements.inputNewPassword.value = '';
+        elements.inputConfirmNewPassword.value = '';
+    }
+
+    /**
+     * Handle change password form submission
+     * Verifies current password, validates new password, re-encrypts vault
+     */
+    async function handleChangePassword() {
+        const currentPassword = elements.inputCurrentPassword.value;
+        const newPassword = elements.inputNewPassword.value;
+        const confirmPassword = elements.inputConfirmNewPassword.value;
+        const newHint = elements.inputNewHint.value.trim();
+
+        // Validate current password is provided
+        if (!currentPassword) {
+            showToast(I18n.t('passwordRequired'), false);
+            elements.inputCurrentPassword.focus();
+            return;
+        }
+
+        // Validate new password is provided
+        if (!newPassword) {
+            showToast(I18n.t('passwordRequired'), false);
+            elements.inputNewPassword.focus();
+            return;
+        }
+
+        // Validate passwords match
+        if (newPassword !== confirmPassword) {
+            showToast(I18n.t('passwordMismatch'), false);
+            elements.inputConfirmNewPassword.focus();
+            return;
+        }
+
+        // Validate hint is provided
+        if (!newHint) {
+            showToast(I18n.t('hintRequired'), false);
+            elements.inputNewHint.focus();
+            return;
+        }
+
+        // Verify current password is correct
+        if (currentPassword !== vaultPassword) {
+            showToast(I18n.t('wrongCurrentPassword'), false);
+            elements.inputCurrentPassword.value = '';
+            elements.inputCurrentPassword.focus();
+            return;
+        }
+
+        // Update password and hint
+        vaultPassword = newPassword;
+        vaultHint = newHint;
+
+        // Save vault with new encryption
+        try {
+            if (storageBackend === 'gdrive') {
+                // For cloud vaults, need to encrypt and save
+                await GDrive.writeVault(gdriveFileId, data);
+            } else {
+                // For local vaults
+                await Storage.writeFile(fileHandle, data, vaultPassword, vaultHint);
+            }
+
+            closeChangePasswordModal();
+            showToast(I18n.t('passwordChanged'));
+        } catch (err) {
+            console.error('Failed to save with new password:', err);
+            showToast(I18n.t('toastError'), false);
         }
     }
 
     async function handleSave() {
         // 2025-12-16: Support both local and cloud backends
+        // 2025-12-17: Use flash status indicator instead of toast
         if (storageBackend === 'gdrive') {
             if (!gdriveFileId) return;
             try {
                 await GDrive.writeVault(gdriveFileId, data);
-                showToast(I18n.t('toastCloudSaved'));
+                if (typeof MenuBar !== 'undefined') MenuBar.setSaveStatus('saved');
             } catch (err) {
-                showToast(I18n.t('toastCloudError'), false);
+                if (typeof MenuBar !== 'undefined') MenuBar.setSaveStatus('error');
             }
         } else {
             if (!fileHandle) return;
             try {
-                await Storage.writeFile(fileHandle, data);
-                showToast(I18n.t('toastSaved'));
+                // 2025-12-17: Pass vaultPassword and vaultHint for encrypted vaults
+                await Storage.writeFile(fileHandle, data, vaultPassword, vaultHint);
+                if (typeof MenuBar !== 'undefined') MenuBar.setSaveStatus('saved');
             } catch (err) {
-                showToast(I18n.t('toastErrorSave'), false);
+                if (typeof MenuBar !== 'undefined') MenuBar.setSaveStatus('error');
             }
         }
     }
@@ -778,14 +1287,10 @@
     /**
      * Close the current vault and return to startup screen
      * 2025-12-15: Added close vault functionality
-     * 2025-12-15: Updated to use custom confirm modal
+     * 2025-12-17: Removed confirmation since auto-save means changes are always saved
+     * 2025-12-17: Added History.clear() to reset undo/redo stack
      */
-    async function handleCloseVault() {
-        const confirmed = await showConfirm(I18n.t('confirmCloseVault'));
-        if (!confirmed) {
-            return;
-        }
-
+    function handleCloseVault() {
         // Reset state
         fileHandle = null;
         gdriveFileId = null;  // 2025-12-16: Reset cloud file ID
@@ -793,9 +1298,90 @@
         data = { version: 2, accounts: [], transactions: [] };
         currentAccountId = null;
 
+        // 2025-12-17: Clear undo/redo history
+        if (typeof History !== 'undefined') History.clear();
+
         // Show startup screen
         elements.workspace.style.display = 'none';
         elements.startupScreen.style.display = 'flex';
+
+        // 2025-12-17: Update cloud reopen link
+        updateCloudReopenLink();
+    }
+
+    /**
+     * Update cloud reopen link visibility
+     * 2025-12-17: Shows or hides the reopen link based on saved last vault
+     */
+    function updateCloudReopenLink() {
+        if (!elements.linkGoogleReopen) return;
+
+        if (typeof GDrive !== 'undefined' && GDrive.isSignedIn()) {
+            const lastVault = GDrive.getLastVault();
+            if (lastVault && lastVault.id && lastVault.name) {
+                elements.googleReopenFilename.textContent = lastVault.name.replace('.json', '');
+                elements.linkGoogleReopen.style.display = 'block';
+            } else {
+                elements.linkGoogleReopen.style.display = 'none';
+            }
+        } else {
+            elements.linkGoogleReopen.style.display = 'none';
+        }
+    }
+
+    // --- Undo/Redo (2025-12-17) ---
+
+    /**
+     * Setup undo/redo button event listeners
+     */
+    function setupUndoRedo() {
+        const btnUndo = document.getElementById('btn-undo');
+        const btnRedo = document.getElementById('btn-redo');
+
+        if (btnUndo) {
+            btnUndo.addEventListener('click', handleUndo);
+        }
+        if (btnRedo) {
+            btnRedo.addEventListener('click', handleRedo);
+        }
+    }
+
+    /**
+     * Handle undo action
+     */
+    function handleUndo() {
+        if (typeof History === 'undefined' || !History.canUndo()) return;
+
+        const previousState = History.undo(data);
+        if (previousState) {
+            data = previousState;
+            render();
+            handleSave();
+        }
+    }
+
+    /**
+     * Handle redo action
+     */
+    function handleRedo() {
+        if (typeof History === 'undefined' || !History.canRedo()) return;
+
+        const nextState = History.redo(data);
+        if (nextState) {
+            data = nextState;
+            render();
+            handleSave();
+        }
+    }
+
+    /**
+     * Save current state to history before making changes
+     * Call this BEFORE modifying data
+     */
+    function saveToHistory() {
+        if (typeof History !== 'undefined') {
+            History.pushState(data);
+        }
     }
 
     // --- Google Drive Integration (2025-12-16) ---
@@ -826,6 +1412,9 @@
         if (elements.btnGdriveCancel) {
             elements.btnGdriveCancel.addEventListener('click', closeVaultPickerModal);
         }
+        if (elements.linkGoogleReopen) {
+            elements.linkGoogleReopen.addEventListener('click', handleReopenCloudVault);
+        }
         if (elements.gdrivePickerModal) {
             elements.gdrivePickerModal.querySelector('.modal-backdrop')
                 .addEventListener('click', closeVaultPickerModal);
@@ -843,10 +1432,14 @@
             elements.googleUserSection.style.display = 'flex';
             elements.googleUserAvatar.src = user.picture || '';
             elements.googleUserName.textContent = user.name || user.email || '';
+
+            // 2025-12-17: Show reopen link if there's a last cloud vault
+            updateCloudReopenLink();
         } else {
             // Show signed-out state
             elements.btnGoogleSignIn.style.display = 'flex';
             elements.googleUserSection.style.display = 'none';
+            elements.linkGoogleReopen.style.display = 'none';
         }
     }
 
@@ -947,21 +1540,48 @@
 
     /**
      * Load a cloud vault by file ID
+     * 2025-12-17: Added saveLastVault for reopen feature
      */
     async function loadCloudVault(fileId) {
         closeVaultPickerModal();
 
         try {
+            const vaultInfo = await GDrive.getVaultInfo(fileId);
             data = await GDrive.readVault(fileId);
             gdriveFileId = fileId;
             storageBackend = 'gdrive';
             currentAccountId = null;
+
+            // 2025-12-17: Save for reopen feature
+            GDrive.saveLastVault(fileId, vaultInfo.name || 'Unknown');
+
             showWorkspace();
             render();
         } catch (err) {
             console.error('Failed to load cloud vault:', err);
             showToast(I18n.t('toastGoogleError'), false);
         }
+    }
+
+    /**
+     * Handle reopen last cloud vault link click
+     * 2025-12-17: Added for quick reopen of last used cloud vault
+     */
+    async function handleReopenCloudVault(e) {
+        e.preventDefault();
+
+        if (!GDrive.isSignedIn()) {
+            showToast(I18n.t('toastGoogleError'), false);
+            return;
+        }
+
+        const lastVault = GDrive.getLastVault();
+        if (!lastVault || !lastVault.id) {
+            showToast(I18n.t('toastGoogleError'), false);
+            return;
+        }
+
+        await loadCloudVault(lastVault.id);
     }
 
     /**
@@ -1023,6 +1643,15 @@
     function openAccountModal() {
         // Reset form fields
         elements.selectAccountType.value = 'checking';
+
+        // 2025-12-17: Reset visual button state
+        if (elements.accountTypeGrid) {
+            elements.accountTypeGrid.querySelectorAll('.account-type-btn').forEach(b => {
+                if (b.dataset.value === 'checking') b.classList.add('active');
+                else b.classList.remove('active');
+            });
+        }
+
         elements.inputAccountName.value = '';
 
         // 2025-12-15: Default currency based on current language
@@ -1091,11 +1720,11 @@
             date: new Date().toISOString()
         };
 
+        saveToHistory();  // 2025-12-17: Save state before modifying data
         data.transactions.push(transaction);
         closeBalanceModal();
         render();
-        handleSave();
-        showToast(I18n.t('toastBalanceUpdated'));
+        handleSave();  // 2025-12-17: handleSave now shows flash indicator
     }
 
     // --- Credit Card Edit Operations (2025-12-15) ---
@@ -1156,6 +1785,7 @@
         const newDueDay = parseInt(elements.selectEditPaymentDue.value) || 15;
         const newCloseDay = parseInt(elements.selectEditStatementClose.value) || 28;
 
+        saveToHistory();  // 2025-12-17: Save state before modifying data
         // Update account
         currentAccount.creditLimit = newLimit;
         currentAccount.paymentDueDay = newDueDay;
@@ -1163,8 +1793,7 @@
 
         closeCreditModal();
         render();
-        handleSave();
-        showToast(I18n.t('toastCreditUpdated'));
+        handleSave();  // 2025-12-17: handleSave now shows flash indicator
     }
 
     // --- Account Edit Operations (2025-12-15: for checking/cash accounts) ---
@@ -1227,14 +1856,14 @@
             return;
         }
 
+        saveToHistory();  // 2025-12-17: Save state before modifying data
         // Update account
         currentAccount.name = newName;
         currentAccount.currency = newCurrency;
 
         closeAccountEditModal();
         render();
-        handleSave();
-        showToast(I18n.t('toastAccountUpdated'));
+        handleSave();  // 2025-12-17: handleSave now shows flash indicator
     }
 
     // --- Comma Formatting (2025-12-15) ---
@@ -1423,6 +2052,7 @@
         let newAccount;
 
         // 2025-12-15: Create account based on type selection
+        // 2025-12-16: Added crypto account type
         if (accountType === 'credit') {
             // Strip commas from credit limit before parsing
             const creditLimitRaw = elements.inputCreditLimit.value.replace(/,/g, '');
@@ -1435,17 +2065,25 @@
             );
         } else if (accountType === 'cash') {
             newAccount = Accounts.createCashAccount(name, currency);
+        } else if (accountType === 'crypto') {
+            // Create crypto account with type 'crypto'
+            newAccount = {
+                id: Date.now().toString(),
+                name: name,
+                currency: currency,
+                type: 'crypto'
+            };
         } else {
             newAccount = Accounts.createAccount(name, currency);
         }
 
+        saveToHistory();  // 2025-12-17: Save state before modifying data
         data.accounts.push(newAccount);
         currentAccountId = newAccount.id;
 
         closeAccountModal();
         render();
-        handleSave();
-        showToast(I18n.t('toastAccountCreated'));
+        handleSave();  // 2025-12-17: handleSave now shows flash indicator
     }
 
     function selectAccount(accountId) {
@@ -1474,6 +2112,7 @@
             return;
         }
 
+        saveToHistory();  // 2025-12-17: Save state before modifying data
         // Remove account and its transactions
         data.accounts = data.accounts.filter(a => a.id !== accountId);
         data.transactions = data.transactions.filter(t => t.accountId !== accountId);
@@ -1484,8 +2123,7 @@
         }
 
         render();
-        handleSave();
-        showToast(I18n.t('toastAccountDeleted'));
+        handleSave();  // 2025-12-17: handleSave now shows flash indicator
     }
 
     // --- Transaction Operations ---
@@ -1604,6 +2242,7 @@
                 category: category,
                 date: new Date().toISOString()
             };
+            saveToHistory();  // 2025-12-17: Save state before modifying data
             data.transactions.push(transaction);
         }
 
@@ -1636,10 +2275,10 @@
         if (confirmed) {
             const recurring = data.recurringTransactions?.find(r => r.id === id);
             if (recurring) {
+                saveToHistory();  // 2025-12-17: Save state before modifying data
                 recurring.active = false;
                 render();
-                handleSave();
-                showToast(I18n.t('toastRecurringCanceled'));
+                handleSave();  // 2025-12-17: handleSave now shows flash indicator
             }
         }
     }
@@ -1661,6 +2300,12 @@
             elements.fileBadge.classList.remove('cloud');
             elements.fileBadge.textContent = I18n.t('fileBadge', { filename });
         }
+
+        // 2025-12-16: Initialize widget system (drag-and-drop, collapse)
+        Widgets.init();
+
+        // 2025-12-17: Show/hide change password option based on encryption status
+        updateChangePasswordVisibility();
     }
 
     function render() {
@@ -1680,7 +2325,10 @@
             const isActive = account.id === currentAccountId;
             const canDelete = data.accounts.length > 1;
             // 2025-12-15: Account type icons (credit=card, cash=bills, checking=bank)
-            const accountIcon = account.type === 'credit' ? '💳' : account.type === 'cash' ? '💵' : '🏦';
+            // 2025-12-16: Added crypto icons using getCryptoIcon
+            const accountIcon = account.type === 'crypto' ? getCryptoIcon(account.currency) :
+                account.type === 'credit' ? '💳' :
+                    account.type === 'cash' ? '💵' : '🏦';
 
             const tab = document.createElement('button');
             tab.className = `account-tab ${isActive ? 'active' : ''}`;
@@ -1743,19 +2391,44 @@
 
             // Hide account settings for credit cards
             elements.accountSettingsInfo.style.display = 'none';
+            if (elements.cryptoAccountInfo) elements.cryptoAccountInfo.style.display = 'none';
+        } else if (currentAccount.type === 'crypto') {
+            // 2025-12-16: Crypto account: Show USD value as main, crypto balance below
+            elements.balanceLabel.textContent = t('balanceLabel');
+
+            // Show "Loading..." initially, will be updated by fetchCryptoPrices
+            elements.balanceDisplay.textContent = 'Loading...';
+            elements.balanceDisplay.classList.remove('negative');
+            elements.balanceDisplay.dataset.cryptoAccountId = currentAccount.id;
+            elements.balanceDisplay.dataset.cryptoBalance = balance;
+            elements.balanceDisplay.dataset.cryptoCurrency = currentAccount.currency;
+
+            // Show crypto balance below
+            if (elements.cryptoAccountInfo) {
+                elements.cryptoAccountInfo.style.display = 'block';
+                elements.cryptoBalanceValue.textContent = `${balance.toFixed(8)} ${currentAccount.currency}`;
+            }
+
+            // Hide credit card info and account settings for crypto
+            elements.creditCardInfo.style.display = 'none';
+            elements.accountSettingsInfo.style.display = 'none';
+
+            // Fetch and update USD price
+            updateCryptoBalanceDisplay();
         } else {
             // Checking/cash account: Show balance
             elements.balanceLabel.textContent = t('balanceLabel');
             elements.balanceDisplay.textContent = Accounts.formatCurrency(balance, currentAccount.currency);
             elements.balanceDisplay.classList.toggle('negative', balance < 0);
             elements.creditCardInfo.style.display = 'none';
+            if (elements.cryptoAccountInfo) elements.cryptoAccountInfo.style.display = 'none';
 
             // 2025-12-15: Show account settings for checking/cash accounts
             elements.accountSettingsInfo.style.display = 'block';
             elements.btnEditAccountSettings.querySelector('[data-i18n="editCreditSettings"]').textContent = t('editCreditSettings');
         }
 
-        elements.accountCurrency.textContent = currentAccount.currency;
+        elements.accountCurrency.textContent = currentAccount.type === 'crypto' ? 'USD' : currentAccount.currency;
 
         // 2025-12-15: Translate adjust amount button
         elements.btnEditBalance.querySelector('[data-i18n="adjustAmount"]').textContent = t('adjustAmount');
@@ -1783,9 +2456,20 @@
             const isIncome = t.amt >= 0;
             const li = document.createElement('li');
             li.className = 'history-item';
+
+            // 2025-12-16: Translate balance adjustment descriptions dynamically
+            let displayDesc = t.desc;
+            if (t.desc === 'Balance Adjustment' || t.desc === 'Ajuste de Saldo') {
+                displayDesc = I18n.t('balanceAdjustment');
+            } else if (t.desc.startsWith('Balance Adjustment:') || t.desc.startsWith('Ajuste de Saldo:')) {
+                // Has a reason appended, extract and translate
+                const reason = t.desc.split(':').slice(1).join(':').trim();
+                displayDesc = `${I18n.t('balanceAdjustment')}: ${reason}`;
+            }
+
             li.innerHTML = `
                 <div class="item-details">
-                    <span class="item-desc">${escapeHtml(t.desc)}</span>
+                    <span class="item-desc">${escapeHtml(displayDesc)}</span>
                     <span class="item-date">${formatDate(t.date)}</span>
                 </div>
                 <div class="item-actions">
@@ -1828,8 +2512,8 @@
             elements.creditWidgetTitle.textContent = '💳 ' + t('accountsCredit');
         }
 
-        // Separate accounts by type
-        const bankAccounts = data.accounts.filter(a => a.type !== 'credit');
+        // Separate accounts by type (2025-12-16: added crypto exclusion from bank)
+        const bankAccounts = data.accounts.filter(a => a.type !== 'credit' && a.type !== 'crypto');
         const creditAccounts = data.accounts.filter(a => a.type === 'credit');
 
         // Helper: Create bank/cash account item
@@ -1892,6 +2576,50 @@
                 });
             }
         }
+
+        // 2025-12-16: Render Crypto accounts
+        const cryptoAccounts = data.accounts.filter(a => a.type === 'crypto');
+
+        // Show/hide crypto widget based on whether crypto accounts exist
+        if (elements.cryptoWidgetCard) {
+            elements.cryptoWidgetCard.style.display = cryptoAccounts.length > 0 ? 'block' : 'none';
+        }
+
+        if (elements.cryptoWidgetTitle) {
+            elements.cryptoWidgetTitle.textContent = '🪙 ' + t('accountsCrypto');
+        }
+
+        if (elements.cryptoAccountsList && cryptoAccounts.length > 0) {
+            elements.cryptoAccountsList.innerHTML = '';
+            cryptoAccounts.forEach(account => {
+                elements.cryptoAccountsList.appendChild(createCryptoItem(account));
+            });
+
+            // Fetch crypto prices for USD conversion
+            fetchCryptoPrices();
+        }
+
+        // Helper: Create crypto account item
+        // 2025-12-16: USD value shown prominently, crypto balance below
+        function createCryptoItem(account) {
+            const balance = Accounts.calculateBalance(data.transactions, account.id);
+            const isActive = account.id === currentAccountId;
+            const cryptoIcon = getCryptoIcon(account.currency);
+
+            const item = document.createElement('div');
+            item.className = `widget-account-item${isActive ? ' active' : ''}`;
+            item.dataset.cryptoCurrency = account.currency;
+            item.dataset.cryptoBalance = balance;
+            item.innerHTML = `
+                <span class="widget-account-name">${cryptoIcon} ${escapeHtml(account.name)}</span>
+                <div class="widget-crypto-details">
+                    <div class="widget-crypto-usd" data-crypto-id="${account.id}">Loading...</div>
+                    <div class="widget-crypto-balance">${balance.toFixed(8)} <span class="widget-currency">${account.currency}</span></div>
+                </div>
+            `;
+            item.addEventListener('click', () => selectAccount(account.id));
+            return item;
+        }
     }
 
     /**
@@ -1915,13 +2643,27 @@
 
             if (recurringList.length === 0) {
                 elements.recurringEmpty.style.display = 'block';
+                // 2025-12-16: Hide total when no recurring expenses
+                if (elements.recurringTotal) {
+                    elements.recurringTotal.style.display = 'none';
+                }
             } else {
                 elements.recurringEmpty.style.display = 'none';
+
+                // 2025-12-16: Calculate total monthly expenses
+                // For each recurring expense, calculate monthly equivalent (amt / frequencyMonths)
+                let totalMonthly = 0;
+                let displayCurrency = 'USD';
 
                 recurringList.forEach(r => {
                     const account = data.accounts.find(a => a.id === r.accountId);
                     const currency = account?.currency || 'USD';
+                    displayCurrency = currency;  // Use last currency (assumes mostly same currency)
                     const categoryIcon = getCategoryIcon(r.category);
+
+                    // Add to total (amt is negative for expenses, so we use Math.abs)
+                    const monthlyAmount = Math.abs(r.amt) / (r.frequencyMonths || 1);
+                    totalMonthly += monthlyAmount;
 
                     const item = document.createElement('div');
                     item.className = 'recurring-item';
@@ -1940,6 +2682,12 @@
 
                     elements.recurringList.appendChild(item);
                 });
+
+                // 2025-12-16: Display total monthly expenses
+                if (elements.recurringTotal) {
+                    elements.recurringTotal.style.display = 'block';
+                    elements.recurringTotal.innerHTML = `<strong>${t('recurringTotal')}</strong> ${Accounts.formatCurrency(-totalMonthly, displayCurrency)}`;
+                }
             }
         }
     }
@@ -1960,6 +2708,135 @@
             work: '💼'
         };
         return icons[category] || icons.general;
+    }
+
+    /**
+     * Get crypto currency icon
+     * 2025-12-16: Maps crypto currency codes to emoji/icons
+     */
+    function getCryptoIcon(currency) {
+        const icons = {
+            BTC: '₿',
+            ETH: '⟠',
+            SOL: '◎'
+        };
+        return icons[currency] || '🪙';
+    }
+
+    // 2025-12-16: Cache for crypto prices to avoid rate limiting
+    let cryptoPriceCache = {
+        prices: null,
+        timestamp: 0,
+        TTL: 60000  // 60 seconds cache
+    };
+
+    /**
+     * Fetch crypto prices from CoinGecko API and update widget
+     * 2025-12-16: Gets USD prices for BTC, ETH, SOL (with caching)
+     */
+    async function fetchCryptoPrices() {
+        const coinIds = {
+            BTC: 'bitcoin',
+            ETH: 'ethereum',
+            SOL: 'solana'
+        };
+
+        try {
+            // Check cache first
+            const now = Date.now();
+            let cryptoPrices;
+
+            if (cryptoPriceCache.prices && (now - cryptoPriceCache.timestamp) < cryptoPriceCache.TTL) {
+                // Use cached prices
+                cryptoPrices = cryptoPriceCache.prices;
+            } else {
+                // Fetch fresh prices
+                const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana&vs_currencies=usd');
+                const prices = await response.json();
+
+                // Map to our currency codes
+                cryptoPrices = {
+                    BTC: prices.bitcoin?.usd || 0,
+                    ETH: prices.ethereum?.usd || 0,
+                    SOL: prices.solana?.usd || 0
+                };
+
+                // Update cache
+                cryptoPriceCache.prices = cryptoPrices;
+                cryptoPriceCache.timestamp = now;
+            }
+
+            // Update all crypto account USD values
+            const cryptoAccounts = data.accounts.filter(a => a.type === 'crypto');
+            cryptoAccounts.forEach(account => {
+                const balance = Accounts.calculateBalance(data.transactions, account.id);
+                const price = cryptoPrices[account.currency] || 0;
+                const usdValue = balance * price;
+
+                const usdEl = document.querySelector(`[data-crypto-id="${account.id}"]`);
+                if (usdEl) {
+                    usdEl.textContent = `$${usdValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                }
+            });
+        } catch (error) {
+            console.error('Failed to fetch crypto prices:', error);
+            // Show error state only if we don't have cached prices
+            if (!cryptoPriceCache.prices) {
+                document.querySelectorAll('.widget-crypto-usd').forEach(el => {
+                    el.textContent = 'Price unavailable';
+                });
+            }
+        }
+    }
+
+    /**
+     * Update the main balance card display for crypto accounts
+     * 2025-12-16: Fetches USD price and displays in balance card (with caching)
+     */
+    async function updateCryptoBalanceDisplay() {
+        const balanceEl = elements.balanceDisplay;
+        if (!balanceEl || !balanceEl.dataset.cryptoAccountId) return;
+
+        const currency = balanceEl.dataset.cryptoCurrency;
+        const balance = parseFloat(balanceEl.dataset.cryptoBalance) || 0;
+
+        try {
+            // Check cache first
+            const now = Date.now();
+            let price = 0;
+
+            if (cryptoPriceCache.prices && (now - cryptoPriceCache.timestamp) < cryptoPriceCache.TTL) {
+                // Use cached price
+                price = cryptoPriceCache.prices[currency] || 0;
+            } else {
+                // Fetch fresh prices
+                const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana&vs_currencies=usd');
+                const prices = await response.json();
+
+                // Update cache
+                cryptoPriceCache.prices = {
+                    BTC: prices.bitcoin?.usd || 0,
+                    ETH: prices.ethereum?.usd || 0,
+                    SOL: prices.solana?.usd || 0
+                };
+                cryptoPriceCache.timestamp = now;
+
+                price = cryptoPriceCache.prices[currency] || 0;
+            }
+
+            const usdValue = balance * price;
+            balanceEl.textContent = `$${usdValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            balanceEl.classList.toggle('positive', usdValue >= 0);
+        } catch (error) {
+            console.error('Failed to fetch crypto price for balance:', error);
+            // Use cached price if available
+            if (cryptoPriceCache.prices && cryptoPriceCache.prices[currency]) {
+                const usdValue = balance * cryptoPriceCache.prices[currency];
+                balanceEl.textContent = `$${usdValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            } else {
+                balanceEl.textContent = 'Price unavailable';
+            }
+        }
     }
 
     /**
@@ -2002,6 +2879,7 @@
     /**
      * Fetch exchange rate history and render sparkline
      * 2025-12-16: Uses frankfurter.app API for historical data
+     * 2025-12-16: Enhanced with X-axis labels and hover tooltips
      * @param {number} days - Number of days of history to fetch
      */
     async function fetchExchangeHistory(days = 7) {
@@ -2018,13 +2896,16 @@
             const data = await response.json();
 
             if (data && data.rates) {
-                // Extract rates into array
-                const rates = Object.keys(data.rates)
+                // Extract rates with dates into array
+                const rateData = Object.keys(data.rates)
                     .sort()
-                    .map(date => data.rates[date].MXN);
+                    .map(date => ({
+                        date: date,
+                        rate: data.rates[date].MXN
+                    }));
 
-                // Draw sparkline
-                drawSparkline(rates);
+                // Draw sparkline with dates for hover and X-axis
+                drawSparkline(rateData, days);
             }
         } catch (error) {
             console.error('Failed to fetch exchange history:', error);
@@ -2032,24 +2913,103 @@
     }
 
     /**
-     * Draw SVG sparkline from rate values
-     * 2025-12-16: Renders polyline into the exchange sparkline SVG
+     * Draw SVG sparkline from rate values with interactive hover
+     * 2025-12-16: Enhanced with X-axis labels and hover tooltips
+     * @param {Array} rateData - Array of {date, rate} objects
+     * @param {number} days - Number of days for X-axis label formatting
      */
-    function drawSparkline(values) {
+    function drawSparkline(rateData, days = 7) {
         const sparklinePath = document.getElementById('sparkline-path');
-        if (!sparklinePath || values.length < 2) return;
+        const dotsGroup = document.getElementById('sparkline-dots');
+        const xAxis = document.getElementById('chart-x-axis');
+        const tooltip = document.getElementById('chart-tooltip');
+
+        if (!sparklinePath || rateData.length < 2) return;
 
         const width = 120;
-        const height = 40;
-        const padding = 2;
+        const height = 45;
+        const padding = 4;
+        const chartHeight = 35; // Leave room for dots at top
 
+        const values = rateData.map(d => d.rate);
         const min = Math.min(...values);
         const max = Math.max(...values);
         const range = max - min || 1;
 
-        const points = values.map((val, i) => {
-            const x = padding + (i / (values.length - 1)) * (width - 2 * padding);
-            const y = height - padding - ((val - min) / range) * (height - 2 * padding);
+        // Clear existing dots
+        if (dotsGroup) dotsGroup.innerHTML = '';
+
+        // Calculate column width for hover areas
+        const columnWidth = (width - 2 * padding) / Math.max(rateData.length - 1, 1);
+
+        // Build polyline points and add hover rectangles (full height for easy hovering)
+        const points = rateData.map((d, i) => {
+            const x = padding + (i / (rateData.length - 1)) * (width - 2 * padding);
+            const y = chartHeight - padding - ((d.rate - min) / range) * (chartHeight - 2 * padding);
+
+            // Add invisible full-height rectangle for hover detection
+            if (dotsGroup) {
+                // Create a group to hold both the hitbox and the visible dot
+                const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                group.setAttribute('class', 'hover-group');
+
+                // Invisible rectangle for hover detection (full height)
+                const hitbox = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                const hitboxX = x - columnWidth / 2;
+                hitbox.setAttribute('x', Math.max(0, hitboxX).toFixed(1));
+                hitbox.setAttribute('y', '0');
+                hitbox.setAttribute('width', columnWidth.toFixed(1));
+                hitbox.setAttribute('height', height.toString());
+                hitbox.setAttribute('fill', 'transparent');
+                hitbox.setAttribute('class', 'hover-hitbox');
+
+                // Visible dot that appears on hover (at actual data point)
+                const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                dot.setAttribute('cx', x.toFixed(1));
+                dot.setAttribute('cy', y.toFixed(1));
+                dot.setAttribute('r', '3');
+                dot.setAttribute('class', 'hover-dot');
+
+                // Hover events on the hitbox
+                hitbox.addEventListener('mouseenter', (e) => {
+                    if (tooltip) {
+                        const formattedDate = new Date(d.date).toLocaleDateString(I18n.getLocale(), {
+                            month: 'short',
+                            day: 'numeric'
+                        });
+                        tooltip.querySelector('.tooltip-rate').textContent = `$${d.rate.toFixed(4)} MXN`;
+                        tooltip.querySelector('.tooltip-date').textContent = formattedDate;
+                        tooltip.style.display = 'block';
+
+                        // Position tooltip near the point, push toward center at edges
+                        const xPercent = (x / width) * 100;
+                        tooltip.style.left = `${xPercent}%`;
+
+                        // Adjust transform based on position to prevent clipping
+                        if (xPercent < 20) {
+                            // Left edge: align tooltip to left
+                            tooltip.style.transform = 'translateX(0)';
+                        } else if (xPercent > 80) {
+                            // Right edge: align tooltip to right
+                            tooltip.style.transform = 'translateX(-100%)';
+                        } else {
+                            // Center: default centered
+                            tooltip.style.transform = 'translateX(-50%)';
+                        }
+                    }
+                    dot.classList.add('active');
+                });
+
+                hitbox.addEventListener('mouseleave', () => {
+                    if (tooltip) tooltip.style.display = 'none';
+                    dot.classList.remove('active');
+                });
+
+                group.appendChild(hitbox);
+                group.appendChild(dot);
+                dotsGroup.appendChild(group);
+            }
+
             return `${x.toFixed(1)},${y.toFixed(1)}`;
         }).join(' ');
 
@@ -2058,6 +3018,86 @@
         // Color based on trend (green if up, red if down)
         const trend = values[values.length - 1] - values[0];
         sparklinePath.setAttribute('stroke', trend >= 0 ? '#22c55e' : '#ef4444');
+
+        // Calculate and display percentage change
+        const chartChange = document.getElementById('chart-change');
+        if (chartChange && values.length >= 2) {
+            const startValue = values[0];
+            const endValue = values[values.length - 1];
+            const percentChange = ((endValue - startValue) / startValue) * 100;
+
+            const sign = percentChange >= 0 ? '+' : '';
+            chartChange.textContent = `${sign}${percentChange.toFixed(2)}%`;
+            chartChange.className = 'chart-change ' + (percentChange >= 0 ? 'positive' : 'negative');
+        }
+
+        // Render X-axis labels
+        if (xAxis) {
+            renderXAxisLabels(xAxis, rateData, days);
+        }
+    }
+
+    /**
+     * Render X-axis labels for the chart
+     * 2025-12-16: Shows days for 7d/1m, weeks for 6m
+     */
+    function renderXAxisLabels(container, rateData, days) {
+        container.innerHTML = '';
+
+        let labelIndices = [];
+
+        if (days <= 7) {
+            // 7d: Show every day
+            labelIndices = rateData.map((_, i) => i);
+        } else if (days <= 30) {
+            // 1m: Show every 5 days
+            labelIndices = rateData.map((_, i) => i).filter(i => i % 5 === 0 || i === rateData.length - 1);
+        } else {
+            // 6m: Show weekly labels
+            labelIndices = rateData.map((_, i) => i).filter(i => i % 7 === 0 || i === rateData.length - 1);
+        }
+
+        // Create labels at evenly spaced positions
+        labelIndices.forEach((dataIndex, i) => {
+            const d = rateData[dataIndex];
+            const date = new Date(d.date);
+
+            let label;
+            if (days <= 30) {
+                // Days: show day number
+                label = date.getDate().toString();
+            } else {
+                // Weeks: show month/day
+                label = date.toLocaleDateString(I18n.getLocale(), { month: 'short', day: 'numeric' });
+                // Shorten to just M/D for space
+                label = `${date.getMonth() + 1}/${date.getDate()}`;
+            }
+
+            const span = document.createElement('span');
+            span.textContent = label;
+
+            // Position based on data index
+            const xPercent = (dataIndex / (rateData.length - 1)) * 100;
+            span.style.position = 'absolute';
+            span.style.left = `${xPercent}%`;
+
+            // First label: align left, last label: align right, others: centered
+            const isFirst = i === 0;
+            const isLast = i === labelIndices.length - 1;
+            if (isFirst) {
+                span.style.transform = 'translateX(0)';
+            } else if (isLast) {
+                span.style.transform = 'translateX(-100%)';
+            } else {
+                span.style.transform = 'translateX(-50%)';
+            }
+
+            container.appendChild(span);
+        });
+
+        // Make container relative for absolute positioning
+        container.style.position = 'relative';
+        container.style.height = '12px';
     }
 
     // --- Utilities ---
