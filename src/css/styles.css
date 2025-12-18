@@ -76,6 +76,7 @@
  * - 2025-12-17: Added compact icon button styles for account type selection
  * - 2025-12-17: Added custom title bar styles for frameless Electron window
  * - 2025-12-17: Added Activity Log widget styles (activity-log-item, activity-user badges, relative time)
+ * - 2025-12-17: Customized global scrollbars (12px) and added specific thinner scrollbar (4px) for activity log to prevent clipping
  * ============================================================================
  */
 
@@ -2768,4 +2769,59 @@ html.dark .activity-user.owner {
     .btn-save {
         width: 100%;
     }
+}
+
+/* --- SCROLLBAR CUSTOMIZATION (2025-12-17) --- */
+/* Global Scrollbar Styles */
+*::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+    background-color: transparent;
+}
+
+*::-webkit-scrollbar-track {
+    background-color: transparent;
+    border-radius: var(--radius-full);
+}
+
+*::-webkit-scrollbar-thumb {
+    background-color: var(--color-border);
+    border-radius: var(--radius-full);
+    border: 3px solid transparent;
+    background-clip: content-box;
+    transition: background-color 0.2s ease;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+    background-color: var(--color-text-muted);
+}
+
+/* Dark mode adjustments for scrollbar */
+html.dark *::-webkit-scrollbar-thumb {
+    background-color: #334155;
+}
+
+html.dark *::-webkit-scrollbar-thumb:hover {
+    background-color: #64748b;
+}
+
+/* Activity Log Specific - Thinner to prevent clipping */
+.activity-log-list::-webkit-scrollbar {
+    width: 4px;
+    /* Thinner width */
+}
+
+.activity-log-list::-webkit-scrollbar-thumb {
+    border: none;
+    /* remove border to maximize thumb visibility on thin track */
+    background-color: var(--color-border);
+}
+
+.activity-log-list::-webkit-scrollbar-thumb:hover {
+    background-color: var(--color-text-muted);
+}
+
+/* Add padding to prevent content from touching the scrollbar */
+.activity-log-list {
+    padding-right: var(--space-xs);
 }
