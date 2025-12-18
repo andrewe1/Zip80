@@ -582,6 +582,8 @@ h3 {
     width: auto;
     display: block;
     margin: 0 auto;
+    transform: translateX(-20px);
+    /* Visual centering adjustment */
 }
 
 .header-logo {
