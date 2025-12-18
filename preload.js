@@ -50,5 +50,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
     fileExists: (filePath) => ipcRenderer.invoke('file-exists', filePath),
 
     // Check if running in Electron
-    isElectron: true
+    isElectron: true,
+
+    // 2025-12-17: Window controls for custom title bar
+    minimizeWindow: () => ipcRenderer.send('window-minimize'),
+    maximizeWindow: () => ipcRenderer.send('window-maximize'),
+    closeWindow: () => ipcRenderer.send('window-close'),
+    isMaximized: () => ipcRenderer.invoke('window-is-maximized')
 });

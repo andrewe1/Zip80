@@ -38,7 +38,7 @@
  * ==============================================================================
  */
 
-const { app, BrowserWindow, ipcMain, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, Menu } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const http = require('http');
@@ -134,18 +134,21 @@ function startServer() {
 }
 
 function createWindow() {
+    // 2025-12-17: Remove default menu bar (File/Edit/View/Window/Help)
+    Menu.setApplicationMenu(null);
+
     mainWindow = new BrowserWindow({
         width: 1280,
         height: 900,
         minWidth: 900,
         minHeight: 600,
+        frame: false,  // 2025-12-17: Frameless window for custom title bar
         webPreferences: {
             preload: path.join(__dirname, 'preload.js'),
             contextIsolation: true,
             nodeIntegration: false
         },
         icon: path.join(__dirname, 'src', 'icon.ico'),
-
         title: 'Zip80 Track',
         show: false
     });
@@ -188,6 +191,30 @@ autoUpdater.on('update-downloaded', () => {
 
 autoUpdater.on('error', (err) => {
     console.error('Auto-updater error:', err);
+});
+
+// --- Window Control IPC Handlers (2025-12-17: Custom title bar) ---
+
+ipcMain.on('window-minimize', () => {
+    if (mainWindow) mainWindow.minimize();
+});
+
+ipcMain.on('window-maximize', () => {
+    if (mainWindow) {
+        if (mainWindow.isMaximized()) {
+            mainWindow.unmaximize();
+        } else {
+            mainWindow.maximize();
+        }
+    }
+});
+
+ipcMain.on('window-close', () => {
+    if (mainWindow) mainWindow.close();
+});
+
+ipcMain.handle('window-is-maximized', () => {
+    return mainWindow ? mainWindow.isMaximized() : false;
 });
 
 app.on('window-all-closed', () => {

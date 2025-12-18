@@ -212,6 +212,103 @@ html.dark .theme-toggle .icon-sun {
     display: block;
 }
 
+/* --- CUSTOM TITLE BAR (2025-12-17) --- */
+/* Frameless Electron window title bar with custom controls */
+.title-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 32px;
+    background-color: #0f172a;
+    color: #f1f5f9;
+    font-size: 12px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 9999;
+    user-select: none;
+}
+
+.title-bar-drag {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-left: 12px;
+    height: 100%;
+    -webkit-app-region: drag;
+    /* Allow window dragging */
+}
+
+.title-bar-icon {
+    font-size: 14px;
+}
+
+.title-bar-text {
+    font-weight: 500;
+}
+
+.title-bar-controls {
+    display: flex;
+    height: 100%;
+    -webkit-app-region: no-drag;
+    /* Buttons should be clickable */
+}
+
+.title-bar-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 46px;
+    height: 100%;
+    background: none;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    transition: background-color 0.1s ease, color 0.1s ease;
+}
+
+.title-bar-btn:hover {
+    background-color: #334155;
+    color: #f1f5f9;
+}
+
+.title-bar-btn:focus {
+    outline: none;
+}
+
+.title-bar-btn:focus-visible {
+    background-color: #334155;
+}
+
+/* Close button - red on hover */
+.title-bar-btn-close:hover {
+    background-color: #dc2626;
+    color: white;
+}
+
+/* SVG icon sizing */
+.title-bar-btn svg {
+    width: 10px;
+    height: 10px;
+}
+
+/* Body padding to account for fixed title bar */
+body {
+    padding-top: 32px;
+}
+
+/* Adjust top-controls position for title bar */
+.top-controls {
+    top: calc(32px + var(--space-md));
+}
+
+/* Startup overlay should start below title bar */
+.startup-overlay {
+    top: 32px;
+}
+
 /* --- RESET & BASE --- */
 *,
 *::before,
