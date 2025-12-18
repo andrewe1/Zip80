@@ -565,7 +565,8 @@ h3 {
 
 .app-title {
     font-size: var(--font-size-3xl);
-    margin-bottom: var(--space-sm);
+    margin-bottom: -30px;
+    /* Bring subtitle closer to logo */
 }
 
 .app-subtitle {

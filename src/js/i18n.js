@@ -124,7 +124,7 @@ const I18n = (() => {
         en: {
             // App title
             appTitle: '💸 Zip80',
-            appSubtitle: 'Your simple expense tracker.',
+            appSubtitle: 'The expense tracker you own.',
             appSubtitleDrag: 'Open a vault or drag it here to begin.',
 
             // Startup buttons
@@ -364,7 +364,7 @@ const I18n = (() => {
         es: {
             // App title
             appTitle: '💸 Zip80',
-            appSubtitle: 'Tu rastreador de gastos simple.',
+            appSubtitle: 'El rastreador de gastos que te pertenece.',
             appSubtitleDrag: 'Abre una bóveda o arrástrala aquí para comenzar.',
 
             // Startup buttons
