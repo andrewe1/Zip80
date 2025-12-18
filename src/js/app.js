@@ -459,13 +459,13 @@
         const t = I18n.t;
 
         // Startup screen
-        elements.appTitle.textContent = t('appTitle');
+        // 2025-12-17: Removed appTitle.textContent - now uses SVG logo instead of text
         elements.appSubtitle.innerHTML = `${t('appSubtitle')}<br>${t('appSubtitleDrag')}`;
         elements.btnOpen.querySelector('[data-i18n="btnOpen"]').textContent = t('btnOpen');
         elements.btnNew.querySelector('[data-i18n="btnNew"]').textContent = t('btnNew');
 
         // Header
-        if (elements.headerTitle) elements.headerTitle.textContent = t('headerTitle');
+        // 2025-12-17: Removed headerTitle.textContent - now uses SVG logo instead of text
         document.querySelector('.vault-label').textContent = t('vaultLabel');
         elements.btnCloseVault.querySelector('[data-i18n="btnCloseVault"]').textContent = t('btnCloseVault');
 
