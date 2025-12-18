@@ -244,7 +244,25 @@ html.dark .theme-toggle .icon-sun {
 }
 
 .title-bar-icon {
-    font-size: 14px;
+    height: 16px;
+    width: auto;
+}
+
+/* Title bar logo theme switching */
+.title-bar-icon-light {
+    display: inline;
+}
+
+.title-bar-icon-dark {
+    display: none;
+}
+
+html.dark .title-bar-icon-light {
+    display: none;
+}
+
+html.dark .title-bar-icon-dark {
+    display: inline;
 }
 
 .title-bar-text {
