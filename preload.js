@@ -41,6 +41,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
     // File operations
     readFile: (filePath) => ipcRenderer.invoke('read-file', filePath),
+    readFileRaw: (filePath) => ipcRenderer.invoke('read-file-raw', filePath),  // 2025-12-17: For encryption
     writeFile: (filePath, data) => ipcRenderer.invoke('write-file', filePath, data),
 
     // Config

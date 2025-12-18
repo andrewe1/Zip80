@@ -67,6 +67,7 @@ const GDrive = (() => {
     // Local storage keys for token persistence
     const TOKEN_KEY = 'zip80_gdrive_token';
     const USER_KEY = 'zip80_gdrive_user';
+    const LAST_VAULT_KEY = 'zip80_gdrive_last_vault';  // 2025-12-17: For reopen feature
 
     // State
     let tokenClient = null;
@@ -425,6 +426,38 @@ const GDrive = (() => {
         return info.name || 'Unknown';
     }
 
+    // 2025-12-17: Last vault tracking for reopen feature
+
+    /**
+     * Save last opened vault for reopen feature
+     * @param {string} fileId - Drive file ID
+     * @param {string} name - Vault filename
+     */
+    function saveLastVault(fileId, name) {
+        localStorage.setItem(LAST_VAULT_KEY, JSON.stringify({ id: fileId, name: name }));
+    }
+
+    /**
+     * Get last opened vault info
+     * @returns {object|null} { id, name } or null if none
+     */
+    function getLastVault() {
+        const saved = localStorage.getItem(LAST_VAULT_KEY);
+        if (!saved) return null;
+        try {
+            return JSON.parse(saved);
+        } catch {
+            return null;
+        }
+    }
+
+    /**
+     * Clear last vault (e.g., on sign out)
+     */
+    function clearLastVault() {
+        localStorage.removeItem(LAST_VAULT_KEY);
+    }
+
     // --- Public API ---
 
     return {
@@ -443,6 +476,11 @@ const GDrive = (() => {
         readVault,
         writeVault,
         getVaultInfo,
-        getVaultName
+        getVaultName,
+
+        // 2025-12-17: Reopen feature
+        saveLastVault,
+        getLastVault,
+        clearLastVault
     };
 })();

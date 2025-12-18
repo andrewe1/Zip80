@@ -207,6 +207,17 @@ const Storage = (() => {
         }
     }
 
+    /**
+     * Read file contents as raw text string
+     * 2025-12-17: Added for encryption detection before parsing
+     * @param {FileSystemFileHandle} handle - File handle
+     * @returns {string} Raw file content as text
+     */
+    async function readFileRaw(handle) {
+        const file = await handle.getFile();
+        return await file.text();
+    }
+
     async function readFile(handle) {
         const file = await handle.getFile();
         const text = await file.text();
@@ -215,9 +226,28 @@ const Storage = (() => {
         return Accounts.migrateData(rawData);
     }
 
-    async function writeFile(handle, data) {
+    /**
+     * Write data to file
+     * 2025-12-17: Added password and hint parameters for encryption support
+     * @param {FileSystemFileHandle} handle - File handle
+     * @param {object} data - Data to write
+     * @param {string|null} password - Optional password for encryption
+     * @param {string|null} hint - Optional hint for encrypted vaults
+     */
+    async function writeFile(handle, data, password = null, hint = null) {
         const writable = await handle.createWritable();
-        await writable.write(JSON.stringify(data, null, 2));
+
+        let content;
+        if (password) {
+            // Encrypt the data before writing (with hint)
+            const encrypted = await Crypto.encrypt(data, password, hint || '');
+            content = JSON.stringify(encrypted, null, 2);
+        } else {
+            // Write unencrypted JSON
+            content = JSON.stringify(data, null, 2);
+        }
+
+        await writable.write(content);
         await writable.close();
     }
 
@@ -289,8 +319,23 @@ const Storage = (() => {
                 return Accounts.migrateData(result.data);
             },
 
-            async writeFile(filePath, data) {
-                const result = await window.electronAPI.writeFile(filePath, data);
+            // 2025-12-17: Raw file read for encryption detection
+            async readFileRaw(filePath) {
+                const result = await window.electronAPI.readFileRaw(filePath);
+                if (!result.success) throw new Error(result.error);
+                return result.data;
+            },
+
+            // 2025-12-17: Updated to support encryption with hint
+            async writeFile(filePath, data, password = null, hint = null) {
+                let content;
+                if (password) {
+                    const encrypted = await Crypto.encrypt(data, password, hint || '');
+                    content = encrypted;
+                } else {
+                    content = data;
+                }
+                const result = await window.electronAPI.writeFile(filePath, content);
                 if (!result.success) throw new Error(result.error);
             },
 
@@ -320,6 +365,7 @@ const Storage = (() => {
         createNewFile,
         reopenLastFile,
         readFile,
+        readFileRaw,  // 2025-12-17: Added for encryption detection
         writeFile,
         getFileName,
         exportToJSON,

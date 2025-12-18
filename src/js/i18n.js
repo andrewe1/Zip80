@@ -69,6 +69,8 @@
  * - 2025-12-16: Added cloud vault picker translations (gdrivePickerTitle, gdriveNoVaults, gdriveShared)
  * - 2025-12-16: Added Google auth toast messages (toastGoogleSignedIn, toastGoogleSignedOut, toastGoogleError)
  * - 2025-12-16: Added cloud save toast messages (toastCloudSaved, toastCloudError)
+ * - 2025-12-17: Added menu bar translations (vaultLabel, viewMode, options, statusSaved, etc.)
+ * - 2025-12-17: Updated 'options' translation in Spanish to 'Configuración'
  */
 
 const I18n = (() => {
@@ -122,15 +124,16 @@ const I18n = (() => {
             // App title
             appTitle: '💸 Zip80',
             appSubtitle: 'Your simple expense tracker.',
-            appSubtitleDrag: 'Open a file or drag it here to begin.',
+            appSubtitleDrag: 'Open a vault or drag it here to begin.',
 
             // Startup buttons
-            btnOpen: 'Open File',
-            btnNew: 'New Data File',
+            btnOpen: 'Open Vault',
+            btnNew: 'New Vault',
             btnReopen: "Re-open '${filename}'",
-            btnReopenBase: 'Re-open last file',
+            btnReopenBase: 'Re-open last vault',
 
             // Header
+            headerTitle: '💸 Zip80',
             fileBadge: '📄 ${filename}',
             btnSave: '💾 Save',
             btnCloseVault: '🚪 Close',
@@ -210,6 +213,7 @@ const I18n = (() => {
             accountTypeChecking: 'Checking Account',
             accountTypeCash: 'Cash',
             accountTypeCreditCard: 'Credit Card',
+            accountTypeCrypto: 'Cryptocurrency',
             creditLimit: 'Credit Limit',
             creditLimitPlaceholder: 'e.g. 5000',
             paymentDueDay: 'Payment Due Day',
@@ -219,14 +223,20 @@ const I18n = (() => {
             dueDay: 'Due',
             closesDay: 'Closes',
 
+            // Crypto Currencies (2025-12-16)
+            currencyBTC: 'BTC - Bitcoin',
+            currencyETH: 'ETH - Ethereum',
+            currencySOL: 'SOL - Solana',
+
             // Balance Overview Widget (2025-12-15)
             balanceOverview: 'Balance Overview',
             totalPositive: 'Positive:',
-            totalNegative: 'Negative:',
-            totalNet: 'Net:',
+            totalCredits: 'Credit Used:',
+            netWorth: 'Net Worth:',
             amountOwed: 'Balance',
             accountsBank: 'Bank/Cash',
             accountsCredit: 'Credit Cards',
+            accountsCrypto: 'Crypto',
 
             // Credit Card Edit Modal (2025-12-15)
             editCreditSettings: 'Edit Account',
@@ -255,15 +265,19 @@ const I18n = (() => {
             confirmTitle: '⚠️ Confirm',
 
             // Recurring Transactions (2025-12-15)
-            recurringToggle: '🔁 Recurring?',
+            recurringToggle: '🔁 Recurring or Subscription?',
             recurringEvery: 'Every',
             recurringMonths: 'month(s)',
             recurringWidgetTitle: 'Recurring Expenses',
             recurringEmpty: 'No recurring expenses',
+            recurringTotal: 'Total Monthly Expenses:',
             btnCancelRecurring: 'Cancel',
             confirmCancelRecurring: 'Cancel this recurring expense?',
             toastRecurringCreated: '🔁 Recurring expense added!',
             toastRecurringCanceled: '✅ Recurring expense canceled',
+
+            // Calendar Widget (2025-12-16)
+            calendarWidgetTitle: 'Calendar',
 
             // Exchange Rate Widget (2025-12-16)
             exchangeWidgetTitle: 'Exchange Rates',
@@ -284,22 +298,76 @@ const I18n = (() => {
             toastGoogleSignedOut: 'Signed out of Google',
             toastGoogleError: 'Google sign-in failed. Please try again.',
             toastCloudSaved: '☁️ Saved to Google Drive',
-            toastCloudError: 'Could not save to Google Drive'
+            toastCloudError: 'Could not save to Google Drive',
+
+            // Menu Bar (2025-12-17)
+            vaultLabel: 'Vault:',
+            viewMode: 'View:',
+            viewStandard: 'Standard',
+            viewCompact: 'Compact',
+            options: 'Options',
+            exportCSV: 'Export as CSV',
+            exportJSON: 'Export as JSON',
+            settings: 'Settings',
+            about: 'About',
+            statusSaved: 'Saved',
+            statusSaving: 'Saving...',
+            statusError: 'Error',
+
+            // Undo/Redo (2025-12-17)
+            undo: 'Undo',
+            redo: 'Redo',
+            undoTitle: 'Undo last action',
+            redoTitle: 'Redo last action',
+
+            // Encryption (2025-12-17)
+            encryptVault: '🔒 Encrypt this vault',
+            encryptionWarning: '⚠️ If you forget your password, your data cannot be recovered.',
+            passwordLabel: 'Password',
+            confirmPasswordLabel: 'Confirm Password',
+            passwordPlaceholder: 'Enter password',
+            confirmPasswordPlaceholder: 'Confirm password',
+            hintLabel: 'Password Hint (required)',
+            hintPlaceholder: 'e.g. My favorite movie',
+            hintRequired: 'A password hint is required.',
+            hintDisplayLabel: 'Hint:',
+            unlockVault: '🔓 Unlock',
+            passwordModalTitle: '🔐 Encrypted Vault',
+            passwordModalDesc: 'This vault is encrypted. Enter your password to unlock it.',
+            wrongPassword: 'Incorrect password. Please try again.',
+            passwordMismatch: 'Passwords do not match.',
+            passwordRequired: 'Password is required for encrypted vaults.',
+
+            // Change Password (2025-12-17)
+            changePassword: '🔑 Change Password',
+            changePasswordTitle: '🔑 Change Password',
+            changePasswordDesc: 'Enter your current password and choose a new one.',
+            currentPasswordLabel: 'Current Password',
+            newPasswordLabel: 'New Password',
+            confirmNewPasswordLabel: 'Confirm New Password',
+            newHintLabel: 'New Password Hint',
+            currentPasswordPlaceholder: 'Enter current password',
+            newPasswordPlaceholder: 'Enter new password',
+            confirmNewPasswordPlaceholder: 'Confirm new password',
+            newHintPlaceholder: 'e.g. My favorite movie',
+            wrongCurrentPassword: 'Current password is incorrect.',
+            passwordChanged: 'Password changed successfully!'
         },
 
         es: {
             // App title
             appTitle: '💸 Zip80',
             appSubtitle: 'Tu rastreador de gastos simple.',
-            appSubtitleDrag: 'Abre un archivo o arrástralo aquí para comenzar.',
+            appSubtitleDrag: 'Abre una bóveda o arrástrala aquí para comenzar.',
 
             // Startup buttons
-            btnOpen: 'Abrir Archivo',
-            btnNew: 'Nuevo Archivo',
+            btnOpen: 'Abrir Bóveda',
+            btnNew: 'Nueva Bóveda',
             btnReopen: "Reabrir '${filename}'",
-            btnReopenBase: 'Reabrir último archivo',
+            btnReopenBase: 'Reabrir última bóveda',
 
             // Header
+            headerTitle: '💸 Zip80',
             fileBadge: '📄 ${filename}',
             btnSave: '💾 Guardar',
             btnCloseVault: '🚪 Cerrar',
@@ -379,6 +447,7 @@ const I18n = (() => {
             accountTypeChecking: 'Cuenta de Cheques',
             accountTypeCash: 'Efectivo',
             accountTypeCreditCard: 'Tarjeta de Crédito',
+            accountTypeCrypto: 'Criptomoneda',
             creditLimit: 'Límite de Crédito',
             creditLimitPlaceholder: 'ej. 5000',
             paymentDueDay: 'Día de Pago',
@@ -388,14 +457,20 @@ const I18n = (() => {
             dueDay: 'Pago',
             closesDay: 'Corte',
 
+            // Crypto Currencies (2025-12-16)
+            currencyBTC: 'BTC - Bitcoin',
+            currencyETH: 'ETH - Ethereum',
+            currencySOL: 'SOL - Solana',
+
             // Balance Overview Widget (2025-12-15)
             balanceOverview: 'Resumen de Saldos',
             totalPositive: 'Positivo:',
-            totalNegative: 'Negativo:',
-            totalNet: 'Neto:',
+            totalCredits: 'Crédito Usado:',
+            netWorth: 'Patrimonio Neto:',
             amountOwed: 'Saldo',
             accountsBank: 'Banco/Efectivo',
             accountsCredit: 'Tarjetas de Crédito',
+            accountsCrypto: 'Cripto',
 
             // Credit Card Edit Modal (2025-12-15)
             editCreditSettings: 'Editar Cuenta',
@@ -424,15 +499,19 @@ const I18n = (() => {
             confirmTitle: '⚠️ Confirmar',
 
             // Recurring Transactions (2025-12-15)
-            recurringToggle: '🔁 ¿Recurrente?',
+            recurringToggle: '🔁 ¿Recurrente o Suscripción?',
             recurringEvery: 'Cada',
             recurringMonths: 'mes(es)',
             recurringWidgetTitle: 'Gastos Recurrentes',
             recurringEmpty: 'Sin gastos recurrentes',
+            recurringTotal: 'Total Gastos Mensuales:',
             btnCancelRecurring: 'Cancelar',
             confirmCancelRecurring: '¿Cancelar este gasto recurrente?',
             toastRecurringCreated: '🔁 ¡Gasto recurrente agregado!',
             toastRecurringCanceled: '✅ Gasto recurrente cancelado',
+
+            // Calendar Widget (2025-12-16)
+            calendarWidgetTitle: 'Calendario',
 
             // Exchange Rate Widget (2025-12-16)
             exchangeWidgetTitle: 'Tipos de Cambio',
@@ -453,7 +532,60 @@ const I18n = (() => {
             toastGoogleSignedOut: 'Sesión de Google cerrada',
             toastGoogleError: 'Error al iniciar sesión. Intenta de nuevo.',
             toastCloudSaved: '☁️ Guardado en Google Drive',
-            toastCloudError: 'No se pudo guardar en Google Drive'
+            toastCloudError: 'No se pudo guardar en Google Drive',
+
+            // Menu Bar (2025-12-17)
+            vaultLabel: 'Bóveda:',
+            viewMode: 'Vista:',
+            viewStandard: 'Estándar',
+            viewCompact: 'Compacta',
+            options: 'Configuración',
+            exportCSV: 'Exportar como CSV',
+            exportJSON: 'Exportar como JSON',
+            settings: 'Configuración',
+            about: 'Acerca de',
+            statusSaved: 'Guardado',
+            statusSaving: 'Guardando...',
+            statusError: 'Error',
+
+            // Undo/Redo (2025-12-17)
+            undo: 'Deshacer',
+            redo: 'Rehacer',
+            undoTitle: 'Deshacer última acción',
+            redoTitle: 'Rehacer última acción',
+
+            // Encryption (2025-12-17)
+            encryptVault: '🔒 Encriptar esta bóveda',
+            encryptionWarning: '⚠️ Si olvidas tu contraseña, tus datos no podrán recuperarse.',
+            passwordLabel: 'Contraseña',
+            confirmPasswordLabel: 'Confirmar Contraseña',
+            passwordPlaceholder: 'Ingresa la contraseña',
+            confirmPasswordPlaceholder: 'Confirma la contraseña',
+            hintLabel: 'Pista de Contraseña (requerida)',
+            hintPlaceholder: 'ej. Mi película favorita',
+            hintRequired: 'Se requiere una pista de contraseña.',
+            hintDisplayLabel: 'Pista:',
+            unlockVault: '🔓 Desbloquear',
+            passwordModalTitle: '🔐 Bóveda Encriptada',
+            passwordModalDesc: 'Esta bóveda está encriptada. Ingresa tu contraseña para desbloquearla.',
+            wrongPassword: 'Contraseña incorrecta. Inténtalo de nuevo.',
+            passwordMismatch: 'Las contraseñas no coinciden.',
+            passwordRequired: 'Se requiere contraseña para bóvedas encriptadas.',
+
+            // Change Password (2025-12-17)
+            changePassword: '🔑 Cambiar Contraseña',
+            changePasswordTitle: '🔑 Cambiar Contraseña',
+            changePasswordDesc: 'Ingresa tu contraseña actual y elige una nueva.',
+            currentPasswordLabel: 'Contraseña Actual',
+            newPasswordLabel: 'Nueva Contraseña',
+            confirmNewPasswordLabel: 'Confirmar Nueva Contraseña',
+            newHintLabel: 'Nueva Pista de Contraseña',
+            currentPasswordPlaceholder: 'Ingresa contraseña actual',
+            newPasswordPlaceholder: 'Ingresa nueva contraseña',
+            confirmNewPasswordPlaceholder: 'Confirma nueva contraseña',
+            newHintPlaceholder: 'ej. Mi película favorita',
+            wrongCurrentPassword: 'La contraseña actual es incorrecta.',
+            passwordChanged: '¡Contraseña cambiada exitosamente!'
         }
     };
 
