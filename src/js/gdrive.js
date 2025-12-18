@@ -47,6 +47,7 @@
  * - 2025-12-16: Implemented init(), signIn(), signOut(), isSignedIn(), getUser()
  * - 2025-12-16: Implemented listVaults(), createVault(), readVault(), writeVault()
  * - 2025-12-16: Implemented getVaultInfo(), getVaultName() for header badge display
+ * - 2025-12-17: Added silent re-authentication to keep users signed in longer
  */
 
 const GDrive = (() => {
@@ -88,7 +89,26 @@ const GDrive = (() => {
     function init(onAuthChange) {
         onAuthChangeCallback = onAuthChange;
 
-        // Try to restore saved session
+        // Initialize token client first (needed for silent refresh)
+        if (typeof google !== 'undefined' && google.accounts) {
+            initTokenClient();
+            restoreSession();
+        } else {
+            // GIS not loaded yet, wait for it
+            window.addEventListener('load', () => {
+                setTimeout(() => {
+                    initTokenClient();
+                    restoreSession();
+                }, 100);
+            });
+        }
+    }
+
+    /**
+     * Attempt to restore a saved session
+     * Tries silent refresh if token is expired
+     */
+    async function restoreSession() {
         const savedToken = localStorage.getItem(TOKEN_KEY);
         const savedUser = localStorage.getItem(USER_KEY);
 
@@ -97,26 +117,66 @@ const GDrive = (() => {
             currentUser = JSON.parse(savedUser);
 
             // Verify token is still valid
-            verifyToken().then(valid => {
-                if (valid) {
-                    isInitialized = true;
-                    if (onAuthChangeCallback) onAuthChangeCallback(true, currentUser);
-                } else {
-                    // Token expired, clear state
+            const valid = await verifyToken();
+            if (valid) {
+                isInitialized = true;
+                if (onAuthChangeCallback) onAuthChangeCallback(true, currentUser);
+            } else {
+                // Token expired - try silent refresh
+                console.log('Token expired, attempting silent refresh...');
+                const refreshed = await silentRefresh();
+                if (!refreshed) {
+                    // Silent refresh failed, user needs to sign in again
                     clearSession();
+                    if (onAuthChangeCallback) onAuthChangeCallback(false, null);
                 }
-            });
+            }
         }
+    }
 
-        // Initialize token client (for sign-in flow)
-        if (typeof google !== 'undefined' && google.accounts) {
-            initTokenClient();
-        } else {
-            // GIS not loaded yet, wait for it
-            window.addEventListener('load', () => {
-                setTimeout(initTokenClient, 100);
-            });
-        }
+    /**
+     * Attempt silent token refresh without user interaction
+     * Returns true if successful, false if user needs to sign in manually
+     */
+    function silentRefresh() {
+        return new Promise((resolve) => {
+            if (!tokenClient) {
+                resolve(false);
+                return;
+            }
+
+            // Set up one-time callback for this refresh attempt
+            const originalCallback = tokenClient.callback;
+
+            tokenClient.callback = async (response) => {
+                // Restore original callback
+                tokenClient.callback = originalCallback;
+
+                if (response.error) {
+                    console.log('Silent refresh failed:', response.error);
+                    resolve(false);
+                    return;
+                }
+
+                // Success - save new token
+                accessToken = response.access_token;
+                localStorage.setItem(TOKEN_KEY, accessToken);
+
+                console.log('Silent refresh successful');
+                isInitialized = true;
+                if (onAuthChangeCallback) onAuthChangeCallback(true, currentUser);
+                resolve(true);
+            };
+
+            try {
+                // Request token silently (prompt: '' means no UI)
+                tokenClient.requestAccessToken({ prompt: '' });
+            } catch (err) {
+                console.log('Silent refresh error:', err);
+                tokenClient.callback = originalCallback;
+                resolve(false);
+            }
+        });
     }
 
     /**
