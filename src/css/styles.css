@@ -580,6 +580,8 @@ h3 {
     height: 300px;
     /* Large for splash screen */
     width: auto;
+    display: block;
+    margin: 0 auto;
 }
 
 .header-logo {
