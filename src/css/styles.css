@@ -221,8 +221,9 @@ html.dark .theme-toggle .icon-sun {
     align-items: center;
     justify-content: space-between;
     height: 32px;
-    background-color: #0f172a;
-    color: #f1f5f9;
+    background-color: var(--color-surface);
+    color: var(--color-text);
+    border-bottom: 1px solid var(--color-border);
     font-size: 12px;
     position: fixed;
     top: 0;
