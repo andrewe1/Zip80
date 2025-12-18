@@ -71,6 +71,7 @@
  * - 2025-12-16: Added cloud save toast messages (toastCloudSaved, toastCloudError)
  * - 2025-12-17: Added menu bar translations (vaultLabel, viewMode, options, statusSaved, etc.)
  * - 2025-12-17: Updated 'options' translation in Spanish to 'Configuración'
+ * - 2025-12-17: Added Activity Log translations (activityLogTitle, activityOwner, activityEmpty, activityYou)
  */
 
 const I18n = (() => {

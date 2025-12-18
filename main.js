@@ -159,7 +159,7 @@ function createWindow() {
     // Load from local HTTP server instead of file:// for OAuth compatibility
     mainWindow.loadURL(`http://127.0.0.1:${SERVER_PORT}/index.html`);
 
-    // Open DevTools in development
+    // Open DevTools in development (uncomment for debugging)
     // mainWindow.webContents.openDevTools();
 }
 

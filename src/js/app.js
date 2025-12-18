@@ -72,6 +72,10 @@
  * - 2025-12-16: Updated showWorkspace() to show cloud badge for Drive vaults
  * - 2025-12-17: Added Menu Bar and Undo/Redo button translations to updateUILanguage()
  * - 2025-12-17: Replaced account type dropdown with stylized icon buttons and updated modal logic
+ * - 2025-12-17: Added Activity Log widget with user attribution for shared vaults
+ * - 2025-12-17: Added getCurrentUserInfo(), renderActivityLog(), formatRelativeTime() for activity tracking
+ * - 2025-12-17: Transaction creation now includes createdBy field for user attribution
+ * - 2025-12-17: Added vaultOwnerEmail tracking when loading cloud vaults for "(owner)" badge
  */
 
 (() => {
@@ -1448,7 +1452,7 @@
             const amountClass = isIncome ? 'income' : 'expense';
             const amountPrefix = isIncome ? '+' : '';
             const currency = account ? account.currency : 'USD';
-            const amountStr = `${amountPrefix}${formatCurrency(Math.abs(tx.amt), currency)}`;
+            const amountStr = `${amountPrefix}${Accounts.formatCurrency(Math.abs(tx.amt), currency)}`;
 
             // Format time (relative)
             const timeStr = formatRelativeTime(tx.date);
