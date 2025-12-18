@@ -7,9 +7,20 @@
     "start": "electron . --no-sandbox --disable-gpu",
     "build": "electron-builder"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/andrewe1/Zip80.git"
+  },
   "build": {
     "appId": "com.zip80.track",
     "productName": "Zip80 Track",
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "andrewe1",
+        "repo": "Zip80"
+      }
+    ],
     "directories": {
       "output": "dist"
     },
@@ -26,5 +37,10 @@
   "devDependencies": {
     "electron": "^28.0.0",
     "electron-builder": "^24.9.1"
+  },
+  "dependencies": {
+    "electron-log": "^5.4.3",
+    "electron-updater": "^6.6.2",
+    "sortablejs": "^1.15.6"
   }
 }

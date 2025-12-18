@@ -8,6 +8,7 @@
  * operations via IPC (Inter-Process Communication).
  * 
  * CHANGE LOG:
+ * - 2025-12-17: Integrated electron-updater for automatic GitHub releases
  * - 2025-12-16: Added local HTTP server (port 17280) for Google OAuth compatibility
  * - 2025-12-16: Changed loadFile() to loadURL() for OAuth to work in Electron
  * - 2025-12-16: Added getMimeType() and startServer() for serving src directory
@@ -41,6 +42,11 @@ const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const http = require('http');
+const { autoUpdater } = require('electron-updater');
+
+// Configure auto-updater logging
+autoUpdater.logger = require('electron-log');
+autoUpdater.logger.transports.file.level = 'info';
 
 // Fix for crash: GPU process isn't usable
 app.disableHardwareAcceleration();
@@ -159,11 +165,29 @@ app.whenReady().then(async () => {
     await startServer();
     createWindow();
 
+    // Check for updates and notify the user
+    autoUpdater.checkForUpdatesAndNotify();
+
     app.on('activate', async () => {
         if (BrowserWindow.getAllWindows().length === 0) {
             createWindow();
         }
     });
+});
+
+// --- Auto-Updater Events ---
+
+autoUpdater.on('update-available', () => {
+    console.log('Update available.');
+});
+
+autoUpdater.on('update-downloaded', () => {
+    console.log('Update downloaded; will install now');
+    autoUpdater.quitAndInstall();
+});
+
+autoUpdater.on('error', (err) => {
+    console.error('Auto-updater error:', err);
 });
 
 app.on('window-all-closed', () => {
@@ -244,6 +268,16 @@ ipcMain.handle('read-file', async (event, filePath) => {
     try {
         const content = fs.readFileSync(filePath, 'utf-8');
         return { success: true, data: content ? JSON.parse(content) : null };
+    } catch (e) {
+        return { success: false, error: e.message };
+    }
+});
+
+// 2025-12-17: Read raw file content (for encryption detection)
+ipcMain.handle('read-file-raw', async (event, filePath) => {
+    try {
+        const content = fs.readFileSync(filePath, 'utf-8');
+        return { success: true, data: content };
     } catch (e) {
         return { success: false, error: e.message };
     }

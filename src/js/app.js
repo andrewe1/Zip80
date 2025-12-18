@@ -71,6 +71,7 @@
  * - 2025-12-16: Added createCloudVault(), loadCloudVault(), renderVaultPicker()
  * - 2025-12-16: Updated showWorkspace() to show cloud badge for Drive vaults
  * - 2025-12-17: Added Menu Bar and Undo/Redo button translations to updateUILanguage()
+ * - 2025-12-17: Replaced account type dropdown with stylized icon buttons and updated modal logic
  */
 
 (() => {
