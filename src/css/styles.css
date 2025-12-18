@@ -556,6 +556,38 @@ h3 {
     line-height: 1.6;
 }
 
+/* --- THEME-AWARE LOGOS (2025-12-17) --- */
+/* SVG logos that switch based on light/dark theme */
+.app-logo,
+.header-logo {
+    height: 1.2em;
+    width: auto;
+    vertical-align: middle;
+    margin-right: var(--space-xs);
+}
+
+/* Light theme: show light logo, hide dark logo */
+.app-logo-light,
+.header-logo-light {
+    display: inline;
+}
+
+.app-logo-dark,
+.header-logo-dark {
+    display: none;
+}
+
+/* Dark theme: show dark logo, hide light logo */
+html.dark .app-logo-light,
+html.dark .header-logo-light {
+    display: none;
+}
+
+html.dark .app-logo-dark,
+html.dark .header-logo-dark {
+    display: inline;
+}
+
 .startup-buttons {
     display: flex;
     flex-direction: column;
