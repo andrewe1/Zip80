@@ -340,18 +340,21 @@ const GDrive = (() => {
     }
 
     /**
-     * List all Zip80 vault files in user's Drive
-     * @returns {Array} Array of vault file objects {id, name, modifiedTime}
+     * List all Zip80 vault files in user's Drive (owned + shared)
+     * 2025-12-17: Updated to include files shared with the user
+     * @returns {Array} Array of vault file objects {id, name, modifiedTime, shared}
      */
     async function listVaults() {
-        // Query for files with our app property
+        // Query for files with our app property (includes both owned and shared)
         const query = `appProperties has { key='${APP_PROPERTY_KEY}' and value='${APP_PROPERTY_VALUE}' } and trashed=false`;
 
         const url = `${DRIVE_API}/files?` + new URLSearchParams({
             q: query,
-            fields: 'files(id,name,modifiedTime,owners)',
+            fields: 'files(id,name,modifiedTime,owners,shared)',
             orderBy: 'modifiedTime desc',
-            pageSize: '50'
+            pageSize: '50',
+            includeItemsFromAllDrives: 'true',
+            supportsAllDrives: 'true'
         });
 
         const response = await driveRequest(url);
