@@ -351,7 +351,13 @@ const I18n = (() => {
             confirmNewPasswordPlaceholder: 'Confirm new password',
             newHintPlaceholder: 'e.g. My favorite movie',
             wrongCurrentPassword: 'Current password is incorrect.',
-            passwordChanged: 'Password changed successfully!'
+            passwordChanged: 'Password changed successfully!',
+
+            // Activity Log (2025-12-17)
+            activityLogTitle: 'Activity Log',
+            activityOwner: '(owner)',
+            activityEmpty: 'No recent activity',
+            activityYou: 'You'
         },
 
         es: {
@@ -585,7 +591,13 @@ const I18n = (() => {
             confirmNewPasswordPlaceholder: 'Confirma nueva contraseña',
             newHintPlaceholder: 'ej. Mi película favorita',
             wrongCurrentPassword: 'La contraseña actual es incorrecta.',
-            passwordChanged: '¡Contraseña cambiada exitosamente!'
+            passwordChanged: '¡Contraseña cambiada exitosamente!',
+
+            // Activity Log (2025-12-17)
+            activityLogTitle: 'Registro de Actividad',
+            activityOwner: '(propietario)',
+            activityEmpty: 'Sin actividad reciente',
+            activityYou: 'Tú'
         }
     };
 

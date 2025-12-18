@@ -90,6 +90,9 @@
     let vaultHint = null;          // Current vault's password hint
     let failedAttempts = 0;        // Track failed unlock attempts
 
+    // 2025-12-17: Activity Log state - track vault owner for attribution
+    let vaultOwnerEmail = null;    // Email of the vault owner (for showing "owner" badge)
+
     // DOM Elements
     const elements = {
         // Theme & Language (2025-12-15)
@@ -301,7 +304,11 @@
         inputConfirmNewPassword: document.getElementById('input-confirm-new-password'),
         inputNewHint: document.getElementById('input-new-hint'),
         btnCancelChangePassword: document.getElementById('btn-cancel-change-password'),
-        btnConfirmChangePassword: document.getElementById('btn-confirm-change-password')
+        btnConfirmChangePassword: document.getElementById('btn-confirm-change-password'),
+
+        // Activity Log (2025-12-17)
+        activityLogTitle: document.getElementById('activity-log-title'),
+        activityLogList: document.getElementById('activity-log-list')
     };
 
     // --- Initialization ---
@@ -1385,6 +1392,122 @@
         }
     }
 
+    // --- Activity Log (2025-12-17) ---
+
+    /**
+     * Get current user info for transaction attribution
+     * Returns email and name from Google account, or null for local vaults
+     */
+    function getCurrentUserInfo() {
+        if (storageBackend === 'gdrive' && typeof GDrive !== 'undefined' && GDrive.isSignedIn()) {
+            const user = GDrive.getUser();
+            if (user) {
+                return {
+                    email: user.email,
+                    name: user.name || user.email.split('@')[0]
+                };
+            }
+        }
+        return null;  // Local vault - no attribution
+    }
+
+    /**
+     * Render the activity log widget showing recent transactions with user attribution
+     */
+    function renderActivityLog() {
+        if (!elements.activityLogList) return;
+
+        // Update widget title
+        if (elements.activityLogTitle) {
+            elements.activityLogTitle.textContent = '📋 ' + I18n.t('activityLogTitle');
+        }
+
+        // Get last 10 transactions, sorted by date descending
+        const recentTransactions = [...(data.transactions || [])]
+            .sort((a, b) => new Date(b.date) - new Date(a.date))
+            .slice(0, 10);
+
+        if (recentTransactions.length === 0) {
+            elements.activityLogList.innerHTML = `
+                <div class="activity-empty">${I18n.t('activityEmpty')}</div>
+            `;
+            return;
+        }
+
+        // Get current user for "You" label
+        const currentUser = getCurrentUserInfo();
+        const currentEmail = currentUser ? currentUser.email : null;
+
+        elements.activityLogList.innerHTML = recentTransactions.map(tx => {
+            // Get account info
+            const account = data.accounts.find(a => a.id === tx.accountId);
+            const accountName = account ? account.name : 'Unknown';
+
+            // Format amount
+            const isIncome = tx.amt > 0;
+            const amountClass = isIncome ? 'income' : 'expense';
+            const amountPrefix = isIncome ? '+' : '';
+            const currency = account ? account.currency : 'USD';
+            const amountStr = `${amountPrefix}${formatCurrency(Math.abs(tx.amt), currency)}`;
+
+            // Format time (relative)
+            const timeStr = formatRelativeTime(tx.date);
+
+            // User attribution
+            let userBadge = '';
+            if (tx.createdBy && tx.createdBy.email) {
+                if (tx.createdBy.email === vaultOwnerEmail) {
+                    // Vault owner
+                    userBadge = `<span class="activity-user owner">${I18n.t('activityOwner')}</span>`;
+                } else if (tx.createdBy.email === currentEmail) {
+                    // Current user (not owner)
+                    userBadge = `<span class="activity-user">${I18n.t('activityYou')}</span>`;
+                } else {
+                    // Other collaborator - show first name
+                    const displayName = tx.createdBy.name || tx.createdBy.email.split('@')[0];
+                    userBadge = `<span class="activity-user">${displayName}</span>`;
+                }
+            }
+
+            return `
+                <div class="activity-log-item">
+                    <span class="activity-icon">${isIncome ? '💰' : '💸'}</span>
+                    <div class="activity-content">
+                        <div class="activity-desc">${tx.desc}</div>
+                        <div class="activity-meta">
+                            ${userBadge}
+                            <span class="activity-time">${timeStr}</span>
+                        </div>
+                    </div>
+                    <span class="activity-amount ${amountClass}">${amountStr}</span>
+                </div>
+            `;
+        }).join('');
+    }
+
+    /**
+     * Format a date as relative time (e.g. "2h ago", "Yesterday")
+     */
+    function formatRelativeTime(dateStr) {
+        const date = new Date(dateStr);
+        const now = new Date();
+        const diffMs = now - date;
+        const diffMins = Math.floor(diffMs / (1000 * 60));
+        const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+        if (diffMins < 1) return 'Just now';
+        if (diffMins < 60) return `${diffMins}m ago`;
+        if (diffHours < 24) return `${diffHours}h ago`;
+        if (diffDays === 1) return 'Yesterday';
+        if (diffDays < 7) return `${diffDays}d ago`;
+
+        return date.toLocaleDateString(I18n.getLocale(), {
+            month: 'short',
+            day: 'numeric'
+        });
+    }
+
     // --- Google Drive Integration (2025-12-16) ---
 
     /**
@@ -1542,6 +1665,7 @@
     /**
      * Load a cloud vault by file ID
      * 2025-12-17: Added saveLastVault for reopen feature
+     * 2025-12-17: Added vaultOwnerEmail tracking for Activity Log
      */
     async function loadCloudVault(fileId) {
         closeVaultPickerModal();
@@ -1552,6 +1676,13 @@
             gdriveFileId = fileId;
             storageBackend = 'gdrive';
             currentAccountId = null;
+
+            // 2025-12-17: Track vault owner for Activity Log attribution
+            if (vaultInfo.owners && vaultInfo.owners[0]) {
+                vaultOwnerEmail = vaultInfo.owners[0].emailAddress;
+            } else {
+                vaultOwnerEmail = null;
+            }
 
             // 2025-12-17: Save for reopen feature
             GDrive.saveLastVault(fileId, vaultInfo.name || 'Unknown');
@@ -1708,17 +1839,20 @@
         }
 
         // Create an adjustment transaction
+        // 2025-12-17: Include createdBy for Activity Log attribution
         const reason = elements.inputAdjustmentReason.value.trim();
         const desc = reason
             ? `${I18n.t('balanceAdjustment')}: ${reason}`
             : I18n.t('balanceAdjustment');
+        const userInfo = getCurrentUserInfo();
 
         const transaction = {
             id: Date.now(),
             accountId: currentAccountId,
             desc: desc,
             amt: adjustment,
-            date: new Date().toISOString()
+            date: new Date().toISOString(),
+            createdBy: userInfo
         };
 
         saveToHistory();  // 2025-12-17: Save state before modifying data
@@ -2235,13 +2369,16 @@
             showToast(I18n.t('toastRecurringCreated'));
         } else {
             // Create regular transaction
+            // 2025-12-17: Include createdBy for Activity Log attribution
+            const userInfo = getCurrentUserInfo();
             const transaction = {
                 id: Date.now(),
                 accountId: currentAccountId,
                 desc: desc,
                 amt: mode === 'income' ? amount : -amount,
                 category: category,
-                date: new Date().toISOString()
+                date: new Date().toISOString(),
+                createdBy: userInfo  // null for local vaults, {email, name} for cloud
             };
             saveToHistory();  // 2025-12-17: Save state before modifying data
             data.transactions.push(transaction);
@@ -2316,6 +2453,7 @@
         renderBalanceOverview();  // 2025-12-15: Balance overview widget
         renderRecurringWidget();  // 2025-12-15: Recurring expenses widget
         Calendar.renderCalendarWidget();  // 2025-12-15: Calendar widget
+        renderActivityLog();  // 2025-12-17: Activity log widget
     }
 
     function renderAccountTabs() {
