@@ -568,18 +568,37 @@ CHANGE LOG:
                         </div>
                         <div class="widget-content">
                             <div class="exchange-content">
+                                <!-- 2025-12-19: Currency dropdowns for flexible exchange rate viewing -->
                                 <div id="exchange-rates" class="exchange-rates">
+                                    <!-- Primary rate row: FROM → TO -->
                                     <div class="exchange-rate-row">
-                                        <span class="exchange-from">1 USD</span>
+                                        <input type="text" id="exchange-amount-from" class="exchange-amount-input"
+                                            value="1" inputmode="decimal">
+                                        <select id="exchange-from-currency" class="exchange-currency-select">
+                                            <option value="USD" selected>USD</option>
+                                            <option value="EUR">EUR</option>
+                                            <option value="GBP">GBP</option>
+                                            <option value="MXN">MXN</option>
+                                            <option value="JPY">JPY</option>
+                                        </select>
                                         <span class="exchange-arrow">=</span>
-                                        <span id="rate-usd-mxn" class="exchange-to">--</span>
-                                        <span class="exchange-currency">MXN</span>
+                                        <span id="rate-primary" class="exchange-to">--</span>
+                                        <span id="primary-to-label" class="exchange-currency">MXN</span>
                                     </div>
+                                    <!-- Inverse rate row: TO → FROM -->
                                     <div class="exchange-rate-row">
-                                        <span class="exchange-from">1 MXN</span>
+                                        <input type="text" id="exchange-amount-to" class="exchange-amount-input"
+                                            value="1" inputmode="decimal">
+                                        <select id="exchange-to-currency" class="exchange-currency-select">
+                                            <option value="USD">USD</option>
+                                            <option value="EUR">EUR</option>
+                                            <option value="GBP">GBP</option>
+                                            <option value="MXN" selected>MXN</option>
+                                            <option value="JPY">JPY</option>
+                                        </select>
                                         <span class="exchange-arrow">=</span>
-                                        <span id="rate-mxn-usd" class="exchange-to">--</span>
-                                        <span class="exchange-currency">USD</span>
+                                        <span id="rate-inverse" class="exchange-to">--</span>
+                                        <span id="inverse-to-label" class="exchange-currency">USD</span>
                                     </div>
                                 </div>
                                 <div class="exchange-chart">

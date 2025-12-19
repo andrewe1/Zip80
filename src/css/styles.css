@@ -1758,7 +1758,8 @@ html.dark .save-status-error {
 .exchange-rate-row {
     display: flex;
     align-items: center;
-    gap: var(--space-sm);
+    gap: 4px;
+    /* 2025-12-19: Tighter spacing */
     padding: var(--space-xs) 0;
     font-size: var(--font-size-sm);
 }
@@ -1766,11 +1767,11 @@ html.dark .save-status-error {
 .exchange-from {
     font-weight: 600;
     color: var(--color-text);
-    min-width: 50px;
 }
 
 .exchange-arrow {
     color: var(--color-text-muted);
+    margin: 0 2px;
 }
 
 .exchange-to {
@@ -1781,6 +1782,59 @@ html.dark .save-status-error {
 .exchange-currency {
     font-size: 0.7rem;
     color: var(--color-text-muted);
+}
+
+/* 2025-12-19: Amount input styling */
+.exchange-amount-input {
+    width: 45px;
+    background-color: var(--color-surface);
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    padding: 2px 4px;
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    text-align: right;
+    appearance: textfield;
+    -moz-appearance: textfield;
+}
+
+.exchange-amount-input::-webkit-outer-spin-button,
+.exchange-amount-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.exchange-amount-input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+}
+
+/* 2025-12-19: Currency dropdown styling */
+.exchange-currency-select {
+    background-color: var(--color-surface);
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    padding: 2px 4px;
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    cursor: pointer;
+    min-width: 55px;
+}
+
+.exchange-currency-select:hover {
+    border-color: var(--color-primary);
+}
+
+.exchange-currency-select:focus {
+    outline: none;
+    border-color: var(--color-primary);
+}
+
+.exchange-inverse-row {
+    font-size: 0.75rem;
+    opacity: 0.8;
 }
 
 .exchange-updated {

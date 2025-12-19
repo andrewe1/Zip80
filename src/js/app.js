@@ -165,10 +165,16 @@
         recurringEmpty: document.getElementById('recurring-empty'),
         recurringTotal: document.getElementById('recurring-total'),  // 2025-12-16
 
-        // Exchange Rate Widget (2025-12-16)
+        // Exchange Rate Widget (2025-12-16, updated 2025-12-19 for dropdowns & inputs)
         exchangeWidgetTitle: document.getElementById('exchange-widget-title'),
-        rateUsdMxn: document.getElementById('rate-usd-mxn'),
-        rateMxnUsd: document.getElementById('rate-mxn-usd'),
+        exchangeAmountFrom: document.getElementById('exchange-amount-from'),
+        exchangeAmountTo: document.getElementById('exchange-amount-to'),
+        exchangeFromCurrency: document.getElementById('exchange-from-currency'),
+        exchangeToCurrency: document.getElementById('exchange-to-currency'),
+        ratePrimary: document.getElementById('rate-primary'),
+        rateInverse: document.getElementById('rate-inverse'),
+        primaryToLabel: document.getElementById('primary-to-label'),
+        inverseToLabel: document.getElementById('inverse-to-label'),
         exchangeUpdated: document.getElementById('exchange-updated'),
 
         // Calendar Widget (2025-12-16)
@@ -806,6 +812,54 @@
                 fetchExchangeHistory(days);
             });
         });
+
+        // 2025-12-19: Currency dropdown change listeners
+        if (elements.exchangeFromCurrency) {
+            elements.exchangeFromCurrency.addEventListener('change', () => fetchExchangeRates());
+        }
+        if (elements.exchangeToCurrency) {
+            elements.exchangeToCurrency.addEventListener('change', () => fetchExchangeRates());
+        }
+
+        // 2025-12-19: Amount input listeners for custom conversions with comma formatting
+        const formatWithCommas = (input) => {
+            // Get cursor position
+            const cursorPos = input.selectionStart;
+            const oldValue = input.value;
+            const oldLen = oldValue.length;
+
+            // Remove non-numeric chars except decimal point
+            let value = input.value.replace(/[^0-9.]/g, '');
+
+            // Handle multiple decimal points
+            const parts = value.split('.');
+            if (parts.length > 2) {
+                value = parts[0] + '.' + parts.slice(1).join('');
+            }
+
+            // Format with commas
+            const [intPart, decPart] = value.split('.');
+            const formatted = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+            input.value = decPart !== undefined ? `${formatted}.${decPart}` : formatted;
+
+            // Adjust cursor position after formatting
+            const newLen = input.value.length;
+            const newCursorPos = cursorPos + (newLen - oldLen);
+            input.setSelectionRange(newCursorPos, newCursorPos);
+        };
+
+        if (elements.exchangeAmountFrom) {
+            elements.exchangeAmountFrom.addEventListener('input', () => {
+                formatWithCommas(elements.exchangeAmountFrom);
+                fetchExchangeRates();
+            });
+        }
+        if (elements.exchangeAmountTo) {
+            elements.exchangeAmountTo.addEventListener('input', () => {
+                formatWithCommas(elements.exchangeAmountTo);
+                fetchExchangeRates();
+            });
+        }
     }
 
     function setupDragAndDrop() {
@@ -2985,30 +3039,64 @@
     /**
      * Fetch live exchange rates from ExchangeRate-API
      * 2025-12-16: Updates the exchange rate widget in sidebar
+     * 2025-12-19: Updated to use dynamic currency selection from dropdowns
      */
     async function fetchExchangeRates() {
+        // Get selected currencies from dropdowns
+        const fromCurrency = elements.exchangeFromCurrency?.value || 'USD';
+        const toCurrency = elements.exchangeToCurrency?.value || 'MXN';
+
+        // Get amounts from inputs (default to 1), strip commas for parsing
+        const amountFrom = parseFloat((elements.exchangeAmountFrom?.value || '1').replace(/,/g, '')) || 1;
+        const amountTo = parseFloat((elements.exchangeAmountTo?.value || '1').replace(/,/g, '')) || 1;
+
+        // Don't fetch if same currency selected
+        if (fromCurrency === toCurrency) {
+            if (elements.ratePrimary) elements.ratePrimary.textContent = amountFrom.toFixed(2);
+            if (elements.rateInverse) elements.rateInverse.textContent = amountTo.toFixed(2);
+            return;
+        }
+
         try {
-            const response = await fetch('https://open.er-api.com/v6/latest/USD');
+            const response = await fetch(`https://open.er-api.com/v6/latest/${fromCurrency}`);
             const data = await response.json();
 
-            if (data && data.rates && data.rates.MXN) {
-                const usdToMxn = data.rates.MXN;
-                const mxnToUsd = 1 / usdToMxn;
+            if (data && data.rates && data.rates[toCurrency]) {
+                const baseRate = data.rates[toCurrency];
+                const inverseBaseRate = 1 / baseRate;
 
-                // Update DOM
-                if (elements.rateUsdMxn) {
-                    elements.rateUsdMxn.textContent = usdToMxn.toFixed(2);
+                // Calculate with user amounts
+                const primaryResult = amountFrom * baseRate;
+                const inverseResult = amountTo * inverseBaseRate;
+
+                // Update rate displays with comma formatting
+                if (elements.ratePrimary) {
+                    const formatted = primaryResult >= 1
+                        ? primaryResult.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                        : primaryResult.toFixed(4);
+                    elements.ratePrimary.textContent = formatted;
                 }
-                if (elements.rateMxnUsd) {
-                    elements.rateMxnUsd.textContent = mxnToUsd.toFixed(4);
+                if (elements.rateInverse) {
+                    const formatted = inverseResult >= 1
+                        ? inverseResult.toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 })
+                        : inverseResult.toFixed(6);
+                    elements.rateInverse.textContent = formatted;
                 }
+
+                // Update labels for stacked layout
+                if (elements.primaryToLabel) elements.primaryToLabel.textContent = toCurrency;
+                if (elements.inverseToLabel) elements.inverseToLabel.textContent = fromCurrency;
+
                 if (elements.exchangeUpdated) {
                     const now = new Date();
                     elements.exchangeUpdated.textContent = `${I18n.t('exchangeUpdated')} ${now.toLocaleTimeString()}`;
                 }
+
+                // Store selected currencies for chart
+                currentExchangePair = { from: fromCurrency, to: toCurrency };
             }
 
-            // Fetch 7-day history for sparkline from frankfurter.app (free, no key)
+            // Fetch history for sparkline
             fetchExchangeHistory();
 
         } catch (error) {
@@ -3019,13 +3107,24 @@
         }
     }
 
+    // 2025-12-19: Track current exchange pair for chart
+    let currentExchangePair = { from: 'USD', to: 'MXN' };
+
     /**
      * Fetch exchange rate history and render sparkline
      * 2025-12-16: Uses frankfurter.app API for historical data
      * 2025-12-16: Enhanced with X-axis labels and hover tooltips
+     * 2025-12-19: Updated to use dynamic currency pair
      * @param {number} days - Number of days of history to fetch
      */
     async function fetchExchangeHistory(days = 7) {
+        // Use current exchange pair or defaults
+        const fromCurrency = currentExchangePair.from || 'USD';
+        const toCurrency = currentExchangePair.to || 'MXN';
+
+        // Skip if same currency
+        if (fromCurrency === toCurrency) return;
+
         try {
             // Calculate date range
             const endDate = new Date();
@@ -3033,7 +3132,7 @@
             startDate.setDate(startDate.getDate() - days);
 
             const formatDate = (d) => d.toISOString().split('T')[0];
-            const url = `https://api.frankfurter.app/${formatDate(startDate)}..${formatDate(endDate)}?from=USD&to=MXN`;
+            const url = `https://api.frankfurter.app/${formatDate(startDate)}..${formatDate(endDate)}?from=${fromCurrency}&to=${toCurrency}`;
 
             const response = await fetch(url);
             const data = await response.json();
@@ -3044,7 +3143,7 @@
                     .sort()
                     .map(date => ({
                         date: date,
-                        rate: data.rates[date].MXN
+                        rate: data.rates[date][toCurrency]
                     }));
 
                 // Draw sparkline with dates for hover and X-axis
@@ -3120,7 +3219,7 @@
                             month: 'short',
                             day: 'numeric'
                         });
-                        tooltip.querySelector('.tooltip-rate').textContent = `$${d.rate.toFixed(4)} MXN`;
+                        tooltip.querySelector('.tooltip-rate').textContent = `${d.rate.toFixed(4)} ${currentExchangePair.to}`;
                         tooltip.querySelector('.tooltip-date').textContent = formattedDate;
                         tooltip.style.display = 'block';
 
@@ -3196,8 +3295,9 @@
             // 1m: Show every 5 days
             labelIndices = rateData.map((_, i) => i).filter(i => i % 5 === 0 || i === rateData.length - 1);
         } else {
-            // 6m: Show weekly labels
-            labelIndices = rateData.map((_, i) => i).filter(i => i % 7 === 0 || i === rateData.length - 1);
+            // 6m: Show approximately 6 labels (one per month)
+            const step = Math.floor(rateData.length / 5);
+            labelIndices = rateData.map((_, i) => i).filter(i => i % step === 0 || i === rateData.length - 1);
         }
 
         // Create labels at evenly spaced positions
@@ -3210,10 +3310,8 @@
                 // Days: show day number
                 label = date.getDate().toString();
             } else {
-                // Weeks: show month/day
-                label = date.toLocaleDateString(I18n.getLocale(), { month: 'short', day: 'numeric' });
-                // Shorten to just M/D for space
-                label = `${date.getMonth() + 1}/${date.getDate()}`;
+                // 2025-12-19: 6m: Show just month abbreviation to avoid cramped labels
+                label = date.toLocaleDateString(I18n.getLocale(), { month: 'short' });
             }
 
             const span = document.createElement('span');
