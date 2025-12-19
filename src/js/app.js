@@ -76,6 +76,12 @@
  * - 2025-12-17: Added getCurrentUserInfo(), renderActivityLog(), formatRelativeTime() for activity tracking
  * - 2025-12-17: Transaction creation now includes createdBy field for user attribution
  * - 2025-12-17: Added vaultOwnerEmail tracking when loading cloud vaults for "(owner)" badge
+ * - 2025-12-19: Enhanced exchange rate widget with currency dropdowns (USD, EUR, GBP, MXN, JPY)
+ * - 2025-12-19: Added custom amount inputs with comma formatting for currency conversion
+ * - 2025-12-19: Updated fetchExchangeRates() and fetchExchangeHistory() for dynamic currency pairs
+ * - 2025-12-19: Added formatWithCommas() for exchange rate input formatting
+ * - 2025-12-19: Fixed chart tooltip to use dynamic currency instead of hardcoded MXN
+ * - 2025-12-19: Updated 6m chart X-axis labels to show month abbreviation only
  */
 
 (() => {

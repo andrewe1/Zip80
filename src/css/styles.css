@@ -77,6 +77,9 @@
  * - 2025-12-17: Added custom title bar styles for frameless Electron window
  * - 2025-12-17: Added Activity Log widget styles (activity-log-item, activity-user badges, relative time)
  * - 2025-12-17: Customized global scrollbars (12px) and added specific thinner scrollbar (4px) for activity log to prevent clipping
+ * - 2025-12-19: Added exchange rate widget enhancements: currency dropdown selects and amount input fields
+ * - 2025-12-19: Added .exchange-currency-select and .exchange-amount-input styles with compact spacing
+ * - 2025-12-19: Updated .exchange-rate-row gap to 4px for tighter layout
  * ============================================================================
  */
 
