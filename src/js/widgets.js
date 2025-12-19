@@ -50,6 +50,10 @@
  * CHANGE LOG:
  * - 2025-12-16: Initial creation with drag-and-drop and collapse functionality
  * - 2025-12-19: Added setEnabled/getEnabled for widget visibility toggling from menu bar
+ * - 2025-12-19: Added popout/maximize feature with floating draggable window
+ * - 2025-12-19: Added setupPopout(), popoutWidget(), closePopout(), refreshPopoutContent()
+ * - 2025-12-19: Added event delegation for interactive elements in popout (buttons, dropdowns, inputs)
+ * - 2025-12-19: Popout syncs with original widget and preserves select/input values on refresh
  */
 
 const Widgets = (() => {
@@ -358,6 +362,232 @@ const Widgets = (() => {
         });
     }
 
+    // 2025-12-19: Popout/maximize functionality
+    let popoutWindow = null;
+    let isDragging = false;
+    let dragOffset = { x: 0, y: 0 };
+    let currentPopoutWidgetId = null;  // Track which widget is currently popped out
+
+    /**
+     * Setup popout functionality
+     * Adds maximize buttons to widget headers and sets up event handlers
+     */
+    function setupPopout() {
+        popoutWindow = document.getElementById('widget-popout');
+        if (!popoutWindow) return;
+
+        // Add maximize button to each widget header
+        document.querySelectorAll('.widget-header').forEach(header => {
+            const widget = header.closest('.widget-card');
+            if (!widget) return;
+
+            const widgetId = widget.dataset.widgetId;
+            if (!widgetId) return;
+
+            // Create maximize button
+            const maxBtn = document.createElement('button');
+            maxBtn.className = 'widget-maximize-btn';
+            maxBtn.innerHTML = '⛶';
+            maxBtn.title = 'Pop out widget';
+            maxBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                popoutWidget(widgetId);
+            });
+
+            // Insert before the title or as first child
+            header.insertBefore(maxBtn, header.firstChild);
+        });
+
+        // Close button handler
+        const closeBtn = popoutWindow.querySelector('.widget-popout-close');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', closePopout);
+        }
+
+        // Escape key to close
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && popoutWindow.style.display !== 'none') {
+                closePopout();
+            }
+        });
+
+        // Drag functionality
+        const header = popoutWindow.querySelector('.widget-popout-header');
+        if (header) {
+            header.addEventListener('mousedown', startDrag);
+        }
+        document.addEventListener('mousemove', drag);
+        document.addEventListener('mouseup', stopDrag);
+
+        // 2025-12-19: Event delegation for interactive elements in popout
+        const popoutContent = popoutWindow.querySelector('.widget-popout-content');
+        if (popoutContent) {
+            // Chart range button clicks
+            popoutContent.addEventListener('click', (e) => {
+                const rangeBtn = e.target.closest('.chart-range-btn');
+                if (rangeBtn && currentPopoutWidgetId) {
+                    const days = parseInt(rangeBtn.dataset.days);
+                    // Update active state in popout
+                    popoutContent.querySelectorAll('.chart-range-btn').forEach(b => b.classList.remove('active'));
+                    rangeBtn.classList.add('active');
+                    // Also update original widget
+                    const origWidget = document.querySelector(`.widget-card[data-widget-id="${currentPopoutWidgetId}"]`);
+                    if (origWidget) {
+                        origWidget.querySelectorAll('.chart-range-btn').forEach(b => b.classList.remove('active'));
+                        const origBtn = origWidget.querySelector(`.chart-range-btn[data-days="${days}"]`);
+                        if (origBtn) origBtn.classList.add('active');
+                    }
+                    // Trigger appropriate fetch based on widget type
+                    if (currentPopoutWidgetId === 'exchange') {
+                        if (window.fetchExchangeHistory) window.fetchExchangeHistory(days);
+                    } else if (currentPopoutWidgetId === 'crypto-rates') {
+                        if (window.fetchCryptoHistory) window.fetchCryptoHistory(days);
+                    }
+                    // Refresh popout content after fetch
+                    setTimeout(() => refreshPopoutContent(), 500);
+                }
+            });
+
+            // Dropdown changes
+            popoutContent.addEventListener('change', (e) => {
+                if (e.target.classList.contains('exchange-currency-select') && currentPopoutWidgetId) {
+                    // Sync to original widget
+                    const origWidget = document.querySelector(`.widget-card[data-widget-id="${currentPopoutWidgetId}"]`);
+                    if (origWidget) {
+                        const origSelect = origWidget.querySelector(`#${e.target.id}`);
+                        if (origSelect) {
+                            origSelect.value = e.target.value;
+                            origSelect.dispatchEvent(new Event('change'));
+                        }
+                    }
+                    setTimeout(() => refreshPopoutContent(), 500);
+                }
+            });
+
+            // Input changes
+            popoutContent.addEventListener('input', (e) => {
+                if (e.target.classList.contains('exchange-amount-input') && currentPopoutWidgetId) {
+                    const origWidget = document.querySelector(`.widget-card[data-widget-id="${currentPopoutWidgetId}"]`);
+                    if (origWidget) {
+                        const origInput = origWidget.querySelector(`#${e.target.id}`);
+                        if (origInput) {
+                            origInput.value = e.target.value;
+                            origInput.dispatchEvent(new Event('input'));
+                        }
+                    }
+                    setTimeout(() => refreshPopoutContent(), 300);
+                }
+            });
+        }
+    }
+
+    /**
+     * Pop out a widget into the floating window
+     * @param {string} widgetId - The widget's data-widget-id value
+     */
+    function popoutWidget(widgetId) {
+        if (!popoutWindow) return;
+
+        const widget = document.querySelector(`.widget-card[data-widget-id="${widgetId}"]`);
+        if (!widget) return;
+
+        currentPopoutWidgetId = widgetId;  // Track for event delegation
+
+        // Get title text
+        const titleEl = widget.querySelector('.widget-title');
+        const title = titleEl ? titleEl.textContent : widgetId;
+
+        // Clone widget content
+        const content = widget.querySelector('.widget-content');
+        if (!content) return;
+
+        // Update popout
+        popoutWindow.querySelector('.widget-popout-title').textContent = title;
+        popoutWindow.querySelector('.widget-popout-content').innerHTML = content.innerHTML;
+
+        // Reset size and position to center (using pixels, not transform, for proper resize behavior)
+        popoutWindow.style.width = '';  // Reset to auto/min-width
+        popoutWindow.style.height = ''; // Reset to auto
+
+        // Show temporarily to get dimensions, then position
+        popoutWindow.style.display = 'block';
+        popoutWindow.style.visibility = 'hidden';
+
+        const rect = popoutWindow.getBoundingClientRect();
+        const centerX = (window.innerWidth - rect.width) / 2;
+        const centerY = (window.innerHeight - rect.height) / 2;
+
+        popoutWindow.style.left = centerX + 'px';
+        popoutWindow.style.top = Math.max(50, centerY) + 'px';  // At least 50px from top
+        popoutWindow.style.transform = 'none';
+        popoutWindow.style.visibility = 'visible';
+    }
+
+    /**
+     * Close the popout window
+     */
+    function closePopout() {
+        if (popoutWindow) {
+            popoutWindow.style.display = 'none';
+            popoutWindow.querySelector('.widget-popout-content').innerHTML = '';
+            currentPopoutWidgetId = null;
+        }
+    }
+
+    /**
+     * Refresh popout content from the original widget
+     * Called after delegated actions update the original widget
+     */
+    function refreshPopoutContent() {
+        if (!popoutWindow || !currentPopoutWidgetId) return;
+
+        const widget = document.querySelector(`.widget-card[data-widget-id="${currentPopoutWidgetId}"]`);
+        if (!widget) return;
+
+        const content = widget.querySelector('.widget-content');
+        const popoutContent = popoutWindow.querySelector('.widget-popout-content');
+        if (!content || !popoutContent) return;
+
+        // Copy HTML
+        popoutContent.innerHTML = content.innerHTML;
+
+        // Sync select values (innerHTML doesn't preserve current values)
+        widget.querySelectorAll('select').forEach(origSelect => {
+            const popoutSelect = popoutContent.querySelector(`#${origSelect.id}`);
+            if (popoutSelect) {
+                popoutSelect.value = origSelect.value;
+            }
+        });
+
+        // Sync input values
+        widget.querySelectorAll('input').forEach(origInput => {
+            const popoutInput = popoutContent.querySelector(`#${origInput.id}`);
+            if (popoutInput) {
+                popoutInput.value = origInput.value;
+            }
+        });
+    }
+
+    function startDrag(e) {
+        if (e.target.classList.contains('widget-popout-close')) return;
+        isDragging = true;
+        const rect = popoutWindow.getBoundingClientRect();
+        dragOffset.x = e.clientX - rect.left;
+        dragOffset.y = e.clientY - rect.top;
+        popoutWindow.style.transform = 'none';
+    }
+
+    function drag(e) {
+        if (!isDragging) return;
+        e.preventDefault();
+        popoutWindow.style.left = (e.clientX - dragOffset.x) + 'px';
+        popoutWindow.style.top = (e.clientY - dragOffset.y) + 'px';
+    }
+
+    function stopDrag() {
+        isDragging = false;
+    }
+
     // Public API
     return {
         init,
@@ -367,6 +597,9 @@ const Widgets = (() => {
         getEnabled,
         getWidgetOrder,
         registerWidget,
-        resetToDefaults
+        resetToDefaults,
+        setupPopout,
+        popoutWidget,
+        closePopout
     };
 })();

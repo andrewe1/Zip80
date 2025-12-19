@@ -82,6 +82,8 @@
  * - 2025-12-19: Updated .exchange-rate-row gap to 4px for tighter layout
  * - 2025-12-19: Increased exchange chart SVG height from 45px to 65px for more visible price movements
  * - 2025-12-19: Added crypto sparkline hover dot styles matching exchange rate chart
+ * - 2025-12-19: Added widget popout floating window styles (draggable, resizable)
+ * - 2025-12-19: Removed height limits on lists inside popout for expanded view
  * ============================================================================
  */
 
@@ -3042,4 +3044,90 @@ html.dark *::-webkit-scrollbar-thumb:hover {
     font-size: var(--font-size-sm);
     font-weight: 400;
     max-width: 300px;
+}
+
+/* =============================================================================
+   2025-12-19: WIDGET POPOUT FLOATING WINDOW
+   ============================================================================= */
+
+.widget-popout-window {
+    position: fixed;
+    z-index: 9999;
+    min-width: 350px;
+    min-height: 200px;
+    max-width: 90vw;
+    max-height: 90vh;
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+    overflow: auto;
+    resize: both;
+    /* 2025-12-19: Enable corner resize handle */
+}
+
+.widget-popout-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-sm) var(--space-md);
+    background-color: var(--color-background);
+    border-bottom: 1px solid var(--color-border);
+    cursor: grab;
+    user-select: none;
+}
+
+.widget-popout-header:active {
+    cursor: grabbing;
+}
+
+.widget-popout-title {
+    font-weight: 600;
+    font-size: var(--font-size-md);
+    color: var(--color-text);
+}
+
+.widget-popout-close {
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: var(--radius-sm);
+    transition: all 0.15s ease;
+}
+
+.widget-popout-close:hover {
+    background-color: var(--color-danger);
+    color: white;
+}
+
+.widget-popout-content {
+    padding: var(--space-md);
+    max-height: calc(80vh - 60px);
+    overflow-y: auto;
+}
+
+/* 2025-12-19: Remove height limits on lists inside popout so resizing shows more content */
+.widget-popout-content .activity-log-list,
+.widget-popout-content .recurring-list {
+    max-height: none;
+}
+
+/* Maximize button in widget header */
+.widget-maximize-btn {
+    background: none;
+    border: none;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    padding: 2px 6px;
+    font-size: 0.9rem;
+    opacity: 0.6;
+    transition: opacity 0.15s ease;
+}
+
+.widget-maximize-btn:hover {
+    opacity: 1;
+    color: var(--color-primary);
 }

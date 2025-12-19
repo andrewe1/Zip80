@@ -75,6 +75,7 @@ CHANGE LOG:
 - 2025-12-19: Replaced static "1" with text input fields for custom amount conversion
 - 2025-12-19: Added Crypto Rates widget with BTC, ETH, SOL, XRP, ADA and fiat currencies
 - 2025-12-19: Added crypto-rates toggle to widgets dropdown menu
+- 2025-12-19: Added widget popout floating window container
 -->
 <!DOCTYPE html>
 <html lang="en">
@@ -1081,6 +1082,15 @@ CHANGE LOG:
     <script src="js/history.js"></script>
     <script src="js/menubar.js"></script>
     <script src="js/app.js"></script>
+
+    <!-- 2025-12-19: Widget Popout Floating Window -->
+    <div id="widget-popout" class="widget-popout-window" style="display: none;">
+        <div class="widget-popout-header">
+            <span class="widget-popout-title"></span>
+            <button class="widget-popout-close" aria-label="Close">✕</button>
+        </div>
+        <div class="widget-popout-content"></div>
+    </div>
 
     <!-- 2025-12-17: Title bar window controls -->
     <script>

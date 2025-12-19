@@ -85,6 +85,7 @@
  * - 2025-12-19: Added Crypto Rates widget with CoinGecko API (BTC, ETH, SOL, XRP, ADA)
  * - 2025-12-19: Added fetchCryptoRates(), fetchCryptoHistory(), drawCryptoSparkline() functions
  * - 2025-12-19: Improved X-axis label rendering to limit max labels and prevent overflow
+ * - 2025-12-19: Exposed fetchExchangeHistory and fetchCryptoHistory to window for popout delegation
  */
 
 (() => {
@@ -2551,6 +2552,7 @@
 
         // 2025-12-16: Initialize widget system (drag-and-drop, collapse)
         Widgets.init();
+        Widgets.setupPopout();  // 2025-12-19: Add popout/maximize buttons
 
         // 2025-12-17: Show/hide change password option based on encryption status
         updateChangePasswordVisibility();
@@ -3625,6 +3627,10 @@
             toast.classList.remove('show');
         }, 2000);
     }
+
+    // --- Expose functions to window for popout delegation (2025-12-19) ---
+    window.fetchExchangeHistory = fetchExchangeHistory;
+    window.fetchCryptoHistory = fetchCryptoHistory;
 
     // --- Start ---
     init();
