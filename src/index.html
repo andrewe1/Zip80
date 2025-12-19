@@ -73,6 +73,8 @@ CHANGE LOG:
 - 2025-12-17: Replaced account type selector dropdown with icon button grid
 - 2025-12-19: Added currency dropdown selects to exchange rate widget (USD, EUR, GBP, MXN, JPY)
 - 2025-12-19: Replaced static "1" with text input fields for custom amount conversion
+- 2025-12-19: Added Crypto Rates widget with BTC, ETH, SOL, XRP, ADA and fiat currencies
+- 2025-12-19: Added crypto-rates toggle to widgets dropdown menu
 -->
 <!DOCTYPE html>
 <html lang="en">
@@ -290,6 +292,14 @@ CHANGE LOG:
                     </div>
                     <div class="widget-toggle-item" data-widget="exchange">
                         <span class="widget-toggle-label">💱 <span data-i18n="widgetExchange">Exchange
+                                Rates</span></span>
+                        <label class="widget-toggle-switch">
+                            <input type="checkbox" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="widget-toggle-item" data-widget="crypto-rates">
+                        <span class="widget-toggle-label">₿ <span data-i18n="widgetCryptoRates">Crypto
                                 Rates</span></span>
                         <label class="widget-toggle-switch">
                             <input type="checkbox" checked>
@@ -634,6 +644,72 @@ CHANGE LOG:
                                 </div>
                             </div>
                             <p id="exchange-updated" class="exchange-updated">Loading...</p>
+                        </div>
+                    </div>
+
+                    <!-- 2025-12-19: Crypto Rates Widget for cryptocurrency price tracking -->
+                    <div class="card widget-card crypto-rates-widget-card" data-widget-id="crypto-rates">
+                        <div class="widget-header">
+                            <h3 id="crypto-rates-widget-title" class="widget-title">₿ Crypto Rates</h3>
+                        </div>
+                        <div class="widget-content">
+                            <div class="exchange-content">
+                                <div id="crypto-rates" class="exchange-rates">
+                                    <!-- Crypto to Fiat row -->
+                                    <div class="exchange-rate-row">
+                                        <input type="text" id="crypto-amount-from" class="exchange-amount-input"
+                                            value="1" inputmode="decimal">
+                                        <select id="crypto-from-currency" class="exchange-currency-select">
+                                            <option value="BTC" selected>BTC</option>
+                                            <option value="ETH">ETH</option>
+                                            <option value="SOL">SOL</option>
+                                            <option value="XRP">XRP</option>
+                                            <option value="ADA">ADA</option>
+                                        </select>
+                                        <span class="exchange-arrow">=</span>
+                                        <span id="crypto-rate-primary" class="exchange-to">--</span>
+                                        <span id="crypto-primary-to-label" class="exchange-currency">USD</span>
+                                    </div>
+                                    <!-- Fiat to Crypto row -->
+                                    <div class="exchange-rate-row">
+                                        <input type="text" id="crypto-amount-to" class="exchange-amount-input" value="1"
+                                            inputmode="decimal">
+                                        <select id="crypto-to-currency" class="exchange-currency-select">
+                                            <option value="USD" selected>USD</option>
+                                            <option value="EUR">EUR</option>
+                                            <option value="GBP">GBP</option>
+                                            <option value="MXN">MXN</option>
+                                            <option value="JPY">JPY</option>
+                                        </select>
+                                        <span class="exchange-arrow">=</span>
+                                        <span id="crypto-rate-inverse" class="exchange-to">--</span>
+                                        <span id="crypto-inverse-to-label" class="exchange-currency">BTC</span>
+                                    </div>
+                                </div>
+                                <div class="exchange-chart">
+                                    <div class="exchange-chart-container">
+                                        <svg id="crypto-sparkline" viewBox="0 0 120 55" preserveAspectRatio="none">
+                                            <polyline id="crypto-sparkline-path" fill="none" stroke="#22c55e"
+                                                stroke-width="1.5" points=""></polyline>
+                                            <g id="crypto-sparkline-dots"></g>
+                                        </svg>
+                                        <div id="crypto-chart-x-axis" class="chart-x-axis"></div>
+                                        <div id="crypto-chart-tooltip" class="chart-tooltip" style="display: none;">
+                                            <span class="tooltip-rate"></span>
+                                            <span class="tooltip-date"></span>
+                                        </div>
+                                    </div>
+                                    <div class="chart-change-row">
+                                        <span id="crypto-chart-change" class="chart-change">--</span>
+                                        <div class="chart-range-btns crypto-range-btns">
+                                            <button class="chart-range-btn active" data-days="7">7d</button>
+                                            <button class="chart-range-btn" data-days="30">1m</button>
+                                            <button class="chart-range-btn" data-days="180">6m</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <p id="crypto-updated" class="exchange-updated">Loading...</p>
                         </div>
                     </div>
 

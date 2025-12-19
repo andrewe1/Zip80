@@ -82,6 +82,9 @@
  * - 2025-12-19: Added formatWithCommas() for exchange rate input formatting
  * - 2025-12-19: Fixed chart tooltip to use dynamic currency instead of hardcoded MXN
  * - 2025-12-19: Updated 6m chart X-axis labels to show month abbreviation only
+ * - 2025-12-19: Added Crypto Rates widget with CoinGecko API (BTC, ETH, SOL, XRP, ADA)
+ * - 2025-12-19: Added fetchCryptoRates(), fetchCryptoHistory(), drawCryptoSparkline() functions
+ * - 2025-12-19: Improved X-axis label rendering to limit max labels and prevent overflow
  */
 
 (() => {
@@ -182,6 +185,18 @@
         primaryToLabel: document.getElementById('primary-to-label'),
         inverseToLabel: document.getElementById('inverse-to-label'),
         exchangeUpdated: document.getElementById('exchange-updated'),
+
+        // Crypto Rates Widget (2025-12-19)
+        cryptoRatesWidgetTitle: document.getElementById('crypto-rates-widget-title'),
+        cryptoAmountFrom: document.getElementById('crypto-amount-from'),
+        cryptoAmountTo: document.getElementById('crypto-amount-to'),
+        cryptoFromCurrency: document.getElementById('crypto-from-currency'),
+        cryptoToCurrency: document.getElementById('crypto-to-currency'),
+        cryptoRatePrimary: document.getElementById('crypto-rate-primary'),
+        cryptoRateInverse: document.getElementById('crypto-rate-inverse'),
+        cryptoPrimaryToLabel: document.getElementById('crypto-primary-to-label'),
+        cryptoInverseToLabel: document.getElementById('crypto-inverse-to-label'),
+        cryptoUpdated: document.getElementById('crypto-updated'),
 
         // Calendar Widget (2025-12-16)
         calendarWidgetTitle: document.getElementById('calendar-widget-title'),
@@ -345,6 +360,7 @@
         await checkForRecentFile();
         updateUILanguage();
         fetchExchangeRates();  // 2025-12-16: Load exchange rates
+        fetchCryptoRates();    // 2025-12-19: Load crypto rates
     }
 
     /**
@@ -866,6 +882,36 @@
                 fetchExchangeRates();
             });
         }
+
+        // 2025-12-19: Crypto rates widget event listeners
+        if (elements.cryptoFromCurrency) {
+            elements.cryptoFromCurrency.addEventListener('change', () => fetchCryptoRates());
+        }
+        if (elements.cryptoToCurrency) {
+            elements.cryptoToCurrency.addEventListener('change', () => fetchCryptoRates());
+        }
+        if (elements.cryptoAmountFrom) {
+            elements.cryptoAmountFrom.addEventListener('input', () => {
+                formatWithCommas(elements.cryptoAmountFrom);
+                fetchCryptoRates();
+            });
+        }
+        if (elements.cryptoAmountTo) {
+            elements.cryptoAmountTo.addEventListener('input', () => {
+                formatWithCommas(elements.cryptoAmountTo);
+                fetchCryptoRates();
+            });
+        }
+
+        // Crypto chart range buttons
+        document.querySelectorAll('.crypto-range-btns .chart-range-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.crypto-range-btns .chart-range-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                const days = parseInt(btn.dataset.days);
+                fetchCryptoHistory(days);
+            });
+        });
     }
 
     function setupDragAndDrop() {
@@ -3116,6 +3162,217 @@
     // 2025-12-19: Track current exchange pair for chart
     let currentExchangePair = { from: 'USD', to: 'MXN' };
 
+    // 2025-12-19: Track current crypto pair for chart
+    let currentCryptoPair = { crypto: 'BTC', fiat: 'USD' };
+
+    // Crypto ID mapping for CoinGecko API
+    const cryptoIdMap = {
+        BTC: 'bitcoin',
+        ETH: 'ethereum',
+        SOL: 'solana',
+        XRP: 'ripple',
+        ADA: 'cardano'
+    };
+
+    /**
+     * Fetch crypto rates from CoinGecko API
+     * 2025-12-19: Displays crypto-to-fiat and fiat-to-crypto conversions
+     */
+    async function fetchCryptoRates() {
+        const cryptoCurrency = elements.cryptoFromCurrency?.value || 'BTC';
+        const fiatCurrency = elements.cryptoToCurrency?.value || 'USD';
+
+        // Get amounts from inputs, strip commas
+        const amountCrypto = parseFloat((elements.cryptoAmountFrom?.value || '1').replace(/,/g, '')) || 1;
+        const amountFiat = parseFloat((elements.cryptoAmountTo?.value || '1').replace(/,/g, '')) || 1;
+
+        const coinId = cryptoIdMap[cryptoCurrency];
+        if (!coinId) return;
+
+        try {
+            const response = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${coinId}&vs_currencies=${fiatCurrency.toLowerCase()}`);
+            const data = await response.json();
+
+            if (data && data[coinId]) {
+                const cryptoToFiat = data[coinId][fiatCurrency.toLowerCase()];
+                const fiatToCrypto = 1 / cryptoToFiat;
+
+                // Calculate with user amounts
+                const primaryResult = amountCrypto * cryptoToFiat;
+                const inverseResult = amountFiat * fiatToCrypto;
+
+                // Update displays with comma formatting
+                if (elements.cryptoRatePrimary) {
+                    elements.cryptoRatePrimary.textContent = primaryResult.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                }
+                if (elements.cryptoRateInverse) {
+                    // Show full decimal for small crypto amounts (e.g., 0.00001139 instead of 1.139e-5)
+                    elements.cryptoRateInverse.textContent = inverseResult.toFixed(8);
+                }
+
+                // Update labels
+                if (elements.cryptoPrimaryToLabel) elements.cryptoPrimaryToLabel.textContent = fiatCurrency;
+                if (elements.cryptoInverseToLabel) elements.cryptoInverseToLabel.textContent = cryptoCurrency;
+
+                if (elements.cryptoUpdated) {
+                    const now = new Date();
+                    elements.cryptoUpdated.textContent = `${I18n.t('exchangeUpdated')} ${now.toLocaleTimeString()}`;
+                }
+
+                // Store for chart
+                currentCryptoPair = { crypto: cryptoCurrency, fiat: fiatCurrency };
+            }
+
+            // Fetch history for sparkline
+            fetchCryptoHistory();
+
+        } catch (error) {
+            console.error('Failed to fetch crypto rates:', error);
+            if (elements.cryptoUpdated) {
+                elements.cryptoUpdated.textContent = I18n.t('exchangeError');
+            }
+        }
+    }
+
+    /**
+     * Fetch crypto price history from CoinGecko and render sparkline
+     * 2025-12-19: Uses CoinGecko market_chart API for historical data
+     */
+    async function fetchCryptoHistory(days = 7) {
+        const cryptoCurrency = currentCryptoPair.crypto || 'BTC';
+        const fiatCurrency = currentCryptoPair.fiat || 'USD';
+        const coinId = cryptoIdMap[cryptoCurrency];
+
+        if (!coinId) return;
+
+        try {
+            const response = await fetch(`https://api.coingecko.com/api/v3/coins/${coinId}/market_chart?vs_currency=${fiatCurrency.toLowerCase()}&days=${days}`);
+            const data = await response.json();
+
+            if (data && data.prices) {
+                // CoinGecko returns [timestamp, price] pairs
+                // Sample to match expected data points (7 for 7d, ~30 for longer)
+                const prices = data.prices;
+                const targetPoints = days <= 7 ? days : 30;
+                const step = Math.max(1, Math.floor(prices.length / targetPoints));
+                const sampled = prices.filter((_, i) => i % step === 0 || i === prices.length - 1);
+
+                const rateData = sampled.map(([timestamp, price]) => ({
+                    date: new Date(timestamp).toISOString().split('T')[0],
+                    rate: price
+                }));
+
+                drawCryptoSparkline(rateData, days);
+            }
+        } catch (error) {
+            console.error('Failed to fetch crypto history:', error);
+        }
+    }
+
+    /**
+     * Draw crypto sparkline chart
+     * 2025-12-19: Similar to exchange sparkline but with crypto-specific elements
+     */
+    function drawCryptoSparkline(rateData, days = 7) {
+        const sparklinePath = document.getElementById('crypto-sparkline-path');
+        const dotsGroup = document.getElementById('crypto-sparkline-dots');
+        const xAxis = document.getElementById('crypto-chart-x-axis');
+        const tooltip = document.getElementById('crypto-chart-tooltip');
+        const chartChange = document.getElementById('crypto-chart-change');
+
+        if (!sparklinePath || rateData.length < 2) return;
+
+        const width = 120;
+        const height = 45;
+        const padding = 4;
+        const chartHeight = 35;
+
+        const values = rateData.map(d => d.rate);
+        const min = Math.min(...values);
+        const max = Math.max(...values);
+        const range = max - min || 1;
+
+        if (dotsGroup) dotsGroup.innerHTML = '';
+
+        const columnWidth = (width - 2 * padding) / Math.max(rateData.length - 1, 1);
+
+        const points = rateData.map((d, i) => {
+            const x = padding + (i / (rateData.length - 1)) * (width - 2 * padding);
+            const y = chartHeight - padding - ((d.rate - min) / range) * (chartHeight - 2 * padding);
+
+            if (dotsGroup) {
+                const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                group.setAttribute('class', 'hover-group');
+
+                const hitbox = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                const hitboxX = x - columnWidth / 2;
+                hitbox.setAttribute('x', Math.max(0, hitboxX).toFixed(1));
+                hitbox.setAttribute('y', '0');
+                hitbox.setAttribute('width', columnWidth.toFixed(1));
+                hitbox.setAttribute('height', height.toString());
+                hitbox.setAttribute('fill', 'transparent');
+                hitbox.setAttribute('class', 'hover-hitbox');
+
+                const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                dot.setAttribute('cx', x.toFixed(1));
+                dot.setAttribute('cy', y.toFixed(1));
+                dot.setAttribute('r', '3');
+                dot.setAttribute('class', 'hover-dot');
+
+                hitbox.addEventListener('mouseenter', () => {
+                    if (tooltip) {
+                        const formattedDate = new Date(d.date).toLocaleDateString(I18n.getLocale(), { month: 'short', day: 'numeric' });
+                        tooltip.querySelector('.tooltip-rate').textContent = `${d.rate.toLocaleString('en-US', { maximumFractionDigits: 2 })} ${currentCryptoPair.fiat}`;
+                        tooltip.querySelector('.tooltip-date').textContent = formattedDate;
+                        tooltip.style.display = 'block';
+
+                        const xPercent = (x / width) * 100;
+                        tooltip.style.left = `${xPercent}%`;
+                        if (xPercent < 20) {
+                            tooltip.style.transform = 'translateX(0)';
+                        } else if (xPercent > 80) {
+                            tooltip.style.transform = 'translateX(-100%)';
+                        } else {
+                            tooltip.style.transform = 'translateX(-50%)';
+                        }
+                    }
+                    dot.classList.add('active');
+                });
+
+                hitbox.addEventListener('mouseleave', () => {
+                    if (tooltip) tooltip.style.display = 'none';
+                    dot.classList.remove('active');
+                });
+
+                group.appendChild(hitbox);
+                group.appendChild(dot);
+                dotsGroup.appendChild(group);
+            }
+
+            return `${x.toFixed(1)},${y.toFixed(1)}`;
+        }).join(' ');
+
+        sparklinePath.setAttribute('points', points);
+
+        const trend = values[values.length - 1] - values[0];
+        sparklinePath.setAttribute('stroke', trend >= 0 ? '#22c55e' : '#ef4444');
+
+        // Percentage change
+        if (chartChange && values.length >= 2) {
+            const startValue = values[0];
+            const endValue = values[values.length - 1];
+            const percentChange = ((endValue - startValue) / startValue) * 100;
+            const sign = percentChange >= 0 ? '+' : '';
+            chartChange.textContent = `${sign}${percentChange.toFixed(2)}%`;
+            chartChange.className = 'chart-change ' + (percentChange >= 0 ? 'positive' : 'negative');
+        }
+
+        // X-axis labels
+        if (xAxis) {
+            renderXAxisLabels(xAxis, rateData, days);
+        }
+    }
+
     /**
      * Fetch exchange rate history and render sparkline
      * 2025-12-16: Uses frankfurter.app API for historical data
@@ -3294,16 +3551,16 @@
 
         let labelIndices = [];
 
-        if (days <= 7) {
-            // 7d: Show every day
-            labelIndices = rateData.map((_, i) => i);
-        } else if (days <= 30) {
-            // 1m: Show every 5 days
-            labelIndices = rateData.map((_, i) => i).filter(i => i % 5 === 0 || i === rateData.length - 1);
-        } else {
-            // 6m: Show approximately 6 labels (one per month)
-            const step = Math.floor(rateData.length / 5);
-            labelIndices = rateData.map((_, i) => i).filter(i => i % step === 0 || i === rateData.length - 1);
+        // 2025-12-19: Limit to max 7 labels to prevent overflow
+        const maxLabels = days <= 7 ? 7 : days <= 30 ? 6 : 5;
+        const step = Math.max(1, Math.floor(rateData.length / maxLabels));
+
+        // Generate evenly spaced indices
+        labelIndices = rateData.map((_, i) => i).filter(i => i % step === 0);
+
+        // Always include final point
+        if (labelIndices[labelIndices.length - 1] !== rateData.length - 1) {
+            labelIndices.push(rateData.length - 1);
         }
 
         // Create labels at evenly spaced positions

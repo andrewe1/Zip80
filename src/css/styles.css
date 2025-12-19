@@ -80,6 +80,8 @@
  * - 2025-12-19: Added exchange rate widget enhancements: currency dropdown selects and amount input fields
  * - 2025-12-19: Added .exchange-currency-select and .exchange-amount-input styles with compact spacing
  * - 2025-12-19: Updated .exchange-rate-row gap to 4px for tighter layout
+ * - 2025-12-19: Increased exchange chart SVG height from 45px to 65px for more visible price movements
+ * - 2025-12-19: Added crypto sparkline hover dot styles matching exchange rate chart
  * ============================================================================
  */
 
@@ -1869,7 +1871,8 @@ html.dark .save-status-error {
 
 .exchange-chart svg {
     width: 100%;
-    height: 45px;
+    height: 65px;
+    /* 2025-12-19: Increased from 45px for more visible price movements */
 }
 
 /* X-axis date/week labels */
@@ -1941,6 +1944,24 @@ html.dark .save-status-error {
 }
 
 #sparkline-dots .hover-dot.active {
+    fill: var(--color-primary);
+    stroke: var(--color-primary);
+}
+
+/* 2025-12-19: Crypto sparkline hover dots - hidden by default */
+#crypto-sparkline-dots .hover-hitbox {
+    cursor: pointer;
+}
+
+#crypto-sparkline-dots .hover-dot {
+    fill: transparent;
+    stroke: transparent;
+    stroke-width: 2;
+    transition: all 0.15s ease;
+    pointer-events: none;
+}
+
+#crypto-sparkline-dots .hover-dot.active {
     fill: var(--color-primary);
     stroke: var(--color-primary);
 }

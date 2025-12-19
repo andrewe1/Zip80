@@ -324,6 +324,7 @@ const I18n = (() => {
             widgetCalendar: 'Calendar',
             widgetRecurring: 'Recurring',
             widgetExchange: 'Exchange Rates',
+            widgetCryptoRates: 'Crypto Rates',  // 2025-12-19
             widgetActivityLog: 'Activity Log',
 
             // Historical View (2025-12-19)
@@ -579,6 +580,7 @@ const I18n = (() => {
             widgetCalendar: 'Calendario',
             widgetRecurring: 'Recurrentes',
             widgetExchange: 'Tipos de Cambio',
+            widgetCryptoRates: 'Precios Cripto',  // 2025-12-19
             widgetActivityLog: 'Actividad',
 
             // Historical View (2025-12-19)
