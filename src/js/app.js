@@ -362,6 +362,7 @@
         updateUILanguage();
         fetchExchangeRates();  // 2025-12-16: Load exchange rates
         fetchCryptoRates();    // 2025-12-19: Load crypto rates
+        Calculator.init();     // 2025-12-19: Initialize calculator tool
     }
 
     /**
@@ -643,6 +644,13 @@
             if (btnOptions) {
                 const span = btnOptions.querySelector('[data-i18n="options"]');
                 if (span) span.textContent = t('options');
+            }
+
+            const btnCalc = document.getElementById('btn-calculator');
+            if (btnCalc) {
+                btnCalc.title = t('btnCalculator');
+                const span = btnCalc.querySelector('[data-i18n="btnCalculator"]');
+                if (span) span.textContent = t('btnCalculator');
             }
 
             // Dropdown items

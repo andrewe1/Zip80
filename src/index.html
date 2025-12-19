@@ -26,7 +26,8 @@ SCRIPTS LOADED (order matters):
 2. accounts.js - Account/currency logic (no dependencies)
 3. storage.js - File operations (depends on Accounts)
 4. calendar.js - Calendar links (no dependencies)
-5. app.js - Main app (depends on all above)
+5. calculator.js - Simple calculator tool (no dependencies)
+6. app.js - Main app (depends on all above)
 
 DATA ATTRIBUTES:
 - data-i18n="key" : Elements with translatable text content
@@ -316,6 +317,10 @@ CHANGE LOG:
                         </label>
                     </div>
                 </div>
+                <!-- 2025-12-19: Calculator Toggle Button -->
+                <button id="btn-calculator" class="menu-btn menu-btn-options" title="Calculator">
+                    🔢 <span data-i18n="btnCalculator">Calculator</span>
+                </button>
                 <!-- Options Button -->
                 <button id="btn-options" class="menu-btn menu-btn-options" aria-haspopup="true" aria-expanded="false">
                     ⚙️ <span data-i18n="options">Options</span>
@@ -1081,6 +1086,7 @@ CHANGE LOG:
     <!-- 2025-12-17: History module for undo/redo -->
     <script src="js/history.js"></script>
     <script src="js/menubar.js"></script>
+    <script src="js/calculator.js"></script>
     <script src="js/app.js"></script>
 
     <!-- 2025-12-17: Title bar window controls -->

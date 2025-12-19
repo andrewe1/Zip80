@@ -309,6 +309,7 @@ const I18n = (() => {
             viewHistorical: 'Historical',
             options: 'Options',
             widgets: 'Widgets',
+            btnCalculator: 'Calculator', // 2025-12-19
             exportCSV: 'Export as CSV',
             exportJSON: 'Export as JSON',
             settings: 'Settings',
@@ -326,6 +327,7 @@ const I18n = (() => {
             widgetExchange: 'Exchange Rates',
             widgetCryptoRates: 'Crypto Rates',  // 2025-12-19
             widgetActivityLog: 'Activity Log',
+            calculatorWidgetTitle: 'Calculator', // 2025-12-19
 
             // Historical View (2025-12-19)
             historicalTitle: 'Account History',
@@ -565,6 +567,7 @@ const I18n = (() => {
             viewHistorical: 'Historial',
             options: 'Configuración',
             widgets: 'Widgets',
+            btnCalculator: 'Calculadora', // 2025-12-19
             exportCSV: 'Exportar como CSV',
             exportJSON: 'Exportar como JSON',
             settings: 'Configuración',
@@ -582,6 +585,7 @@ const I18n = (() => {
             widgetExchange: 'Tipos de Cambio',
             widgetCryptoRates: 'Precios Cripto',  // 2025-12-19
             widgetActivityLog: 'Actividad',
+            calculatorWidgetTitle: 'Calculadora', // 2025-12-19
 
             // Historical View (2025-12-19)
             historicalTitle: 'Historial de Cuentas',

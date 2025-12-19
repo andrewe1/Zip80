@@ -3131,3 +3131,100 @@ html.dark *::-webkit-scrollbar-thumb:hover {
     opacity: 1;
     color: var(--color-primary);
 }
+/* =============================================================================
+   2025-12-19: CALCULATOR WIDGET STYLES
+   ============================================================================= */
+
+.calculator-container {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+    padding: var(--space-xs);
+    user-select: none;
+}
+
+.calc-display {
+    background-color: var(--color-bg);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-md);
+    text-align: right;
+    min-height: 80px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.calc-formula {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+    min-height: 1.2em;
+    margin-bottom: 2px;
+}
+
+.calc-current {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--color-text);
+}
+
+.calc-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--space-sm);
+}
+
+.calc-btn {
+    min-height: 60px;
+    border-radius: var(--radius-md);
+    font-size: 1.25rem;
+    font-weight: 600;
+    transition: all 0.1s ease;
+}
+
+.calc-btn-op {
+    background-color: var(--color-bg);
+    color: var(--color-primary);
+    border: 1px solid var(--color-border);
+}
+
+.calc-btn-num {
+    background-color: var(--color-surface);
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
+}
+
+.calc-btn-eq {
+    background-color: var(--color-primary);
+    color: white;
+    grid-column: span 2;
+}
+
+.calc-btn-clear {
+    color: var(--color-danger);
+}
+
+.calc-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-sm);
+}
+
+.calc-btn:active {
+    transform: translateY(0);
+}
+
+.calc-btn-eq:hover {
+    background-color: var(--color-primary-hover);
+}
+
+.calc-btn-num:hover {
+    border-color: var(--color-primary);
+}
+
+@media (max-width: 480px) {
+    .calc-btn {
+        min-height: 50px;
+        font-size: 1rem;
+    }
+}
