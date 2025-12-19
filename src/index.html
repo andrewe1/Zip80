@@ -220,16 +220,16 @@ CHANGE LOG:
         <!-- 2025-12-17: Menu Bar Framework - toolbar for view modes and options (below header) -->
         <nav id="menu-bar" class="menu-bar">
             <div class="menu-bar-left">
-                <!-- View Mode Toggles -->
+                <!-- View Mode Toggles (2025-12-19: Removed Compact, added Historical) -->
                 <div class="view-mode-group">
                     <span class="view-mode-label" data-i18n="viewMode">View:</span>
                     <button id="btn-view-standard" class="menu-btn menu-btn-view active" data-view="standard"
                         title="Standard View">
                         📋 <span data-i18n="viewStandard">Standard</span>
                     </button>
-                    <button id="btn-view-compact" class="menu-btn menu-btn-view" data-view="compact"
-                        title="Compact View">
-                        📊 <span data-i18n="viewCompact">Compact</span>
+                    <button id="btn-view-historical" class="menu-btn menu-btn-view" data-view="historical"
+                        title="Historical View">
+                        📈 <span data-i18n="viewHistorical">Historical</span>
                     </button>
                 </div>
 
@@ -244,6 +244,65 @@ CHANGE LOG:
                 </div>
             </div>
             <div class="menu-bar-right">
+                <!-- 2025-12-19: Widgets Toggle Button -->
+                <button id="btn-widgets" class="menu-btn menu-btn-options" aria-haspopup="true" aria-expanded="false">
+                    🧩 <span data-i18n="widgets">Widgets</span>
+                </button>
+                <!-- Widgets Dropdown Menu (hidden by default) -->
+                <div id="widgets-dropdown" class="widgets-dropdown" style="display: none;">
+                    <div class="widget-toggle-item" data-widget="balance-bank">
+                        <span class="widget-toggle-label">🏦 <span data-i18n="widgetBankCash">Bank/Cash</span></span>
+                        <label class="widget-toggle-switch">
+                            <input type="checkbox" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="widget-toggle-item" data-widget="balance-credit">
+                        <span class="widget-toggle-label">💳 <span data-i18n="widgetCreditCards">Credit
+                                Cards</span></span>
+                        <label class="widget-toggle-switch">
+                            <input type="checkbox" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="widget-toggle-item" data-widget="balance-crypto">
+                        <span class="widget-toggle-label">🪙 <span data-i18n="widgetCrypto">Crypto</span></span>
+                        <label class="widget-toggle-switch">
+                            <input type="checkbox" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="widget-toggle-item" data-widget="calendar">
+                        <span class="widget-toggle-label">📅 <span data-i18n="widgetCalendar">Calendar</span></span>
+                        <label class="widget-toggle-switch">
+                            <input type="checkbox" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="widget-toggle-item" data-widget="recurring">
+                        <span class="widget-toggle-label">🔁 <span data-i18n="widgetRecurring">Recurring</span></span>
+                        <label class="widget-toggle-switch">
+                            <input type="checkbox" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="widget-toggle-item" data-widget="exchange">
+                        <span class="widget-toggle-label">💱 <span data-i18n="widgetExchange">Exchange
+                                Rates</span></span>
+                        <label class="widget-toggle-switch">
+                            <input type="checkbox" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="widget-toggle-item" data-widget="activity-log">
+                        <span class="widget-toggle-label">📋 <span data-i18n="widgetActivityLog">Activity
+                                Log</span></span>
+                        <label class="widget-toggle-switch">
+                            <input type="checkbox" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
                 <!-- Options Button -->
                 <button id="btn-options" class="menu-btn menu-btn-options" aria-haspopup="true" aria-expanded="false">
                     ⚙️ <span data-i18n="options">Options</span>
@@ -406,6 +465,21 @@ CHANGE LOG:
                     <p id="empty-state" class="empty-state">No transactions yet. Add one above!</p>
                 </section>
             </div><!-- end workspace-main -->
+
+            <!-- 2025-12-19: Historical View Panel (hidden by default, shown when Historical tab active) -->
+            <div id="historical-view" class="workspace-historical" style="display: none;">
+                <div class="card historical-card">
+                    <div class="historical-header">
+                        <h2 class="card-title">📈 <span data-i18n="historicalTitle">Account History</span></h2>
+                    </div>
+                    <div class="historical-placeholder">
+                        <div class="placeholder-icon">📊</div>
+                        <p data-i18n="historicalPlaceholder">Historical charts coming soon!</p>
+                        <p class="placeholder-hint" data-i18n="historicalHint">Track your account balances over time
+                            with interactive graphs.</p>
+                    </div>
+                </div>
+            </div><!-- end historical-view -->
 
             <!-- 2025-12-15: Balance Overview Sidebar Widget -->
             <!-- 2025-12-16: Updated with widget system for drag/drop and collapse -->

@@ -159,8 +159,20 @@ function createWindow() {
     // Load from local HTTP server instead of file:// for OAuth compatibility
     mainWindow.loadURL(`http://127.0.0.1:${SERVER_PORT}/index.html`);
 
-    // Open DevTools in development (uncomment for debugging)
-    // mainWindow.webContents.openDevTools();
+    // 2025-12-19: Dev shortcuts for quick testing
+    // F5 = Reload, F12 = Toggle DevTools, Ctrl+Shift+I = DevTools
+    mainWindow.webContents.on('before-input-event', (event, input) => {
+        if (input.key === 'F5') {
+            mainWindow.reload();
+            event.preventDefault();
+        } else if (input.key === 'F12') {
+            mainWindow.webContents.toggleDevTools();
+            event.preventDefault();
+        } else if (input.key === 'I' && input.control && input.shift) {
+            mainWindow.webContents.toggleDevTools();
+            event.preventDefault();
+        }
+    });
 }
 
 app.whenReady().then(async () => {

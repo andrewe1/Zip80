@@ -49,6 +49,7 @@
  * 
  * CHANGE LOG:
  * - 2025-12-16: Initial creation with drag-and-drop and collapse functionality
+ * - 2025-12-19: Added setEnabled/getEnabled for widget visibility toggling from menu bar
  */
 
 const Widgets = (() => {
@@ -57,11 +58,13 @@ const Widgets = (() => {
     // Default widget configuration
     // Add new widgets here with their default settings
     const DEFAULT_WIDGETS = {
-        'balance-bank': { order: 0, collapsed: false, group: 'balance-row' },
-        'balance-credit': { order: 1, collapsed: false, group: 'balance-row' },
-        'calendar': { order: 2, collapsed: false, group: 'main' },
-        'recurring': { order: 3, collapsed: false, group: 'bottom-row' },
-        'exchange': { order: 4, collapsed: false, group: 'bottom-row' }
+        'balance-bank': { order: 0, collapsed: false, enabled: true, group: 'balance-row' },
+        'balance-credit': { order: 1, collapsed: false, enabled: true, group: 'balance-row' },
+        'balance-crypto': { order: 2, collapsed: false, enabled: true, group: 'balance-row' },
+        'calendar': { order: 3, collapsed: false, enabled: true, group: 'main' },
+        'recurring': { order: 4, collapsed: false, enabled: true, group: 'bottom-row' },
+        'exchange': { order: 5, collapsed: false, enabled: true, group: 'bottom-row' },
+        'activity-log': { order: 6, collapsed: false, enabled: true, group: 'bottom-row' }
     };
 
     let sortableInstances = [];
@@ -75,6 +78,7 @@ const Widgets = (() => {
         loadPreferences();
         setupWidgetHeaders();
         restoreCollapsedStates();
+        restoreEnabledStates();  // 2025-12-19: Restore visibility
         initSortable();
     }
 
@@ -172,6 +176,48 @@ const Widgets = (() => {
         }
         preferences[widgetId].collapsed = isCollapsed;
         savePreferences();
+    }
+
+    /**
+     * 2025-12-19: Set enabled state for a widget (show/hide)
+     * @param {string} widgetId - The widget's data-widget-id value
+     * @param {boolean} enabled - Whether the widget should be visible
+     */
+    function setEnabled(widgetId, enabled) {
+        const widget = document.querySelector(`[data-widget-id="${widgetId}"]`);
+        if (widget) {
+            widget.style.display = enabled ? '' : 'none';
+        }
+
+        // Update preferences
+        if (!preferences[widgetId]) {
+            preferences[widgetId] = { ...DEFAULT_WIDGETS[widgetId] } || { order: 99, collapsed: false, enabled: true };
+        }
+        preferences[widgetId].enabled = enabled;
+        savePreferences();
+    }
+
+    /**
+     * 2025-12-19: Check if a widget is enabled (visible)
+     * @param {string} widgetId - The widget's data-widget-id value
+     * @returns {boolean} True if enabled
+     */
+    function getEnabled(widgetId) {
+        return preferences[widgetId]?.enabled !== false;  // Default to true if not set
+    }
+
+    /**
+     * 2025-12-19: Restore enabled/disabled states from preferences
+     */
+    function restoreEnabledStates() {
+        Object.keys(preferences).forEach(widgetId => {
+            if (preferences[widgetId].enabled === false) {
+                const widget = document.querySelector(`[data-widget-id="${widgetId}"]`);
+                if (widget) {
+                    widget.style.display = 'none';
+                }
+            }
+        });
     }
 
     /**
@@ -316,6 +362,8 @@ const Widgets = (() => {
         init,
         toggleCollapse,
         isCollapsed,
+        setEnabled,
+        getEnabled,
         getWidgetOrder,
         registerWidget,
         resetToDefaults

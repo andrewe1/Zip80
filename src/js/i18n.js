@@ -72,6 +72,7 @@
  * - 2025-12-17: Added menu bar translations (vaultLabel, viewMode, options, statusSaved, etc.)
  * - 2025-12-17: Updated 'options' translation in Spanish to 'Configuración'
  * - 2025-12-17: Added Activity Log translations (activityLogTitle, activityOwner, activityEmpty, activityYou)
+ * - 2025-12-19: Replaced viewCompact with viewHistorical, added widget toggle translations
  */
 
 const I18n = (() => {
@@ -305,8 +306,9 @@ const I18n = (() => {
             vaultLabel: 'Vault:',
             viewMode: 'View:',
             viewStandard: 'Standard',
-            viewCompact: 'Compact',
+            viewHistorical: 'Historical',
             options: 'Options',
+            widgets: 'Widgets',
             exportCSV: 'Export as CSV',
             exportJSON: 'Export as JSON',
             settings: 'Settings',
@@ -314,6 +316,20 @@ const I18n = (() => {
             statusSaved: 'Saved',
             statusSaving: 'Saving...',
             statusError: 'Error',
+
+            // Widget Toggles (2025-12-19)
+            widgetBankCash: 'Bank/Cash',
+            widgetCreditCards: 'Credit Cards',
+            widgetCrypto: 'Crypto',
+            widgetCalendar: 'Calendar',
+            widgetRecurring: 'Recurring',
+            widgetExchange: 'Exchange Rates',
+            widgetActivityLog: 'Activity Log',
+
+            // Historical View (2025-12-19)
+            historicalTitle: 'Account History',
+            historicalPlaceholder: 'Historical charts coming soon!',
+            historicalHint: 'Track your account balances over time with interactive graphs.',
 
             // Undo/Redo (2025-12-17)
             undo: 'Undo',
@@ -545,8 +561,9 @@ const I18n = (() => {
             vaultLabel: 'Bóveda:',
             viewMode: 'Vista:',
             viewStandard: 'Estándar',
-            viewCompact: 'Compacta',
+            viewHistorical: 'Historial',
             options: 'Configuración',
+            widgets: 'Widgets',
             exportCSV: 'Exportar como CSV',
             exportJSON: 'Exportar como JSON',
             settings: 'Configuración',
@@ -554,6 +571,20 @@ const I18n = (() => {
             statusSaved: 'Guardado',
             statusSaving: 'Guardando...',
             statusError: 'Error',
+
+            // Widget Toggles (2025-12-19)
+            widgetBankCash: 'Banco/Efectivo',
+            widgetCreditCards: 'Tarjetas',
+            widgetCrypto: 'Cripto',
+            widgetCalendar: 'Calendario',
+            widgetRecurring: 'Recurrentes',
+            widgetExchange: 'Tipos de Cambio',
+            widgetActivityLog: 'Actividad',
+
+            // Historical View (2025-12-19)
+            historicalTitle: 'Historial de Cuentas',
+            historicalPlaceholder: '¡Gráficos históricos próximamente!',
+            historicalHint: 'Rastrea los saldos de tus cuentas a lo largo del tiempo con gráficos interactivos.',
 
             // Undo/Redo (2025-12-17)
             undo: 'Deshacer',

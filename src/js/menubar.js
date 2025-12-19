@@ -4,6 +4,7 @@ FILE MAINTENANCE & AI PROTOCOL
 1. CHANGE LOG: 
    - [2025-12-17] - [Init] - Created menu bar controller with view modes and options dropdown
    - [2025-12-17] - [Edit] - Added save status indicator functions (setSaveStatus)
+   - [2025-12-19] - [Edit] - Added widgets dropdown, historical view panel switching, removed compact view
 2. INSTRUCTION:
    - When editing this file, always update the Change Log above.
    - Explain the "WHY" behind complex logic in inline comments.
@@ -31,10 +32,14 @@ const MenuBar = (function () {
     let optionsButton;
     let optionsDropdown;
     let dropdownItems;
+    // 2025-12-19: Widgets dropdown
+    let widgetsButton;
+    let widgetsDropdown;
 
     // --- State ---
     let currentViewMode = 'standard';
-    let dropdownOpen = false;
+    let optionsDropdownOpen = false;
+    let widgetsDropdownOpen = false;
 
     /**
      * Initialize the menu bar functionality
@@ -53,9 +58,14 @@ const MenuBar = (function () {
         optionsDropdown = document.getElementById('options-dropdown');
         dropdownItems = optionsDropdown ? optionsDropdown.querySelectorAll('.dropdown-item') : [];
 
+        // 2025-12-19: Widgets dropdown references
+        widgetsButton = document.getElementById('btn-widgets');
+        widgetsDropdown = document.getElementById('widgets-dropdown');
+
         // Bind event listeners
         bindViewModeEvents();
         bindOptionsDropdownEvents();
+        bindWidgetsDropdownEvents();  // 2025-12-19
         bindClickOutsideHandler();
 
         console.log('MenuBar initialized');
@@ -75,7 +85,8 @@ const MenuBar = (function () {
 
     /**
      * Set the active view mode
-     * @param {string} mode - View mode name (e.g., 'standard', 'compact')
+     * 2025-12-19: Updated to handle standard/historical (removed compact)
+     * @param {string} mode - View mode name ('standard', 'historical')
      */
     function setViewMode(mode) {
         if (mode === currentViewMode) return;
@@ -88,8 +99,24 @@ const MenuBar = (function () {
         });
 
         // Add/remove body class for view mode styling
-        document.body.classList.remove('view-standard', 'view-compact');
+        document.body.classList.remove('view-standard', 'view-historical');
         document.body.classList.add(`view-${mode}`);
+
+        // 2025-12-19: Toggle visibility of main content vs historical view
+        const workspaceMain = document.querySelector('.workspace-main');
+        const historicalView = document.getElementById('historical-view');
+        const workspaceSidebar = document.querySelector('.workspace-sidebar');
+
+        if (mode === 'historical') {
+            if (workspaceMain) workspaceMain.style.display = 'none';
+            if (historicalView) historicalView.style.display = 'block';
+            if (workspaceSidebar) workspaceSidebar.style.display = 'none';
+        } else {
+            // Use empty string to remove inline style and let CSS take over
+            if (workspaceMain) workspaceMain.style.display = '';
+            if (historicalView) historicalView.style.display = 'none';
+            if (workspaceSidebar) workspaceSidebar.style.display = '';
+        }
 
         // Dispatch custom event for other components to react
         window.dispatchEvent(new CustomEvent('viewModeChange', {
@@ -108,7 +135,8 @@ const MenuBar = (function () {
         // Toggle dropdown on button click
         optionsButton.addEventListener('click', (e) => {
             e.stopPropagation();
-            toggleDropdown();
+            closeWidgetsDropdown(); // Close widgets if open
+            toggleOptionsDropdown();
         });
 
         // Handle dropdown item clicks
@@ -116,7 +144,7 @@ const MenuBar = (function () {
             item.addEventListener('click', () => {
                 const action = item.dataset.action;
                 handleDropdownAction(action);
-                closeDropdown();
+                closeOptionsDropdown();
             });
         });
 
@@ -124,9 +152,45 @@ const MenuBar = (function () {
         optionsButton.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
-                toggleDropdown();
-            } else if (e.key === 'Escape' && dropdownOpen) {
-                closeDropdown();
+                toggleOptionsDropdown();
+            } else if (e.key === 'Escape' && optionsDropdownOpen) {
+                closeOptionsDropdown();
+            }
+        });
+    }
+
+    /**
+     * 2025-12-19: Bind events for the widgets dropdown
+     */
+    function bindWidgetsDropdownEvents() {
+        if (!widgetsButton || !widgetsDropdown) return;
+
+        // Toggle dropdown on button click
+        widgetsButton.addEventListener('click', (e) => {
+            e.stopPropagation();
+            closeOptionsDropdown(); // Close options if open
+            toggleWidgetsDropdown();
+        });
+
+        // Handle toggle switch changes
+        const toggleItems = widgetsDropdown.querySelectorAll('.widget-toggle-item');
+        toggleItems.forEach(item => {
+            const checkbox = item.querySelector('input[type="checkbox"]');
+            const widgetId = item.dataset.widget;
+            if (checkbox && widgetId) {
+                checkbox.addEventListener('change', () => {
+                    toggleWidget(widgetId, checkbox.checked);
+                });
+            }
+        });
+
+        // Keyboard navigation
+        widgetsButton.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                toggleWidgetsDropdown();
+            } else if (e.key === 'Escape' && widgetsDropdownOpen) {
+                closeWidgetsDropdown();
             }
         });
     }
@@ -134,15 +198,15 @@ const MenuBar = (function () {
     /**
      * Toggle the options dropdown visibility
      */
-    function toggleDropdown() {
-        dropdownOpen ? closeDropdown() : openDropdown();
+    function toggleOptionsDropdown() {
+        optionsDropdownOpen ? closeOptionsDropdown() : openOptionsDropdown();
     }
 
     /**
      * Open the options dropdown
      */
-    function openDropdown() {
-        dropdownOpen = true;
+    function openOptionsDropdown() {
+        optionsDropdownOpen = true;
         optionsDropdown.style.display = 'block';
         optionsButton.setAttribute('aria-expanded', 'true');
     }
@@ -150,19 +214,68 @@ const MenuBar = (function () {
     /**
      * Close the options dropdown
      */
-    function closeDropdown() {
-        dropdownOpen = false;
-        optionsDropdown.style.display = 'none';
-        optionsButton.setAttribute('aria-expanded', 'false');
+    function closeOptionsDropdown() {
+        optionsDropdownOpen = false;
+        if (optionsDropdown) optionsDropdown.style.display = 'none';
+        if (optionsButton) optionsButton.setAttribute('aria-expanded', 'false');
     }
 
     /**
-     * Handle clicks outside the dropdown to close it
+     * 2025-12-19: Toggle the widgets dropdown visibility
+     */
+    function toggleWidgetsDropdown() {
+        widgetsDropdownOpen ? closeWidgetsDropdown() : openWidgetsDropdown();
+    }
+
+    /**
+     * 2025-12-19: Open the widgets dropdown
+     */
+    function openWidgetsDropdown() {
+        widgetsDropdownOpen = true;
+        widgetsDropdown.style.display = 'block';
+        widgetsButton.setAttribute('aria-expanded', 'true');
+    }
+
+    /**
+     * 2025-12-19: Close the widgets dropdown
+     */
+    function closeWidgetsDropdown() {
+        widgetsDropdownOpen = false;
+        if (widgetsDropdown) widgetsDropdown.style.display = 'none';
+        if (widgetsButton) widgetsButton.setAttribute('aria-expanded', 'false');
+    }
+
+    /**
+     * 2025-12-19: Toggle a widget's visibility
+     * @param {string} widgetId - The widget's data-widget-id value
+     * @param {boolean} enabled - Whether to show or hide the widget
+     */
+    function toggleWidget(widgetId, enabled) {
+        // Call into Widgets module if available
+        if (typeof Widgets !== 'undefined' && Widgets.setEnabled) {
+            Widgets.setEnabled(widgetId, enabled);
+        } else {
+            // Fallback: directly show/hide the widget
+            const widget = document.querySelector(`[data-widget-id="${widgetId}"]`);
+            if (widget) {
+                widget.style.display = enabled ? '' : 'none';
+            }
+        }
+        console.log(`Widget ${widgetId} ${enabled ? 'enabled' : 'disabled'}`);
+    }
+
+    /**
+     * Handle clicks outside dropdowns to close them
      */
     function bindClickOutsideHandler() {
         document.addEventListener('click', (e) => {
-            if (dropdownOpen && !optionsDropdown.contains(e.target) && e.target !== optionsButton) {
-                closeDropdown();
+            // Close options dropdown
+            if (optionsDropdownOpen && optionsDropdown && !optionsDropdown.contains(e.target) && e.target !== optionsButton) {
+                closeOptionsDropdown();
+            }
+            // Close widgets dropdown
+            if (widgetsDropdownOpen && widgetsDropdown && !widgetsDropdown.contains(e.target) && e.target !== widgetsButton) {
+                closeWidgetsDropdown();
             }
         });
     }
@@ -270,7 +383,8 @@ const MenuBar = (function () {
         init,
         setViewMode,
         getViewMode,
-        closeDropdown,
+        closeDropdown: closeOptionsDropdown,
+        closeWidgetsDropdown,
         setSaveStatus
     };
 })();
