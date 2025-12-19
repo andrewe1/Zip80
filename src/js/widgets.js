@@ -362,20 +362,17 @@ const Widgets = (() => {
         });
     }
 
-    // 2025-12-19: Popout/maximize functionality
-    let popoutWindow = null;
-    let isDragging = false;
+    // 2025-12-19: Multi-popout functionality
+    const activePopouts = new Map(); // Map<widgetId, { window: HTMLElement, observer: MutationObserver }>
+    let topZIndex = 10000;
+    let dragTarget = null;
     let dragOffset = { x: 0, y: 0 };
-    let currentPopoutWidgetId = null;  // Track which widget is currently popped out
 
     /**
      * Setup popout functionality
-     * Adds maximize buttons to widget headers and sets up event handlers
+     * Adds maximize buttons to widget headers and sets up global handlers
      */
     function setupPopout() {
-        popoutWindow = document.getElementById('widget-popout');
-        if (!popoutWindow) return;
-
         // Add maximize button to each widget header
         document.querySelectorAll('.widget-header').forEach(header => {
             const widget = header.closest('.widget-card');
@@ -383,6 +380,9 @@ const Widgets = (() => {
 
             const widgetId = widget.dataset.widgetId;
             if (!widgetId) return;
+
+            // Avoid double-adding
+            if (header.querySelector('.widget-maximize-btn')) return;
 
             // Create maximize button
             const maxBtn = document.createElement('button');
@@ -398,86 +398,120 @@ const Widgets = (() => {
             header.insertBefore(maxBtn, header.firstChild);
         });
 
-        // Close button handler
-        const closeBtn = popoutWindow.querySelector('.widget-popout-close');
-        if (closeBtn) {
-            closeBtn.addEventListener('click', closePopout);
-        }
-
-        // Escape key to close
+        // Global Escape key to close focused popout
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && popoutWindow.style.display !== 'none') {
-                closePopout();
+            if (e.key === 'Escape') {
+                // Find popout with highest z-index
+                let highestZ = -1;
+                let topWidgetId = null;
+                activePopouts.forEach((win, id) => {
+                    const z = parseInt(win.style.zIndex || 0);
+                    if (z > highestZ) {
+                        highestZ = z;
+                        topWidgetId = id;
+                    }
+                });
+                if (topWidgetId) closePopout(topWidgetId);
             }
         });
 
-        // Drag functionality
-        const header = popoutWindow.querySelector('.widget-popout-header');
-        if (header) {
-            header.addEventListener('mousedown', startDrag);
-        }
+        // Global move/up handlers for dragging
         document.addEventListener('mousemove', drag);
         document.addEventListener('mouseup', stopDrag);
 
-        // 2025-12-19: Event delegation for interactive elements in popout
-        const popoutContent = popoutWindow.querySelector('.widget-popout-content');
-        if (popoutContent) {
-            // Chart range button clicks
-            popoutContent.addEventListener('click', (e) => {
-                const rangeBtn = e.target.closest('.chart-range-btn');
-                if (rangeBtn && currentPopoutWidgetId) {
-                    const days = parseInt(rangeBtn.dataset.days);
-                    // Update active state in popout
-                    popoutContent.querySelectorAll('.chart-range-btn').forEach(b => b.classList.remove('active'));
-                    rangeBtn.classList.add('active');
-                    // Also update original widget
-                    const origWidget = document.querySelector(`.widget-card[data-widget-id="${currentPopoutWidgetId}"]`);
-                    if (origWidget) {
-                        origWidget.querySelectorAll('.chart-range-btn').forEach(b => b.classList.remove('active'));
-                        const origBtn = origWidget.querySelector(`.chart-range-btn[data-days="${days}"]`);
-                        if (origBtn) origBtn.classList.add('active');
-                    }
-                    // Trigger appropriate fetch based on widget type
-                    if (currentPopoutWidgetId === 'exchange') {
-                        if (window.fetchExchangeHistory) window.fetchExchangeHistory(days);
-                    } else if (currentPopoutWidgetId === 'crypto-rates') {
-                        if (window.fetchCryptoHistory) window.fetchCryptoHistory(days);
-                    }
-                    // Refresh popout content after fetch
-                    setTimeout(() => refreshPopoutContent(), 500);
-                }
-            });
+        // Global click handler to bring to front
+        document.addEventListener('mousedown', (e) => {
+            const win = e.target.closest('.widget-popout-window');
+            if (win) {
+                const widgetId = win.dataset.widgetId;
+                if (widgetId) focusPopout(widgetId);
+            }
+        });
+    }
 
-            // Dropdown changes
-            popoutContent.addEventListener('change', (e) => {
-                if (e.target.classList.contains('exchange-currency-select') && currentPopoutWidgetId) {
-                    // Sync to original widget
-                    const origWidget = document.querySelector(`.widget-card[data-widget-id="${currentPopoutWidgetId}"]`);
-                    if (origWidget) {
-                        const origSelect = origWidget.querySelector(`#${e.target.id}`);
-                        if (origSelect) {
-                            origSelect.value = e.target.value;
-                            origSelect.dispatchEvent(new Event('change'));
-                        }
-                    }
-                    setTimeout(() => refreshPopoutContent(), 500);
-                }
-            });
+    /**
+     * Create a new popout window element
+     * @param {string} widgetId
+     * @param {string} title
+     * @returns {HTMLElement}
+     */
+    function createPopoutElement(widgetId, title) {
+        const win = document.createElement('div');
+        win.className = 'widget-popout-window';
+        win.id = `popout-${widgetId}`;
+        win.dataset.widgetId = widgetId;
+        win.style.zIndex = ++topZIndex;
 
-            // Input changes
-            popoutContent.addEventListener('input', (e) => {
-                if (e.target.classList.contains('exchange-amount-input') && currentPopoutWidgetId) {
-                    const origWidget = document.querySelector(`.widget-card[data-widget-id="${currentPopoutWidgetId}"]`);
-                    if (origWidget) {
-                        const origInput = origWidget.querySelector(`#${e.target.id}`);
-                        if (origInput) {
-                            origInput.value = e.target.value;
-                            origInput.dispatchEvent(new Event('input'));
-                        }
+        win.innerHTML = `
+            <div class="widget-popout-header">
+                <span class="widget-popout-title">${title}</span>
+                <button class="widget-popout-close" title="Close">✕</button>
+            </div>
+            <div class="widget-popout-content"></div>
+        `;
+
+        // Close button handler
+        const closeBtn = win.querySelector('.widget-popout-close');
+        closeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            closePopout(widgetId);
+        });
+
+        // Drag handler
+        const header = win.querySelector('.widget-popout-header');
+        header.addEventListener('mousedown', (e) => startDrag(win, e));
+
+        // Event delegation for interactive elements in this specific popout
+        const content = win.querySelector('.widget-popout-content');
+
+        // Chart range buttons
+        content.addEventListener('click', (e) => {
+            const rangeBtn = e.target.closest('.chart-range-btn');
+            if (rangeBtn) {
+                const days = parseInt(rangeBtn.dataset.days);
+                const origWidget = document.querySelector(`.widget-card[data-widget-id="${widgetId}"]`);
+                if (origWidget) {
+                    const origBtn = origWidget.querySelector(`.chart-range-btn[data-days="${days}"]`);
+                    if (origBtn) {
+                        origBtn.click(); // Trigger original behavior
+                        // Popout refresh is handled by the overall refresh loop if necessary, 
+                        // but here we manually refresh to be snappy
+                        setTimeout(() => refreshPopoutContent(widgetId), 500);
                     }
-                    setTimeout(() => refreshPopoutContent(), 300);
                 }
-            });
+            }
+        });
+
+        // Dropdown changes & Input events
+        content.addEventListener('change', (e) => syncToOriginal(widgetId, e));
+        content.addEventListener('input', (e) => syncToOriginal(widgetId, e));
+
+        document.body.appendChild(win);
+        return win;
+    }
+
+    /**
+     * Sync actions in popout to original widget
+     */
+    function syncToOriginal(widgetId, e) {
+        const origWidget = document.querySelector(`.widget-card[data-widget-id="${widgetId}"]`);
+        if (!origWidget) return;
+
+        const origEl = origWidget.querySelector(`#${e.target.id}`);
+        if (origEl) {
+            origEl.value = e.target.value;
+            origEl.dispatchEvent(new Event(e.type));
+            setTimeout(() => refreshPopoutContent(widgetId), e.type === 'input' ? 300 : 500);
+        }
+    }
+
+    /**
+     * Bring popout to front
+     */
+    function focusPopout(widgetId) {
+        const entry = activePopouts.get(widgetId);
+        if (entry && entry.window && parseInt(entry.window.style.zIndex) < topZIndex) {
+            entry.window.style.zIndex = ++topZIndex;
         }
     }
 
@@ -486,106 +520,111 @@ const Widgets = (() => {
      * @param {string} widgetId - The widget's data-widget-id value
      */
     function popoutWidget(widgetId) {
-        if (!popoutWindow) return;
+        // If already open, just focus it
+        if (activePopouts.has(widgetId)) {
+            focusPopout(widgetId);
+            return;
+        }
 
         const widget = document.querySelector(`.widget-card[data-widget-id="${widgetId}"]`);
         if (!widget) return;
-
-        currentPopoutWidgetId = widgetId;  // Track for event delegation
 
         // Get title text
         const titleEl = widget.querySelector('.widget-title');
         const title = titleEl ? titleEl.textContent : widgetId;
 
-        // Clone widget content
+        // Create window
+        const win = createPopoutElement(widgetId, title);
+
+        // Setup MutationObserver to sync content automatically when the original widget changes
         const content = widget.querySelector('.widget-content');
-        if (!content) return;
+        const observer = new MutationObserver(() => {
+            refreshPopoutContent(widgetId);
+        });
 
-        // Update popout
-        popoutWindow.querySelector('.widget-popout-title').textContent = title;
-        popoutWindow.querySelector('.widget-popout-content').innerHTML = content.innerHTML;
+        if (content) {
+            observer.observe(content, {
+                childList: true,
+                subtree: true,
+                characterData: true,
+                attributes: true // Watch for class/style changes too
+            });
+        }
 
-        // Reset size and position to center (using pixels, not transform, for proper resize behavior)
-        popoutWindow.style.width = '';  // Reset to auto/min-width
-        popoutWindow.style.height = ''; // Reset to auto
+        activePopouts.set(widgetId, { window: win, observer });
+
+        // Populate and position
+        refreshPopoutContent(widgetId);
 
         // Show temporarily to get dimensions, then position
-        popoutWindow.style.display = 'block';
-        popoutWindow.style.visibility = 'hidden';
+        win.style.display = 'block';
+        win.style.visibility = 'hidden';
 
-        const rect = popoutWindow.getBoundingClientRect();
-        const centerX = (window.innerWidth - rect.width) / 2;
-        const centerY = (window.innerHeight - rect.height) / 2;
+        const rect = win.getBoundingClientRect();
+        const centerX = (window.innerWidth - rect.width) / 2 + (activePopouts.size * 20); // Stack offset
+        const centerY = (window.innerHeight - rect.height) / 2 + (activePopouts.size * 20);
 
-        popoutWindow.style.left = centerX + 'px';
-        popoutWindow.style.top = Math.max(50, centerY) + 'px';  // At least 50px from top
-        popoutWindow.style.transform = 'none';
-        popoutWindow.style.visibility = 'visible';
+        win.style.left = centerX + 'px';
+        win.style.top = Math.max(50, centerY) + 'px';
+        win.style.visibility = 'visible';
     }
 
     /**
-     * Close the popout window
+     * Close a specific popout window
+     * @param {string} widgetId
      */
-    function closePopout() {
-        if (popoutWindow) {
-            popoutWindow.style.display = 'none';
-            popoutWindow.querySelector('.widget-popout-content').innerHTML = '';
-            currentPopoutWidgetId = null;
+    function closePopout(widgetId) {
+        const entry = activePopouts.get(widgetId);
+        if (entry) {
+            if (entry.observer) entry.observer.disconnect();
+            if (entry.window) entry.window.remove();
+            activePopouts.delete(widgetId);
         }
     }
 
     /**
      * Refresh popout content from the original widget
-     * Called after delegated actions update the original widget
+     * @param {string} widgetId
      */
-    function refreshPopoutContent() {
-        if (!popoutWindow || !currentPopoutWidgetId) return;
+    function refreshPopoutContent(widgetId) {
+        const entry = activePopouts.get(widgetId);
+        if (!entry || !entry.window) return;
 
-        const widget = document.querySelector(`.widget-card[data-widget-id="${currentPopoutWidgetId}"]`);
+        const widget = document.querySelector(`.widget-card[data-widget-id="${widgetId}"]`);
         if (!widget) return;
 
         const content = widget.querySelector('.widget-content');
-        const popoutContent = popoutWindow.querySelector('.widget-popout-content');
+        const popoutContent = entry.window.querySelector('.widget-popout-content');
         if (!content || !popoutContent) return;
 
         // Copy HTML
         popoutContent.innerHTML = content.innerHTML;
 
-        // Sync select values (innerHTML doesn't preserve current values)
-        widget.querySelectorAll('select').forEach(origSelect => {
-            const popoutSelect = popoutContent.querySelector(`#${origSelect.id}`);
-            if (popoutSelect) {
-                popoutSelect.value = origSelect.value;
-            }
-        });
-
-        // Sync input values
-        widget.querySelectorAll('input').forEach(origInput => {
-            const popoutInput = popoutContent.querySelector(`#${origInput.id}`);
-            if (popoutInput) {
-                popoutInput.value = origInput.value;
-            }
+        // Sync values
+        widget.querySelectorAll('select, input').forEach(origEl => {
+            const popoutEl = popoutContent.querySelector(`#${origEl.id}`);
+            if (popoutEl) popoutEl.value = origEl.value;
         });
     }
 
-    function startDrag(e) {
+    function startDrag(win, e) {
         if (e.target.classList.contains('widget-popout-close')) return;
-        isDragging = true;
-        const rect = popoutWindow.getBoundingClientRect();
+        dragTarget = win;
+        const rect = win.getBoundingClientRect();
         dragOffset.x = e.clientX - rect.left;
         dragOffset.y = e.clientY - rect.top;
-        popoutWindow.style.transform = 'none';
+        focusPopout(win.dataset.widgetId);
     }
 
     function drag(e) {
-        if (!isDragging) return;
+        if (!dragTarget) return;
         e.preventDefault();
-        popoutWindow.style.left = (e.clientX - dragOffset.x) + 'px';
-        popoutWindow.style.top = (e.clientY - dragOffset.y) + 'px';
+        dragTarget.style.left = (e.clientX - dragOffset.x) + 'px';
+        dragTarget.style.top = (e.clientY - dragOffset.y) + 'px';
     }
 
     function stopDrag() {
-        isDragging = false;
+        dragTarget = null;
     }
 
     // Public API

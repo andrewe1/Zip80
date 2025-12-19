@@ -84,6 +84,7 @@
  * - 2025-12-19: Added crypto sparkline hover dot styles matching exchange rate chart
  * - 2025-12-19: Added widget popout floating window styles (draggable, resizable)
  * - 2025-12-19: Removed height limits on lists inside popout for expanded view
+ * - 2025-12-19: Standardized widget card padding to fix header spacing alignment issues
  * ============================================================================
  */
 
@@ -986,12 +987,12 @@ html.dark .save-status-error {
     gap: var(--space-md);
 }
 
-.balance-widget-card {
-    padding: var(--space-md);
-}
+/* Consistent padding handled by .widget-card */
+/* balance-widget-card padding removed for consistency */
 
 /* 2025-12-16: Widget System Styles */
 .widget-card {
+    padding: var(--space-sm) var(--space-md);
     transition: box-shadow 0.2s ease, transform 0.2s ease;
 }
 
@@ -1665,10 +1666,7 @@ html.dark .save-status-error {
     text-align: center;
 }
 
-/* 2025-12-15: Recurring Widget */
-.recurring-widget-card {
-    padding: var(--space-md);
-}
+/* 2025-12-15: Recurring Widget - padding handled by .widget-card */
 
 .recurring-list {
     display: flex;
@@ -1751,10 +1749,7 @@ html.dark .save-status-error {
     margin-right: var(--space-xs);
 }
 
-/* 2025-12-16: Exchange Rate Widget */
-.exchange-widget-card {
-    padding: var(--space-md);
-}
+/* 2025-12-16: Exchange Rate Widget - padding handled by .widget-card */
 
 .exchange-rates {
     display: flex;
@@ -2256,11 +2251,8 @@ html.dark .save-status-error {
 }
 
 /* --- CALENDAR WIDGET --- */
-/* 2025-12-15: Calendar widget in sidebar */
-.calendar-widget-card {
-    padding: var(--space-md);
-    margin-bottom: var(--space-md);
-}
+/* 2025-12-15: Calendar widget - padding handled by .widget-card consistency check (2025-12-19) */
+/* .calendar-widget-card padding removed to ensure alignment with all other widgets */
 
 .calendar-full-date {
     font-size: var(--font-size-lg);
@@ -3060,10 +3052,18 @@ html.dark *::-webkit-scrollbar-thumb:hover {
     background-color: var(--color-surface);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-lg);
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
-    overflow: auto;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.05);
+    overflow: hidden;
+    /* Changed from auto to hidden for resize to work better with internal scroll */
     resize: both;
-    /* 2025-12-19: Enable corner resize handle */
+    display: flex;
+    flex-direction: column;
+    transition: box-shadow 0.2s ease;
+}
+
+.widget-popout-window:active,
+.widget-popout-window:focus-within {
+    box-shadow: 0 20px 80px rgba(0, 0, 0, 0.5), 0 0 0 1px var(--color-primary-muted);
 }
 
 .widget-popout-header {
