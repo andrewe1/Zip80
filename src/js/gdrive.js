@@ -48,6 +48,8 @@
  * - 2025-12-16: Implemented listVaults(), createVault(), readVault(), writeVault()
  * - 2025-12-16: Implemented getVaultInfo(), getVaultName() for header badge display
  * - 2025-12-17: Added silent re-authentication to keep users signed in longer
+ * - 2025-12-19: Added shareVault() for in-app vault sharing via permissions API
+ * - 2025-12-19: Added openPicker() for browsing shared files via Google Picker API
  */
 
 const GDrive = (() => {
@@ -65,6 +67,11 @@ const GDrive = (() => {
     const APP_PROPERTY_KEY = 'zip80_vault';
     const APP_PROPERTY_VALUE = 'true';
 
+    // 2025-12-19: Google Picker API key (for browsing shared files)
+    const API_KEY = 'AIzaSyBLK4FjnahkUupol0gkq97bafWgeJiCEes';
+    // Extract project number from client ID for Picker appId
+    const PROJECT_NUMBER = CLIENT_ID.split('-')[0];
+
     // Local storage keys for token persistence
     const TOKEN_KEY = 'zip80_gdrive_token';
     const USER_KEY = 'zip80_gdrive_user';
@@ -75,6 +82,7 @@ const GDrive = (() => {
     let accessToken = null;
     let currentUser = null;
     let isInitialized = false;
+    let pickerApiLoaded = false;  // 2025-12-19: Picker API state
 
     // Callbacks for auth state changes
     let onAuthChangeCallback = null;
@@ -340,33 +348,62 @@ const GDrive = (() => {
     }
 
     /**
-     * List all Zip80 vault files in user's Drive (owned + shared)
-     * 2025-12-17: Updated to include files shared with the user
-     * @returns {Array} Array of vault file objects {id, name, modifiedTime, shared}
-     */
+ * List all Zip80 vault files in user's Drive (owned + shared)
+ * 2025-12-17: Updated to include files shared with the user
+ * 2025-12-19: Fixed to properly find shared files using sharedWithMe and name pattern
+ * @returns {Array} Array of vault file objects {id, name, modifiedTime, shared}
+ */
     async function listVaults() {
-        // Query for files with our app property (includes both owned and shared)
-        const query = `appProperties has { key='${APP_PROPERTY_KEY}' and value='${APP_PROPERTY_VALUE}' } and trashed=false`;
+        // Query 1: Files with our app property (files we created or modified)
+        const appPropertyQuery = `appProperties has { key='${APP_PROPERTY_KEY}' and value='${APP_PROPERTY_VALUE}' } and trashed=false`;
 
-        const url = `${DRIVE_API}/files?` + new URLSearchParams({
-            q: query,
-            fields: 'files(id,name,modifiedTime,owners,shared)',
-            orderBy: 'modifiedTime desc',
-            pageSize: '50',
-            includeItemsFromAllDrives: 'true',
-            supportsAllDrives: 'true'
-        });
+        // Query 2: Shared files with .json extension (for files shared with us that we haven't opened yet)
+        // Note: We search for all shared JSON files and will filter invalid ones when opened
+        const sharedQuery = `sharedWithMe=true and mimeType='application/json' and trashed=false`;
 
-        const response = await driveRequest(url);
+        // Fetch both queries in parallel
+        const [ownedResponse, sharedResponse] = await Promise.all([
+            driveRequest(`${DRIVE_API}/files?` + new URLSearchParams({
+                q: appPropertyQuery,
+                fields: 'files(id,name,modifiedTime,owners,shared)',
+                orderBy: 'modifiedTime desc',
+                pageSize: '50',
+                includeItemsFromAllDrives: 'true',
+                supportsAllDrives: 'true'
+            })),
+            driveRequest(`${DRIVE_API}/files?` + new URLSearchParams({
+                q: sharedQuery,
+                fields: 'files(id,name,modifiedTime,owners,shared)',
+                orderBy: 'modifiedTime desc',
+                pageSize: '50',
+                includeItemsFromAllDrives: 'true',
+                supportsAllDrives: 'true'
+            }))
+        ]);
 
-        if (!response.ok) {
+        if (!ownedResponse.ok) {
             throw new Error('Failed to list vaults');
         }
 
-        const data = await response.json();
-        return data.files || [];
-    }
+        const ownedData = await ownedResponse.json();
+        const ownedFiles = ownedData.files || [];
 
+        // Get shared files (ignore errors as this is supplementary)
+        let sharedFiles = [];
+        if (sharedResponse.ok) {
+            const sharedData = await sharedResponse.json();
+            sharedFiles = sharedData.files || [];
+        }
+
+        // Merge and deduplicate by ID (prefer owned/appProperty version)
+        const seenIds = new Set(ownedFiles.map(f => f.id));
+        const uniqueShared = sharedFiles.filter(f => !seenIds.has(f.id));
+
+        console.log('[GDrive] listVaults - owned:', ownedFiles.length, 'shared:', sharedFiles.length, 'unique shared:', uniqueShared.length);
+        console.log('[GDrive] Shared files found:', sharedFiles);
+
+        return [...ownedFiles, ...uniqueShared];
+    }
     /**
      * Create a new vault file in Drive
      * @param {string} name - Vault name (used as filename)
@@ -521,6 +558,108 @@ const GDrive = (() => {
         localStorage.removeItem(LAST_VAULT_KEY);
     }
 
+    // 2025-12-19: In-app vault sharing
+
+    /**
+     * Share a vault with another user via Google Drive permissions
+     * @param {string} fileId - Drive file ID to share
+     * @param {string} email - Email address to share with
+     * @param {string} role - Permission role ('reader' or 'writer')
+     * @returns {Promise<object>} Created permission object
+     */
+    async function shareVault(fileId, email, role = 'writer') {
+        const url = `${DRIVE_API}/files/${fileId}/permissions`;
+
+        const response = await driveRequest(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                type: 'user',
+                role: role,
+                emailAddress: email,
+                sendNotificationEmail: true
+            })
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error?.message || 'Failed to share vault');
+        }
+
+        return response.json();
+    }
+
+    // 2025-12-19: Google Picker API for browsing shared files
+
+    /**
+     * Load Google Picker API library
+     * @returns {Promise<void>}
+     */
+    async function loadPickerApi() {
+        if (pickerApiLoaded) return;
+
+        // Ensure gapi is loaded
+        if (typeof gapi === 'undefined') {
+            throw new Error('Google API library not loaded');
+        }
+
+        await new Promise((resolve, reject) => {
+            gapi.load('picker', {
+                callback: resolve,
+                onerror: () => reject(new Error('Failed to load Picker API'))
+            });
+        });
+        pickerApiLoaded = true;
+    }
+
+    /**
+     * Open Google Drive Picker to browse and select vault files
+     * Allows access to "Shared with me" files that our normal query can't see
+     * @param {Function} onSelect - Callback with selected file {id, name}
+     * @param {Function} onCancel - Optional callback if user cancels
+     */
+    async function openPicker(onSelect, onCancel) {
+        if (!accessToken) {
+            throw new Error('Not authenticated');
+        }
+
+        await loadPickerApi();
+
+        // View for user's own files
+        const myDriveView = new google.picker.DocsView(google.picker.ViewId.DOCS)
+            .setMimeTypes('application/json')
+            .setIncludeFolders(true)
+            .setSelectFolderEnabled(false);
+
+        // View for shared files
+        const sharedView = new google.picker.DocsView(google.picker.ViewId.DOCS)
+            .setMimeTypes('application/json')
+            .setOwnedByMe(false)
+            .setIncludeFolders(true)
+            .setSelectFolderEnabled(false);
+
+        const picker = new google.picker.PickerBuilder()
+            .setAppId(PROJECT_NUMBER)
+            .setOAuthToken(accessToken)
+            .setDeveloperKey(API_KEY)
+            .addView(myDriveView)
+            .addView(sharedView)
+            .setTitle('Select a Vault')
+            .setCallback((data) => {
+                if (data.action === google.picker.Action.PICKED) {
+                    const file = data.docs[0];
+                    console.log('[GDrive] Picker selected:', file.name, file.id);
+                    if (onSelect) onSelect({ id: file.id, name: file.name });
+                } else if (data.action === google.picker.Action.CANCEL) {
+                    console.log('[GDrive] Picker cancelled');
+                    if (onCancel) onCancel();
+                }
+            })
+            .build();
+
+        picker.setVisible(true);
+    }
+
     // --- Public API ---
 
     return {
@@ -544,6 +683,12 @@ const GDrive = (() => {
         // 2025-12-17: Reopen feature
         saveLastVault,
         getLastVault,
-        clearLastVault
+        clearLastVault,
+
+        // 2025-12-19: Sharing
+        shareVault,
+
+        // 2025-12-19: Picker for browsing shared files
+        openPicker
     };
 })();

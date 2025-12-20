@@ -77,6 +77,8 @@ CHANGE LOG:
 - 2025-12-19: Added Crypto Rates widget with BTC, ETH, SOL, XRP, ADA and fiat currencies
 - 2025-12-19: Added crypto-rates toggle to widgets dropdown menu
 - 2025-12-19: Added widget popout floating window container
+- 2025-12-19: Added Share Vault modal and options dropdown button for cloud vaults
+- 2025-12-19: Added Browse Drive button and GAPI script for Picker API (shared files)
 -->
 <!DOCTYPE html>
 <html lang="en">
@@ -89,6 +91,8 @@ CHANGE LOG:
     <link rel="stylesheet" href="css/styles.css">
     <!-- 2025-12-16: Google Identity Services for OAuth2 -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <!-- 2025-12-19: Google API Loader for Picker API (browsing shared files) -->
+    <script src="https://apis.google.com/js/api.js" async defer></script>
 </head>
 
 <body>
@@ -186,6 +190,10 @@ CHANGE LOG:
                     <div class="google-vault-actions">
                         <button id="btn-google-open" class="btn btn-secondary">
                             ☁️ <span data-i18n="btnOpenCloudVault">Open Cloud Vault</span>
+                        </button>
+                        <!-- 2025-12-19: Browse Drive with Picker API (for shared files) -->
+                        <button id="btn-browse-drive" class="btn btn-secondary">
+                            📂 <span data-i18n="btnBrowseDrive">Browse Drive</span>
                         </button>
                         <button id="btn-google-new" class="btn btn-secondary">
                             ✨ <span data-i18n="btnNewCloudVault">New Cloud Vault</span>
@@ -342,6 +350,10 @@ CHANGE LOG:
                     <button id="btn-add-password" class="dropdown-item" data-action="add-password"
                         style="display: none;">
                         🔒 <span data-i18n="addPassword">Add Password</span>
+                    </button>
+                    <!-- 2025-12-19: Share vault (only for cloud vaults you own) -->
+                    <button id="btn-share-vault" class="dropdown-item" data-action="share-vault" style="display: none;">
+                        🔗 <span data-i18n="shareVault">Share Vault</span>
                     </button>
                     <div class="dropdown-divider"></div>
                     <button id="btn-settings" class="dropdown-item" data-action="settings">
@@ -1071,6 +1083,41 @@ CHANGE LOG:
                 </button>
                 <button id="btn-confirm-add-password" class="btn btn-primary">
                     <span data-i18n="addPassword">🔒 Add Password</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2025-12-19: Share Vault Modal (for cloud vaults you own) -->
+    <div id="share-vault-modal" class="modal" style="display: none;">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <h2 id="share-vault-modal-title" class="modal-title">🔗 Share Vault</h2>
+            <p id="share-vault-modal-desc" class="modal-desc">Enter the email address to share this vault with.</p>
+
+            <div class="form-group">
+                <label id="label-share-email" for="input-share-email" data-i18n="shareEmailLabel">Email Address</label>
+                <input type="email" id="input-share-email" class="input" placeholder="e.g. person@gmail.com">
+            </div>
+
+            <div class="form-group">
+                <label id="label-share-role" data-i18n="shareRoleLabel">Permission Level</label>
+                <div class="share-role-buttons">
+                    <button class="btn btn-role active" data-role="writer">
+                        ✏️ <span data-i18n="shareRoleEditor">Can Edit</span>
+                    </button>
+                    <button class="btn btn-role" data-role="reader">
+                        👁️ <span data-i18n="shareRoleViewer">Can View</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="modal-actions">
+                <button id="btn-cancel-share" class="btn btn-secondary">
+                    <span data-i18n="cancel">Cancel</span>
+                </button>
+                <button id="btn-confirm-share" class="btn btn-primary">
+                    <span data-i18n="shareVaultBtn">Share</span>
                 </button>
             </div>
         </div>

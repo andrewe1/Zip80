@@ -3497,3 +3497,44 @@ html.dark *::-webkit-scrollbar-thumb:hover {
     margin: 0 var(--space-xs);
     min-width: 40px;
 }
+
+/* =============================================================================
+   2025-12-19: SHARE VAULT MODAL
+   ============================================================================= */
+
+/* Share role toggle buttons */
+.share-role-buttons {
+    display: flex;
+    gap: var(--space-sm);
+}
+
+.btn-role {
+    flex: 1;
+    padding: var(--space-sm) var(--space-md);
+    border: 2px solid var(--color-border);
+    background: var(--color-surface);
+    color: var(--color-text);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+}
+
+.btn-role:hover {
+    border-color: var(--color-primary);
+}
+
+.btn-role.active {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    color: white;
+}
+
+html.dark .btn-role {
+    background: var(--color-bg);
+}
+
+html.dark .btn-role.active {
+    background: var(--color-primary);
+}

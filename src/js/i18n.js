@@ -75,6 +75,8 @@
  * - 2025-12-19: Replaced viewCompact with viewHistorical, added widget toggle translations
  * - 2025-12-19: Added Add Password translations (addPassword, addPasswordTitle, addPasswordDesc, passwordAdded)
  * - 2025-12-19: Added Settings and Inactivity Timer translations (settingsTitle, inactivityWarning, stayOpen, etc.)
+ * - 2025-12-19: Added Share Vault translations (shareVault, shareEmailLabel, shareRoleEditor, etc.)
+ * - 2025-12-19: Added btnBrowseDrive translation for Google Picker API
  */
 
 const I18n = (() => {
@@ -303,6 +305,7 @@ const I18n = (() => {
             toastGoogleError: 'Google sign-in failed. Please try again.',
             toastCloudSaved: '☁️ Saved to Google Drive',
             toastCloudError: 'Could not save to Google Drive',
+            btnBrowseDrive: '📂 Browse Drive',  // 2025-12-19: Picker for shared files
 
             // Menu Bar (2025-12-17)
             vaultLabel: 'Vault:',
@@ -398,7 +401,20 @@ const I18n = (() => {
             inactivityWarning: 'Vault will close due to inactivity in',
             inactivitySeconds: 'seconds',
             stayOpen: 'Stay Open',
-            closeNow: 'Close Now'
+            closeNow: 'Close Now',
+
+            // Share Vault (2025-12-19)
+            shareVault: '🔗 Share Vault',
+            shareVaultTitle: '🔗 Share Vault',
+            shareVaultDesc: 'Enter the email address to share this vault with.',
+            shareEmailLabel: 'Email Address',
+            shareEmailPlaceholder: 'e.g. person@gmail.com',
+            shareRoleLabel: 'Permission Level',
+            shareRoleEditor: 'Can Edit',
+            shareRoleViewer: 'Can View',
+            shareVaultBtn: 'Share',
+            toastVaultShared: '🔗 Vault shared successfully!',
+            toastShareError: 'Could not share vault. Please check the email address.'
         },
 
         es: {
@@ -580,6 +596,7 @@ const I18n = (() => {
             toastGoogleError: 'Error al iniciar sesión. Intenta de nuevo.',
             toastCloudSaved: '☁️ Guardado en Google Drive',
             toastCloudError: 'No se pudo guardar en Google Drive',
+            btnBrowseDrive: '📂 Explorar Drive',  // 2025-12-19: Picker for shared files
 
             // Menu Bar (2025-12-17)
             vaultLabel: 'Bóveda:',
@@ -675,7 +692,20 @@ const I18n = (() => {
             inactivityWarning: 'La bóveda se cerrará por inactividad en',
             inactivitySeconds: 'segundos',
             stayOpen: 'Mantener Abierta',
-            closeNow: 'Cerrar Ahora'
+            closeNow: 'Cerrar Ahora',
+
+            // Share Vault (2025-12-19)
+            shareVault: '🔗 Compartir Bóveda',
+            shareVaultTitle: '🔗 Compartir Bóveda',
+            shareVaultDesc: 'Ingresa el correo electrónico para compartir esta bóveda.',
+            shareEmailLabel: 'Correo Electrónico',
+            shareEmailPlaceholder: 'ej. persona@gmail.com',
+            shareRoleLabel: 'Nivel de Permiso',
+            shareRoleEditor: 'Puede Editar',
+            shareRoleViewer: 'Solo Ver',
+            shareVaultBtn: 'Compartir',
+            toastVaultShared: '🔗 ¡Bóveda compartida exitosamente!',
+            toastShareError: 'No se pudo compartir. Verifica el correo electrónico.'
         }
     };
 

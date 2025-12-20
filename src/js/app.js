@@ -89,6 +89,8 @@
  * - 2025-12-19: Added Add Password feature (openAddPasswordModal, closeAddPasswordModal, handleAddPassword)
  * - 2025-12-19: Added Settings modal with inactivity timer toggle (openSettingsModal, closeSettingsModal)
  * - 2025-12-19: Added inactivity timer (10 min timeout, 10 sec countdown warning, activity tracking)
+ * - 2025-12-19: Added Share Vault modal for cloud vaults (openShareVaultModal, handleShareVault)
+ * - 2025-12-19: Added Browse Drive via Google Picker API (handleBrowseDrive, btnBrowseDrive)
  */
 
 (() => {
@@ -311,6 +313,7 @@
         googleUserName: document.getElementById('google-user-name'),
         btnGoogleOpen: document.getElementById('btn-google-open'),
         btnGoogleNew: document.getElementById('btn-google-new'),
+        btnBrowseDrive: document.getElementById('btn-browse-drive'),  // 2025-12-19: Picker API
         gdrivePickerModal: document.getElementById('gdrive-picker-modal'),
         gdrivePickerTitle: document.getElementById('gdrive-picker-title'),
         gdriveVaultList: document.getElementById('gdrive-vault-list'),
@@ -364,7 +367,14 @@
         inactivityModal: document.getElementById('inactivity-modal'),
         inactivityCountdown: document.getElementById('inactivity-countdown'),
         btnCancelInactivity: document.getElementById('btn-cancel-inactivity'),
-        btnCloseNow: document.getElementById('btn-close-now')
+        btnCloseNow: document.getElementById('btn-close-now'),
+
+        // Share Vault Modal (2025-12-19)
+        btnShareVault: document.getElementById('btn-share-vault'),
+        shareVaultModal: document.getElementById('share-vault-modal'),
+        inputShareEmail: document.getElementById('input-share-email'),
+        btnCancelShare: document.getElementById('btn-cancel-share'),
+        btnConfirmShare: document.getElementById('btn-confirm-share')
     };
 
     // --- Initialization ---
@@ -874,6 +884,33 @@
 
         // Account settings edit button (2025-12-15: for checking/cash accounts)
         elements.btnEditAccountSettings.addEventListener('click', openAccountEditModal);
+
+        // 2025-12-19: Share vault modal
+        if (elements.btnShareVault) {
+            elements.btnShareVault.addEventListener('click', openShareVaultModal);
+        }
+        if (elements.btnCancelShare) {
+            elements.btnCancelShare.addEventListener('click', closeShareVaultModal);
+        }
+        if (elements.btnConfirmShare) {
+            elements.btnConfirmShare.addEventListener('click', handleShareVault);
+        }
+        if (elements.shareVaultModal) {
+            elements.shareVaultModal.querySelector('.modal-backdrop').addEventListener('click', closeShareVaultModal);
+            // Role button toggle
+            const roleButtons = elements.shareVaultModal.querySelectorAll('.btn-role');
+            roleButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    roleButtons.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                });
+            });
+        }
+        if (elements.inputShareEmail) {
+            elements.inputShareEmail.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') handleShareVault();
+            });
+        }
 
         // 2025-12-15: Background click to deselect accounts
         // Uses closest() to detect clicks outside of any card or interactive element
@@ -1676,6 +1713,104 @@
         elements.settingsModal.style.display = 'none';
     }
 
+    // --- Share Vault Modal (2025-12-19) ---
+
+    /**
+     * Open share vault modal
+     * Updates labels with current translations and resets form
+     */
+    function openShareVaultModal() {
+        const t = I18n.t;
+
+        // Update labels with translations
+        document.getElementById('share-vault-modal-title').textContent = t('shareVaultTitle');
+        document.getElementById('share-vault-modal-desc').textContent = t('shareVaultDesc');
+        document.getElementById('label-share-email').textContent = t('shareEmailLabel');
+        document.getElementById('label-share-role').textContent = t('shareRoleLabel');
+        elements.inputShareEmail.placeholder = t('shareEmailPlaceholder');
+
+        // Update role button labels
+        const roleButtons = elements.shareVaultModal.querySelectorAll('.btn-role');
+        roleButtons.forEach(btn => {
+            const span = btn.querySelector('[data-i18n]');
+            if (span) {
+                const key = span.dataset.i18n;
+                span.textContent = t(key);
+            }
+        });
+
+        // Update cancel/share button labels
+        document.querySelector('#btn-cancel-share [data-i18n="cancel"]').textContent = t('cancel');
+        document.querySelector('#btn-confirm-share [data-i18n="shareVaultBtn"]').textContent = t('shareVaultBtn');
+
+        // Reset form
+        elements.inputShareEmail.value = '';
+        roleButtons.forEach(btn => {
+            if (btn.dataset.role === 'writer') {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        });
+
+        elements.shareVaultModal.style.display = 'flex';
+        elements.inputShareEmail.focus();
+    }
+
+    /**
+     * Close share vault modal
+     */
+    function closeShareVaultModal() {
+        elements.shareVaultModal.style.display = 'none';
+    }
+
+    /**
+     * Handle share vault submission
+     * Calls GDrive.shareVault with email and selected role
+     */
+    async function handleShareVault() {
+        const email = elements.inputShareEmail.value.trim();
+
+        // Validate email
+        if (!email || !email.includes('@')) {
+            showToast(I18n.t('toastShareError'), false);
+            elements.inputShareEmail.focus();
+            return;
+        }
+
+        // Get selected role (default to 'writer')
+        const activeRoleBtn = elements.shareVaultModal.querySelector('.btn-role.active');
+        const role = activeRoleBtn ? activeRoleBtn.dataset.role : 'writer';
+
+        try {
+            await GDrive.shareVault(gdriveFileId, email, role);
+            showToast(I18n.t('toastVaultShared'));
+            closeShareVaultModal();
+        } catch (err) {
+            console.error('Failed to share vault:', err);
+            showToast(I18n.t('toastShareError'), false);
+        }
+    }
+
+    /**
+     * Update share button visibility
+     * Only show for cloud vaults where the current user is the owner
+     */
+    function updateShareButtonVisibility() {
+        if (!elements.btnShareVault) return;
+
+        // Only show for cloud vaults where user is the owner
+        const isCloudVault = storageBackend === 'gdrive';
+        const currentUser = typeof GDrive !== 'undefined' && GDrive.isSignedIn() ? GDrive.getUser() : null;
+        const currentUserEmail = currentUser ? currentUser.email : null;
+
+        // If vaultOwnerEmail is null, it means the current user is the owner (they created the vault)
+        // If vaultOwnerEmail matches current user's email, they're also the owner
+        const isOwner = vaultOwnerEmail === null || vaultOwnerEmail === currentUserEmail;
+
+        elements.btnShareVault.style.display = (isCloudVault && isOwner) ? '' : 'none';
+    }
+
     async function handleSave() {
         // 2025-12-16: Support both local and cloud backends
         // 2025-12-17: Use flash status indicator instead of toast
@@ -1963,6 +2098,10 @@
             elements.gdrivePickerModal.querySelector('.modal-backdrop')
                 .addEventListener('click', closeVaultPickerModal);
         }
+        // 2025-12-19: Browse Drive button (Picker API for shared files)
+        if (elements.btnBrowseDrive) {
+            elements.btnBrowseDrive.addEventListener('click', handleBrowseDrive);
+        }
     }
 
     /**
@@ -2003,6 +2142,34 @@
         if (typeof GDrive !== 'undefined') {
             GDrive.signOut();
             showToast(I18n.t('toastGoogleSignedOut'));
+        }
+    }
+
+    /**
+     * Handle Browse Drive button click
+     * 2025-12-19: Opens Google Picker to browse Drive including shared files
+     */
+    async function handleBrowseDrive() {
+        if (!GDrive.isSignedIn()) {
+            showToast(I18n.t('toastGoogleError'), false);
+            return;
+        }
+
+        try {
+            await GDrive.openPicker(
+                // onSelect callback
+                (file) => {
+                    console.log('[App] Picker selected file:', file.name);
+                    loadCloudVault(file.id);
+                },
+                // onCancel callback
+                () => {
+                    console.log('[App] Picker cancelled');
+                }
+            );
+        } catch (err) {
+            console.error('Failed to open Drive picker:', err);
+            showToast(I18n.t('toastGoogleError'), false);
         }
     }
 
@@ -2866,6 +3033,9 @@
 
         // 2025-12-17: Show/hide change password option based on encryption status
         updateChangePasswordVisibility();
+
+        // 2025-12-19: Show/hide share button (only for cloud vaults you own)
+        updateShareButtonVisibility();
 
         // 2025-12-19: Start inactivity timer when vault is opened
         resetInactivityTimer();
