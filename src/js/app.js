@@ -3343,7 +3343,13 @@
         if (currentLinkedAccount && currentAccountId && currentAccountId.startsWith('linked_')) {
             // Use cached transactions from linked account, filtered by accountId
             const allCached = currentLinkedAccount.cachedTransactions || [];
-            accountTransactions = allCached.filter(t => t.accountId === currentLinkedAccount.accountId);
+            const targetId = currentLinkedAccount.accountId;
+
+            // Debug: Show what accountIds exist in cached transactions
+            const uniqueAccountIds = [...new Set(allCached.map(t => t.accountId))];
+            console.log('[History] Target accountId:', targetId, 'Cached accountIds:', uniqueAccountIds);
+
+            accountTransactions = allCached.filter(t => t.accountId === targetId);
             console.log('[History] Linked account transactions:', accountTransactions.length, 'of', allCached.length, 'cached');
             // Hide add transaction form for view-only linked accounts
             const transactionForm = document.querySelector('.transaction-form');
