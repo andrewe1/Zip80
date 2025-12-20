@@ -4,3 +4,7 @@ dist/
 .idea/
 .vscode/
 *.log
+
+# Environment and config files (contain API keys)
+.env
+src/js/config.js
