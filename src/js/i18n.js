@@ -430,7 +430,7 @@ const I18n = (() => {
             noLinkedAccounts: 'No shared accounts available',
 
             // Linked Accounts Display
-            linkedBadge: '🔗 Linked',
+            linkedBadge: 'Linked',
             lastSynced: 'Last synced',
             syncError: 'Sync failed',
 
@@ -747,7 +747,7 @@ const I18n = (() => {
             noLinkedAccounts: 'No hay cuentas compartidas disponibles',
 
             // Linked Accounts Display
-            linkedBadge: '🔗 Vinculada',
+            linkedBadge: 'Vinculada',
             lastSynced: 'Última sincronización',
             syncError: 'Error de sincronización',
 

@@ -713,6 +713,8 @@ const GDrive = (() => {
                                     ownerEmail: vault.owners?.[0]?.emailAddress || 'Unknown',
                                     accountId: share.accountId,
                                     accountName: account.name,
+                                    accountType: account.type || 'checking',  // 2025-12-20: Include account type for icon display
+                                    accountCurrency: account.currency || 'USD',  // 2025-12-20: Include currency for crypto icons
                                     permission: share.permission,
                                     shareId: share.id
                                 });

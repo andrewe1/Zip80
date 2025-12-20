@@ -1268,10 +1268,11 @@
         });
 
         // 2025-12-16: Exchange rate chart range buttons
-        document.querySelectorAll('.chart-range-btn').forEach(btn => {
+        // 2025-12-20: Exclude crypto buttons - use :not() to avoid affecting crypto widget
+        document.querySelectorAll('.chart-range-btns:not(.crypto-range-btns) .chart-range-btn').forEach(btn => {
             btn.addEventListener('click', () => {
-                // Update active state
-                document.querySelectorAll('.chart-range-btn').forEach(b => b.classList.remove('active'));
+                // Update active state only for exchange widget buttons
+                document.querySelectorAll('.chart-range-btns:not(.crypto-range-btns) .chart-range-btn').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
 
                 // Fetch new data for selected range
@@ -3511,10 +3512,15 @@
             data.linkedAccounts.forEach(linked => {
                 const isActive = `linked_${linked.sourceVaultId}_${linked.accountId}` === currentAccountId;
 
+                // 2025-12-20: Use correct account type icon instead of link icon
+                const linkedAccountIcon = linked.accountType === 'crypto' ? getCryptoIcon(linked.accountCurrency) :
+                    linked.accountType === 'credit' ? '💳' :
+                        linked.accountType === 'cash' ? '💵' : '🏦';
+
                 const tab = document.createElement('button');
                 tab.className = `account-tab linked ${isActive ? 'active' : ''}`;
                 tab.innerHTML = `
-                    <span class="account-icon">🔗</span>
+                    <span class="account-icon">${linkedAccountIcon}</span>
                     <span class="account-name">${escapeHtml(linked.accountName)}</span>
                     <span class="linked-badge">${linked.permission === 'editor' ? '✏️' : '👁️'}</span>
                     <span class="linked-sync-time">${I18n.t('sharedBy')} ${escapeHtml(linked.ownerEmail.split('@')[0])}</span>
@@ -3811,17 +3817,23 @@
                 });
 
                 // 2025-12-19: Add linked accounts to the widget
+                // 2025-12-20: Use correct account type icon instead of link icon
                 if (data.linkedAccounts && data.linkedAccounts.length > 0) {
                     data.linkedAccounts.forEach(linked => {
                         const linkedId = `linked_${linked.sourceVaultId}_${linked.accountId}`;
                         const isActive = linkedId === currentAccountId;
 
+                        // Get correct icon based on account type
+                        const linkedIcon = linked.accountType === 'crypto' ? getCryptoIcon(linked.accountCurrency) :
+                            linked.accountType === 'credit' ? '💳' :
+                                linked.accountType === 'cash' ? '💵' : '🏦';
+
                         const item = document.createElement('div');
                         item.className = `widget-account-item linked${isActive ? ' active' : ''}`;
                         item.innerHTML = `
-                            <span class="widget-account-name">🔗 ${escapeHtml(linked.accountName)}</span>
+                            <span class="widget-account-name">${linkedIcon} ${escapeHtml(linked.accountName)}</span>
                             <span class="widget-account-balance positive">
-                                ${Accounts.formatCurrency(linked.cachedBalance || 0, 'USD')} <span class="widget-currency">🔗</span>
+                                ${Accounts.formatCurrency(linked.cachedBalance || 0, linked.accountCurrency || 'USD')} <span class="widget-currency">${linked.accountCurrency || 'USD'}</span>
                             </span>
                         `;
                         item.addEventListener('click', () => selectLinkedAccount(linked));
@@ -4852,6 +4864,8 @@
             sourceVaultName: share.sourceVaultName,
             accountId: share.accountId,
             accountName: share.accountName,
+            accountType: share.accountType || 'checking',  // 2025-12-20: Store account type for icon display
+            accountCurrency: share.accountCurrency || 'USD',  // 2025-12-20: Store currency for crypto icons
             permission: share.permission,
             ownerEmail: share.ownerEmail,
             lastSync: new Date().toISOString(),
