@@ -3888,3 +3888,34 @@ html.dark .btn-role.active {
 .sticky-deck.linked .sticky-deck-header::before {
     content: '🔗 ';
 }
+
+/* ==========================================================================
+   2025-12-20: SHARE ROLE BUTTONS
+   ========================================================================== */
+
+.share-role-buttons {
+    display: flex;
+    gap: var(--space-sm);
+}
+
+.btn-role {
+    flex: 1;
+    padding: var(--space-sm) var(--space-md);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-role:hover {
+    border-color: var(--color-primary);
+    color: var(--color-text);
+}
+
+.btn-role.active {
+    border-color: var(--color-primary);
+    background: var(--color-primary);
+    color: white;
+}

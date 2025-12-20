@@ -1150,6 +1150,37 @@ CHANGE LOG:
         </div>
     </div>
 
+    <!-- 2025-12-20: Share Deck Modal -->
+    <div id="share-deck-modal" class="modal" style="display: none;">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <h2 id="share-deck-modal-title" class="modal-title">📋 Share Deck</h2>
+            <p id="share-deck-modal-desc" class="modal-desc">Share this deck with another user.</p>
+
+            <div class="form-group">
+                <label id="label-share-deck-email" for="input-share-deck-email">Email Address</label>
+                <input type="email" id="input-share-deck-email" class="input" placeholder="e.g. person@gmail.com">
+            </div>
+
+            <div class="form-group">
+                <label>Permission</label>
+                <div class="share-role-buttons">
+                    <button class="btn btn-role active" data-role="viewer">👁️ Can View</button>
+                    <button class="btn btn-role" data-role="editor">✏️ Can Edit</button>
+                </div>
+            </div>
+
+            <div class="modal-actions">
+                <button id="btn-cancel-share-deck" class="btn btn-secondary">
+                    <span data-i18n="cancel">Cancel</span>
+                </button>
+                <button id="btn-confirm-share-deck" class="btn btn-primary">
+                    <span data-i18n="shareDeck">Share Deck</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- 2025-12-15: Custom Confirm Modal (replaces native confirm dialog) -->
     <div id="confirm-modal" class="modal" style="display: none;">
         <div class="modal-backdrop"></div>

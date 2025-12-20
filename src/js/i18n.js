@@ -439,7 +439,8 @@ const I18n = (() => {
             deckDefaultName: 'New Deck',
             addNotePlaceholder: '+ Add note...',
             deleteDeckConfirm: 'Delete this deck?',
-            shareDeck: 'Share Deck'
+            shareDeck: 'Share Deck',
+            toastDeckShared: '📋 Deck shared successfully!'
         },
 
         es: {
@@ -755,7 +756,8 @@ const I18n = (() => {
             deckDefaultName: 'Nueva Nota',
             addNotePlaceholder: '+ Agregar nota...',
             deleteDeckConfirm: '¿Eliminar esta nota?',
-            shareDeck: 'Compartir Nota'
+            shareDeck: 'Compartir Nota',
+            toastDeckShared: '📋 ¡Nota compartida exitosamente!'
         }
     };
 

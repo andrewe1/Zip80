@@ -387,7 +387,11 @@
         btnCloseAcceptShares: document.getElementById('btn-close-accept-shares'),
 
         // Sticky Notes (2025-12-20)
-        btnNewDeck: document.getElementById('btn-new-deck')
+        btnNewDeck: document.getElementById('btn-new-deck'),
+        shareDeckModal: document.getElementById('share-deck-modal'),
+        inputShareDeckEmail: document.getElementById('input-share-deck-email'),
+        btnCancelShareDeck: document.getElementById('btn-cancel-share-deck'),
+        btnConfirmShareDeck: document.getElementById('btn-confirm-share-deck')
     };
 
     // --- Initialization ---
@@ -425,6 +429,8 @@
         if (elements.btnNewDeck) {
             elements.btnNewDeck.addEventListener('click', handleCreateDeck);
         }
+        // Share deck modal setup
+        setupShareDeckModal();
     }
 
     /**
@@ -472,15 +478,115 @@
         data.stickyDecks = (data.stickyDecks || []).filter(d => !d._deleted);
         handleSave();
     }
+    // Track currently sharing deck
+    let currentShareDeck = null;
 
     /**
-     * Handle sharing a deck
+     * Handle sharing a deck - opens the share modal
      */
     function handleShareDeck(deck) {
-        // TODO: Implement deck sharing (similar to account sharing)
-        showToast('Deck sharing coming soon!', true);
+        if (!elements.shareDeckModal) return;
+
+        currentShareDeck = deck;
+
+        // Reset form
+        elements.inputShareDeckEmail.value = '';
+
+        // Reset role buttons
+        const roleButtons = elements.shareDeckModal.querySelectorAll('.btn-role');
+        roleButtons.forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.role === 'viewer');
+        });
+
+        // Wire up role button toggles
+        roleButtons.forEach(btn => {
+            btn.onclick = () => {
+                roleButtons.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+            };
+        });
+
+        // Show modal
+        elements.shareDeckModal.style.display = 'flex';
+        elements.inputShareDeckEmail.focus();
     }
 
+    /**
+     * Close share deck modal
+     */
+    function closeShareDeckModal() {
+        if (elements.shareDeckModal) {
+            elements.shareDeckModal.style.display = 'none';
+        }
+        currentShareDeck = null;
+    }
+
+    /**
+     * Confirm share deck - creates the share entry
+     */
+    async function confirmShareDeck() {
+        if (!currentShareDeck) return;
+
+        const email = elements.inputShareDeckEmail.value.trim().toLowerCase();
+
+        if (!email || !email.includes('@')) {
+            showToast(I18n.t('toastShareError'), false);
+            return;
+        }
+
+        // Get selected role
+        const activeBtn = elements.shareDeckModal.querySelector('.btn-role.active');
+        const permission = activeBtn ? activeBtn.dataset.role : 'viewer';
+
+        // Initialize deckShares if needed
+        if (!data.deckShares) {
+            data.deckShares = [];
+        }
+
+        // Create share entry
+        const share = {
+            id: 'dshare_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+            deckId: currentShareDeck.id,
+            sharedWith: email,
+            permission: permission,
+            createdAt: new Date().toISOString()
+        };
+
+        // Remove existing share for same deck+email
+        data.deckShares = data.deckShares.filter(s =>
+            !(s.deckId === currentShareDeck.id && s.sharedWith === email)
+        );
+        data.deckShares.push(share);
+
+        // Save vault
+        await handleSave();
+
+        // Share vault file via Google Drive (if cloud)
+        if (storageBackend === 'gdrive' && gdriveFileId) {
+            try {
+                await GDrive.shareVault(gdriveFileId, email, 'reader');
+            } catch (err) {
+                console.warn('Could not share vault via Drive:', err);
+            }
+        }
+
+        closeShareDeckModal();
+        showToast(I18n.t('toastDeckShared'), true);
+    }
+
+    // Setup share deck modal event listeners
+    function setupShareDeckModal() {
+        if (elements.btnCancelShareDeck) {
+            elements.btnCancelShareDeck.addEventListener('click', closeShareDeckModal);
+        }
+        if (elements.btnConfirmShareDeck) {
+            elements.btnConfirmShareDeck.addEventListener('click', confirmShareDeck);
+        }
+        // Close on backdrop click
+        if (elements.shareDeckModal) {
+            elements.shareDeckModal.querySelector('.modal-backdrop')?.addEventListener('click', closeShareDeckModal);
+        }
+    }
     /**
      * Setup account type selection buttons
      * 2025-12-17: Handles click events on the new icon buttons
