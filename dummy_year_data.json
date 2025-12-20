@@ -8721,5 +8721,25 @@
       "createdBy": null,
       "category": "work"
     }
+  ],
+  "_migratedToCloud": {
+    "date": "2025-12-20T22:59:31.503Z",
+    "cloudFileId": "1X_1jOrUJShHlDLUpANobgVJnroHkTZ-0",
+    "migratedBy": "andres.reza@gmail.com"
+  },
+  "stickyDecks": [
+    {
+      "id": "deck_1766258472068_0idrwrzmf",
+      "name": "New Deck",
+      "color": "#ffeb3b",
+      "position": {
+        "x": 322,
+        "y": 477
+      },
+      "collapsed": false,
+      "notes": [],
+      "createdAt": "2025-12-20T19:21:12.068Z",
+      "createdBy": null
+    }
   ]
 }

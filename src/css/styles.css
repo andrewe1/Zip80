@@ -1440,6 +1440,74 @@ html.dark .save-status-error {
     font-weight: 500;
 }
 
+/* 2025-12-20: Migration Notice Banner (shown on local vaults that were previously moved to cloud) */
+.migration-notice {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-md);
+    padding: var(--space-sm) var(--space-md);
+    background-color: #fef3c7;
+    color: #92400e;
+    border-radius: var(--radius-md);
+    margin-bottom: var(--space-md);
+    font-size: var(--font-size-sm);
+    border: 1px solid #fcd34d;
+}
+
+html.dark .migration-notice {
+    background-color: #78350f;
+    color: #fef3c7;
+    border-color: #92400e;
+}
+
+.migration-notice-text {
+    flex: 1;
+}
+
+.btn-dismiss-notice {
+    padding: var(--space-xs) var(--space-sm);
+    background-color: transparent;
+    border: 1px solid currentColor;
+    border-radius: var(--radius-sm);
+    color: inherit;
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.btn-dismiss-notice:hover {
+    background-color: rgba(0, 0, 0, 0.1);
+}
+
+html.dark .btn-dismiss-notice:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.migration-notice-actions {
+    display: flex;
+    gap: var(--space-sm);
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.btn-dismiss-notice-link {
+    padding: var(--space-xs) var(--space-sm);
+    background-color: transparent;
+    border: none;
+    color: inherit;
+    font-size: var(--font-size-sm);
+    cursor: pointer;
+    text-decoration: underline;
+    opacity: 0.8;
+    transition: opacity 0.15s ease;
+}
+
+.btn-dismiss-notice-link:hover {
+    opacity: 1;
+}
+
 /* Balance Card */
 .balance-card {
     text-align: center;

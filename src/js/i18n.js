@@ -440,7 +440,24 @@ const I18n = (() => {
             addNotePlaceholder: '+ Add note...',
             deleteDeckConfirm: 'Delete this deck?',
             shareDeck: 'Share Deck',
-            toastDeckShared: '📋 Deck shared successfully!'
+            toastDeckShared: '📋 Deck shared successfully!',
+
+            // Move to Cloud (2025-12-20)
+            moveToCloud: 'Move to Cloud',
+            moveToCloudConfirmTitle: '☁️ Move Vault to Cloud',
+            moveToCloudConfirmDesc: 'This will copy your vault to Google Drive (${email}) and switch to cloud storage. Sharing features will be enabled.',
+            moveToCloudSignInTitle: '☁️ Sign In Required',
+            moveToCloudSignInDesc: 'Please sign in with Google to move your vault to the cloud.',
+            moveToCloudRequireSignIn: 'Please sign in to Google first.',
+            toastMovedToCloud: '☁️ Vault moved to cloud successfully!',
+            toastMoveToCloudError: 'Failed to move vault to cloud. Please try again.',
+            moveToCloudSuccessTitle: '☁️ Migration Complete',
+            moveToCloudSuccessDesc: 'Your vault has been moved to the cloud. The vault will now close. Please reopen it from the Cloud Storage section.',
+            moveToCloudOverwriteTitle: '⚠️ Cloud Vault Exists',
+            moveToCloudOverwriteDesc: 'This vault was previously uploaded to the cloud. Moving it again will overwrite the existing cloud vault with any local changes.',
+            localVaultMigratedNotice: '⚠️ This vault was previously moved to the cloud on ${date}. Changes made here will stay local only.',
+            dismissNotice: 'Dismiss',
+            dismissNoticeForever: "Don't show again"
         },
 
         es: {
@@ -757,7 +774,24 @@ const I18n = (() => {
             addNotePlaceholder: '+ Agregar nota...',
             deleteDeckConfirm: '¿Eliminar esta nota?',
             shareDeck: 'Compartir Nota',
-            toastDeckShared: '📋 ¡Nota compartida exitosamente!'
+            toastDeckShared: '📋 ¡Nota compartida exitosamente!',
+
+            // Move to Cloud (2025-12-20)
+            moveToCloud: 'Mover a la Nube',
+            moveToCloudConfirmTitle: '☁️ Mover Bóveda a la Nube',
+            moveToCloudConfirmDesc: 'Esto copiará tu bóveda a Google Drive (${email}) y cambiará al almacenamiento en la nube. Las funciones de compartir estarán habilitadas.',
+            moveToCloudSignInTitle: '☁️ Inicio de Sesión Requerido',
+            moveToCloudSignInDesc: 'Por favor inicia sesión con Google para mover tu bóveda a la nube.',
+            moveToCloudRequireSignIn: 'Por favor inicia sesión en Google primero.',
+            toastMovedToCloud: '☁️ ¡Bóveda movida a la nube exitosamente!',
+            toastMoveToCloudError: 'No se pudo mover la bóveda a la nube. Intenta de nuevo.',
+            moveToCloudSuccessTitle: '☁️ Migración Completa',
+            moveToCloudSuccessDesc: 'Tu bóveda ha sido movida a la nube. La bóveda se cerrará ahora. Por favor, ábrela desde la sección de Almacenamiento en la Nube.',
+            moveToCloudOverwriteTitle: '⚠️ Bóveda en la Nube Existe',
+            moveToCloudOverwriteDesc: 'Esta bóveda fue subida previamente a la nube. Moverla de nuevo sobrescribirá la bóveda en la nube existente con los cambios locales.',
+            localVaultMigratedNotice: '⚠️ Esta bóveda fue movida a la nube el ${date}. Los cambios hechos aquí permanecerán solo en local.',
+            dismissNotice: 'Descartar',
+            dismissNoticeForever: 'No mostrar de nuevo'
         }
     };
 

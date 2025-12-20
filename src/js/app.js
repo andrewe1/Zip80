@@ -371,6 +371,14 @@
 
         // Share Accounts Modal (2025-12-19)
         btnShareVault: document.getElementById('btn-share-vault'),
+        btnMoveToCloud: document.getElementById('btn-move-to-cloud'),  // 2025-12-20: Move local vault to cloud
+
+        // Migration Notice (2025-12-20)
+        migrationNotice: document.getElementById('migration-notice'),
+        migrationNoticeText: document.getElementById('migration-notice-text'),
+        btnDismissNotice: document.getElementById('btn-dismiss-notice'),
+        btnDismissNoticeForever: document.getElementById('btn-dismiss-notice-forever'),
+
         shareVaultModal: document.getElementById('share-vault-modal'),
         inputShareEmail: document.getElementById('input-share-email'),
         shareAccountsGrid: document.getElementById('share-accounts-grid'),
@@ -1246,6 +1254,14 @@
         }
         if (elements.acceptSharesModal) {
             elements.acceptSharesModal.querySelector('.modal-backdrop').addEventListener('click', closeAcceptSharesModal);
+        }
+
+        // 2025-12-20: Migration notice dismiss button
+        if (elements.btnDismissNotice) {
+            elements.btnDismissNotice.addEventListener('click', dismissMigrationNotice);
+        }
+        if (elements.btnDismissNoticeForever) {
+            elements.btnDismissNoticeForever.addEventListener('click', dismissMigrationNoticeForever);
         }
 
         // 2025-12-15: Background click to deselect accounts
@@ -2196,6 +2212,210 @@
         elements.btnShareVault.style.display = (isCloudVault && isOwner) ? '' : 'none';
     }
 
+    /**
+     * Update move-to-cloud button visibility
+     * Show for all local vaults (sign-in is handled in the dialog)
+     * 2025-12-20: New function for cloud migration feature
+     * 2025-12-20: Updated to show for all local vaults, sign-in prompt in handler
+     */
+    function updateMoveToCloudVisibility() {
+        if (!elements.btnMoveToCloud) return;
+
+        const isLocalVault = storageBackend === 'local';
+
+        // Show for all local vaults - sign-in is handled in handleMoveToCloud
+        elements.btnMoveToCloud.style.display = isLocalVault ? '' : 'none';
+    }
+
+    /**
+     * Handle moving a local vault to Google Drive cloud storage
+     * Creates a new cloud vault with current data and switches storage backend
+     * 2025-12-20: New function for cloud migration feature
+     * 2025-12-20: Enhanced to show Google account and mark local vault after migration
+     * 2025-12-20: Shows sign-in dialog with Google button if not logged in
+     */
+    async function handleMoveToCloud() {
+        // If not signed in, show dialog prompting to sign in
+        if (!GDrive.isSignedIn()) {
+            const wantsToSignIn = await showConfirm(
+                I18n.t('moveToCloudSignInDesc'),
+                {
+                    title: I18n.t('moveToCloudSignInTitle'),
+                    isDanger: false,
+                    confirmText: I18n.t('btnGoogleSignIn'),
+                    cancelText: I18n.t('cancel')
+                }
+            );
+
+            if (!wantsToSignIn) return;
+
+            // Trigger Google sign-in
+            try {
+                await GDrive.signIn();
+                // After sign-in, check if successful and retry
+                if (!GDrive.isSignedIn()) {
+                    showToast(I18n.t('moveToCloudRequireSignIn'), false);
+                    return;
+                }
+            } catch (err) {
+                console.error('Google sign-in failed:', err);
+                showToast(I18n.t('moveToCloudRequireSignIn'), false);
+                return;
+            }
+        }
+
+        // Get user email for confirmation dialog
+        const user = GDrive.getUser();
+        const userEmail = user ? user.email : '';
+
+        // Check if vault was previously migrated - warn about overwriting
+        if (data && data._migratedToCloud) {
+            const confirmOverwrite = await showConfirm(
+                I18n.t('moveToCloudOverwriteDesc'),
+                { title: I18n.t('moveToCloudOverwriteTitle'), isDanger: true }
+            );
+            if (!confirmOverwrite) return;
+        }
+
+        // Confirm with user, showing which Google account will be used
+        const confirmed = await showConfirm(
+            I18n.t('moveToCloudConfirmDesc', { email: userEmail }),
+            { title: I18n.t('moveToCloudConfirmTitle'), isDanger: false }
+        );
+
+        if (!confirmed) return;
+
+        // Store reference to local file handle before clearing it
+        const localFileHandle = fileHandle;
+
+        try {
+            // Get current vault name for the cloud file
+            const localFileName = await Storage.getFileName(fileHandle);
+            const vaultName = localFileName.replace('.json', '');
+
+            // Create new cloud vault with current data
+            const fileId = await GDrive.createVault(vaultName, data);
+
+            // Mark the local vault file as migrated (write migration info)
+            if (localFileHandle) {
+                try {
+                    const migratedData = {
+                        ...data,
+                        _migratedToCloud: {
+                            date: new Date().toISOString(),
+                            cloudFileId: fileId,
+                            migratedBy: userEmail
+                        }
+                    };
+                    await Storage.writeFile(localFileHandle, migratedData, vaultPassword, vaultHint);
+                } catch (markErr) {
+                    console.warn('Could not mark local vault as migrated:', markErr);
+                }
+            }
+
+            // Switch to cloud storage backend
+            gdriveFileId = fileId;
+            storageBackend = 'gdrive';
+            fileHandle = null;  // Clear local file handle
+
+            // Save for reopen feature
+            GDrive.saveLastVault(fileId, `${vaultName}.json`);
+
+            // Show success dialog and close vault when user clicks OK
+            await showConfirm(
+                I18n.t('moveToCloudSuccessDesc'),
+                {
+                    title: I18n.t('moveToCloudSuccessTitle'),
+                    isDanger: false,
+                    confirmText: 'OK',
+                    cancelText: null  // Hide cancel button
+                }
+            );
+
+            // Close vault and return to startup screen
+            handleCloseVault();
+
+        } catch (err) {
+            console.error('Failed to move vault to cloud:', err);
+            showToast(I18n.t('toastMoveToCloudError'), false);
+        }
+    }
+
+    /**
+     * Check if current local vault was previously migrated to cloud and show notice
+     * 2025-12-20: New function to warn users about local-only changes
+     */
+    function checkMigrationNotice() {
+        if (!elements.migrationNotice) return;
+
+        // Only show for local vaults with migration data
+        if (storageBackend !== 'local' || !data || !data._migratedToCloud) {
+            elements.migrationNotice.style.display = 'none';
+            return;
+        }
+
+        // Check if user permanently dismissed this notice
+        if (isPermanentlyDismissed()) {
+            elements.migrationNotice.style.display = 'none';
+            return;
+        }
+
+        // Format the migration date
+        const migrationDate = new Date(data._migratedToCloud.date);
+        const formattedDate = migrationDate.toLocaleDateString(I18n.getLocale(), {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+        });
+
+        // Show the notice with formatted text
+        elements.migrationNoticeText.textContent = I18n.t('localVaultMigratedNotice', { date: formattedDate });
+        elements.migrationNotice.style.display = 'flex';
+    }
+
+    /**
+     * Get the localStorage key for permanent dismiss of a migrated vault
+     * @returns {string|null} Key or null if no migration data
+     */
+    function getMigrationDismissKey() {
+        if (!data || !data._migratedToCloud || !data._migratedToCloud.cloudFileId) {
+            return null;
+        }
+        return `zip80_migration_dismissed_${data._migratedToCloud.cloudFileId}`;
+    }
+
+    /**
+     * Check permanent dismiss setting
+     * @returns {boolean} True if permanently dismissed
+     */
+    function isPermanentlyDismissed() {
+        const key = getMigrationDismissKey();
+        if (!key) return false;
+        return localStorage.getItem(key) === 'true';
+    }
+
+    /**
+     * Dismiss the migration notice (for current session only)
+     * 2025-12-20: New function
+     */
+    function dismissMigrationNotice() {
+        if (elements.migrationNotice) {
+            elements.migrationNotice.style.display = 'none';
+        }
+    }
+
+    /**
+     * Permanently dismiss the migration notice (stored in localStorage)
+     * 2025-12-20: New function
+     */
+    function dismissMigrationNoticeForever() {
+        const key = getMigrationDismissKey();
+        if (key) {
+            localStorage.setItem(key, 'true');
+        }
+        dismissMigrationNotice();
+    }
+
     async function handleSave() {
         // 2025-12-16: Support both local and cloud backends
         // 2025-12-17: Use flash status indicator instead of toast
@@ -2505,6 +2725,10 @@
         // 2025-12-19: Browse Drive button (Picker API for shared files)
         if (elements.btnBrowseDrive) {
             elements.btnBrowseDrive.addEventListener('click', handleBrowseDrive);
+        }
+        // 2025-12-20: Move to Cloud button (migrate local vault to cloud)
+        if (elements.btnMoveToCloud) {
+            elements.btnMoveToCloud.addEventListener('click', handleMoveToCloud);
         }
     }
 
@@ -3124,13 +3348,22 @@
             const t = I18n.t;
             const title = options.title || t('confirmTitle');
             const confirmText = options.confirmText || t('confirm');
-            const cancelText = options.cancelText || t('cancel');
+            const cancelText = options.cancelText === null || options.cancelText === false
+                ? null
+                : (options.cancelText || t('cancel'));
             const isDanger = options.isDanger !== false; // Default to danger style
 
             // Set modal content
             elements.confirmModalTitle.textContent = title;
             elements.confirmModalMessage.textContent = message;
-            elements.btnConfirmCancel.querySelector('span').textContent = cancelText;
+
+            // 2025-12-20: Support hiding cancel button when cancelText is null
+            if (cancelText === null) {
+                elements.btnConfirmCancel.style.display = 'none';
+            } else {
+                elements.btnConfirmCancel.style.display = '';
+                elements.btnConfirmCancel.querySelector('span').textContent = cancelText;
+            }
             elements.btnConfirmOk.querySelector('span').textContent = confirmText;
 
             // Set button style (danger or primary)
@@ -3448,6 +3681,12 @@
 
         // 2025-12-19: Show/hide share button (only for cloud vaults you own)
         updateShareButtonVisibility();
+
+        // 2025-12-20: Show/hide move-to-cloud button (only for local vaults when signed in)
+        updateMoveToCloudVisibility();
+
+        // 2025-12-20: Check if local vault was previously migrated and show notice
+        checkMigrationNotice();
 
         // 2025-12-19: Start inactivity timer when vault is opened
         resetInactivityTimer();

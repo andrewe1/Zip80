@@ -287,18 +287,45 @@ const GDrive = (() => {
     /**
      * Trigger Google sign-in flow
      * Opens Google sign-in popup
+     * 2025-12-20: Now returns a Promise that resolves when sign-in completes
+     * @returns {Promise<boolean>} Resolves true if sign-in successful, false otherwise
      */
     function signIn() {
-        if (!tokenClient) {
-            initTokenClient();
-        }
+        return new Promise((resolve) => {
+            if (!tokenClient) {
+                initTokenClient();
+            }
 
-        if (tokenClient) {
+            if (!tokenClient) {
+                console.error('Token client not initialized');
+                resolve(false);
+                return;
+            }
+
+            // Store original callback and create a wrapper that also resolves the promise
+            const originalCallback = tokenClient.callback;
+
+            tokenClient.callback = async (response) => {
+                // Call the original callback
+                await originalCallback(response);
+                // Restore original callback
+                tokenClient.callback = originalCallback;
+                // Resolve promise based on success
+                resolve(!response.error);
+            };
+
+            // Set up error callback wrapper
+            const originalErrorCallback = tokenClient.error_callback;
+            tokenClient.error_callback = (error) => {
+                if (originalErrorCallback) originalErrorCallback(error);
+                tokenClient.callback = originalCallback;
+                tokenClient.error_callback = originalErrorCallback;
+                resolve(false);
+            };
+
             // Request access token
             tokenClient.requestAccessToken({ prompt: 'consent' });
-        } else {
-            console.error('Token client not initialized');
-        }
+        });
     }
 
     /**

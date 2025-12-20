@@ -231,6 +231,16 @@ CHANGE LOG:
             </div>
         </header>
 
+        <!-- 2025-12-20: Migration Notice Banner (shown when local vault was previously moved to cloud) -->
+        <div id="migration-notice" class="migration-notice" style="display: none;">
+            <span id="migration-notice-text" class="migration-notice-text"></span>
+            <div class="migration-notice-actions">
+                <button id="btn-dismiss-notice-forever" class="btn-dismiss-notice-link"
+                    data-i18n="dismissNoticeForever">Don't show again</button>
+                <button id="btn-dismiss-notice" class="btn-dismiss-notice" data-i18n="dismissNotice">Dismiss</button>
+            </div>
+        </div>
+
         <!-- 2025-12-17: Menu Bar Framework - toolbar for view modes and options (below header) -->
         <nav id="menu-bar" class="menu-bar">
             <div class="menu-bar-left">
@@ -363,6 +373,11 @@ CHANGE LOG:
                     <!-- 2025-12-19: Share vault (only for cloud vaults you own) -->
                     <button id="btn-share-vault" class="dropdown-item" data-action="share-vault" style="display: none;">
                         🔗 <span data-i18n="shareVault">Share Vault</span>
+                    </button>
+                    <!-- 2025-12-20: Move to cloud (only for local vaults when signed into Google) -->
+                    <button id="btn-move-to-cloud" class="dropdown-item" data-action="move-to-cloud"
+                        style="display: none;">
+                        ☁️ <span data-i18n="moveToCloud">Move to Cloud</span>
                     </button>
                     <div class="dropdown-divider"></div>
                     <button id="btn-settings" class="dropdown-item" data-action="settings">
