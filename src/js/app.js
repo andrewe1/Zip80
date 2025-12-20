@@ -3206,8 +3206,34 @@
     let currentLinkedAccount = null;
 
     function renderBalance() {
-        const currentAccount = data.accounts.find(a => a.id === currentAccountId);
         const balanceCard = document.querySelector('.balance-card');
+
+        // 2025-12-19: Check if viewing a linked account
+        if (currentLinkedAccount && currentAccountId && currentAccountId.startsWith('linked_')) {
+            // Show linked account balance
+            if (balanceCard) balanceCard.style.display = 'block';
+
+            const t = I18n.t;
+            elements.balanceLabel.textContent = t('balance');
+            elements.balanceDisplay.textContent = Accounts.formatCurrency(
+                currentLinkedAccount.cachedBalance || 0,
+                'USD' // Default, could be improved
+            );
+            elements.balanceDisplay.classList.remove('negative');
+
+            // Hide credit card info for linked accounts
+            elements.creditCardInfo.style.display = 'none';
+            elements.btnEditCredit.style.display = 'none';
+            elements.btnEditAccountSettings.style.display = 'none';
+            elements.btnEditBalance.style.display = 'none';
+
+            // Update account display
+            elements.accountName.textContent = currentLinkedAccount.accountName;
+            elements.accountCurrency.textContent = `🔗 ${t('sharedBy')} ${currentLinkedAccount.ownerEmail}`;
+            return;
+        }
+
+        const currentAccount = data.accounts.find(a => a.id === currentAccountId);
 
         // 2025-12-15: Hide entire balance card when no account is selected
         if (!currentAccount) {
@@ -3291,7 +3317,26 @@
         const list = elements.historyList;
         list.innerHTML = '';
 
-        const accountTransactions = Accounts.getAccountTransactions(data.transactions, currentAccountId);
+        // 2025-12-19: Check if viewing a linked account - use cached transactions
+        let accountTransactions;
+        let currency = 'USD';
+
+        if (currentLinkedAccount && currentAccountId && currentAccountId.startsWith('linked_')) {
+            // Use cached transactions from linked account
+            accountTransactions = currentLinkedAccount.cachedTransactions || [];
+            // Hide add transaction form for view-only linked accounts
+            const transactionForm = document.querySelector('.transaction-form');
+            if (transactionForm) {
+                transactionForm.style.display = currentLinkedAccount.permission === 'editor' ? 'block' : 'none';
+            }
+        } else {
+            accountTransactions = Accounts.getAccountTransactions(data.transactions, currentAccountId);
+            const currentAccount = data.accounts.find(a => a.id === currentAccountId);
+            currency = currentAccount?.currency || 'USD';
+            // Show transaction form for owned accounts
+            const transactionForm = document.querySelector('.transaction-form');
+            if (transactionForm) transactionForm.style.display = 'block';
+        }
 
         if (accountTransactions.length === 0) {
             elements.emptyState.style.display = 'block';
@@ -3300,8 +3345,11 @@
 
         elements.emptyState.style.display = 'none';
 
-        const currentAccount = data.accounts.find(a => a.id === currentAccountId);
-        const currency = currentAccount?.currency || 'USD';
+        // Get currency from owned account if not a linked account
+        if (!currentLinkedAccount || !currentAccountId.startsWith('linked_')) {
+            const currentAccount = data.accounts.find(a => a.id === currentAccountId);
+            currency = currentAccount?.currency || 'USD';
+        }
 
         const sorted = [...accountTransactions].sort((a, b) => b.id - a.id);
 
