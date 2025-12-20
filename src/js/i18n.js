@@ -73,6 +73,8 @@
  * - 2025-12-17: Updated 'options' translation in Spanish to 'Configuración'
  * - 2025-12-17: Added Activity Log translations (activityLogTitle, activityOwner, activityEmpty, activityYou)
  * - 2025-12-19: Replaced viewCompact with viewHistorical, added widget toggle translations
+ * - 2025-12-19: Added Add Password translations (addPassword, addPasswordTitle, addPasswordDesc, passwordAdded)
+ * - 2025-12-19: Added Settings and Inactivity Timer translations (settingsTitle, inactivityWarning, stayOpen, etc.)
  */
 
 const I18n = (() => {
@@ -373,11 +375,30 @@ const I18n = (() => {
             wrongCurrentPassword: 'Current password is incorrect.',
             passwordChanged: 'Password changed successfully!',
 
+            // Add Password (2025-12-19)
+            addPassword: '🔒 Add Password',
+            addPasswordTitle: '🔒 Add Password',
+            addPasswordDesc: 'Encrypt your vault with a password.',
+            passwordAdded: '🔒 Vault encrypted successfully!',
+
             // Activity Log (2025-12-17)
             activityLogTitle: 'Activity Log',
             activityOwner: '(owner)',
             activityEmpty: 'No recent activity',
-            activityYou: 'You'
+            activityYou: 'You',
+
+            // Settings Modal (2025-12-19)
+            settingsTitle: '🛠️ Settings',
+            settingsDesc: 'Configure your application preferences.',
+            settingsInactivityTimer: '⏱️ Inactivity Timer',
+            settingsInactivityDesc: 'Close vault after 10 minutes of inactivity',
+            close: 'Close',
+
+            // Inactivity Warning (2025-12-19)
+            inactivityWarning: 'Vault will close due to inactivity in',
+            inactivitySeconds: 'seconds',
+            stayOpen: 'Stay Open',
+            closeNow: 'Close Now'
         },
 
         es: {
@@ -631,11 +652,30 @@ const I18n = (() => {
             wrongCurrentPassword: 'La contraseña actual es incorrecta.',
             passwordChanged: '¡Contraseña cambiada exitosamente!',
 
+            // Add Password (2025-12-19)
+            addPassword: '🔒 Agregar Contraseña',
+            addPasswordTitle: '🔒 Agregar Contraseña',
+            addPasswordDesc: 'Encripta tu bóveda con una contraseña.',
+            passwordAdded: '🔒 ¡Bóveda encriptada exitosamente!',
+
             // Activity Log (2025-12-17)
             activityLogTitle: 'Registro de Actividad',
             activityOwner: '(propietario)',
             activityEmpty: 'Sin actividad reciente',
-            activityYou: 'Tú'
+            activityYou: 'Tú',
+
+            // Settings Modal (2025-12-19)
+            settingsTitle: '🛠️ Configuración',
+            settingsDesc: 'Configura tus preferencias de la aplicación.',
+            settingsInactivityTimer: '⏱️ Temporizador de Inactividad',
+            settingsInactivityDesc: 'Cerrar bóveda después de 10 minutos de inactividad',
+            close: 'Cerrar',
+
+            // Inactivity Warning (2025-12-19)
+            inactivityWarning: 'La bóveda se cerrará por inactividad en',
+            inactivitySeconds: 'segundos',
+            stayOpen: 'Mantener Abierta',
+            closeNow: 'Cerrar Ahora'
         }
     };
 

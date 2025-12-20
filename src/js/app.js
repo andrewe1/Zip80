@@ -86,6 +86,9 @@
  * - 2025-12-19: Added fetchCryptoRates(), fetchCryptoHistory(), drawCryptoSparkline() functions
  * - 2025-12-19: Improved X-axis label rendering to limit max labels and prevent overflow
  * - 2025-12-19: Exposed fetchExchangeHistory and fetchCryptoHistory to window for popout delegation
+ * - 2025-12-19: Added Add Password feature (openAddPasswordModal, closeAddPasswordModal, handleAddPassword)
+ * - 2025-12-19: Added Settings modal with inactivity timer toggle (openSettingsModal, closeSettingsModal)
+ * - 2025-12-19: Added inactivity timer (10 min timeout, 10 sec countdown warning, activity tracking)
  */
 
 (() => {
@@ -338,9 +341,30 @@
         btnCancelChangePassword: document.getElementById('btn-cancel-change-password'),
         btnConfirmChangePassword: document.getElementById('btn-confirm-change-password'),
 
+        // Add Password Modal (2025-12-19)
+        btnAddPassword: document.getElementById('btn-add-password'),
+        addPasswordModal: document.getElementById('add-password-modal'),
+        inputAddPassword: document.getElementById('input-add-password'),
+        inputConfirmAddPassword: document.getElementById('input-confirm-add-password'),
+        inputAddHint: document.getElementById('input-add-hint'),
+        btnCancelAddPassword: document.getElementById('btn-cancel-add-password'),
+        btnConfirmAddPassword: document.getElementById('btn-confirm-add-password'),
+
         // Activity Log (2025-12-17)
         activityLogTitle: document.getElementById('activity-log-title'),
-        activityLogList: document.getElementById('activity-log-list')
+        activityLogList: document.getElementById('activity-log-list'),
+
+        // Settings Modal (2025-12-19)
+        btnSettings: document.getElementById('btn-settings'),
+        settingsModal: document.getElementById('settings-modal'),
+        btnCloseSettings: document.getElementById('btn-close-settings'),
+        checkboxInactivityTimer: document.getElementById('checkbox-inactivity-timer'),
+
+        // Inactivity Warning Modal (2025-12-19)
+        inactivityModal: document.getElementById('inactivity-modal'),
+        inactivityCountdown: document.getElementById('inactivity-countdown'),
+        btnCancelInactivity: document.getElementById('btn-cancel-inactivity'),
+        btnCloseNow: document.getElementById('btn-close-now')
     };
 
     // --- Initialization ---
@@ -363,6 +387,8 @@
         fetchExchangeRates();  // 2025-12-16: Load exchange rates
         fetchCryptoRates();    // 2025-12-19: Load crypto rates
         Calculator.init();     // 2025-12-19: Initialize calculator tool
+        initInactivityTimer(); // 2025-12-19: Load inactivity timer settings
+        setupActivityTracking(); // 2025-12-19: Track user activity for inactivity timer
     }
 
     /**
@@ -799,6 +825,45 @@
         }
         if (elements.changePasswordModal) {
             elements.changePasswordModal.querySelector('.modal-backdrop').addEventListener('click', closeChangePasswordModal);
+        }
+
+        // 2025-12-19: Add password modal (for unencrypted vaults)
+        if (elements.btnAddPassword) {
+            elements.btnAddPassword.addEventListener('click', openAddPasswordModal);
+        }
+        if (elements.btnCancelAddPassword) {
+            elements.btnCancelAddPassword.addEventListener('click', closeAddPasswordModal);
+        }
+        if (elements.btnConfirmAddPassword) {
+            elements.btnConfirmAddPassword.addEventListener('click', handleAddPassword);
+        }
+        if (elements.addPasswordModal) {
+            elements.addPasswordModal.querySelector('.modal-backdrop').addEventListener('click', closeAddPasswordModal);
+        }
+
+        // 2025-12-19: Settings modal
+        if (elements.btnSettings) {
+            elements.btnSettings.addEventListener('click', openSettingsModal);
+        }
+        if (elements.btnCloseSettings) {
+            elements.btnCloseSettings.addEventListener('click', closeSettingsModal);
+        }
+        if (elements.settingsModal) {
+            elements.settingsModal.querySelector('.modal-backdrop').addEventListener('click', closeSettingsModal);
+        }
+        if (elements.checkboxInactivityTimer) {
+            elements.checkboxInactivityTimer.addEventListener('change', handleInactivityToggle);
+        }
+
+        // 2025-12-19: Inactivity warning modal
+        if (elements.btnCancelInactivity) {
+            elements.btnCancelInactivity.addEventListener('click', cancelInactivityWarning);
+        }
+        if (elements.btnCloseNow) {
+            elements.btnCloseNow.addEventListener('click', () => {
+                cancelInactivityWarning();
+                handleCloseVault();
+            });
         }
 
         // Credit card edit modal (2025-12-15)
@@ -1260,12 +1325,16 @@
     // --- Change Password (2025-12-17) ---
 
     /**
-     * Update visibility of change password button in options menu
-     * Only show for encrypted vaults
+     * Update visibility of password buttons in options menu
+     * 2025-12-17: Show change password only for encrypted vaults
+     * 2025-12-19: Show add password only for unencrypted vaults
      */
     function updateChangePasswordVisibility() {
         if (elements.btnChangePassword) {
             elements.btnChangePassword.style.display = isVaultEncrypted ? 'flex' : 'none';
+        }
+        if (elements.btnAddPassword) {
+            elements.btnAddPassword.style.display = isVaultEncrypted ? 'none' : 'flex';
         }
     }
 
@@ -1380,6 +1449,233 @@
         }
     }
 
+    // --- Add Password (2025-12-19) ---
+
+    /**
+     * Open add password modal
+     * For encrypting unencrypted vaults
+     */
+    function openAddPasswordModal() {
+        if (isVaultEncrypted) {
+            showToast(I18n.t('toastError'), false);
+            return;
+        }
+
+        const t = I18n.t;
+
+        // Reset fields
+        elements.inputAddPassword.value = '';
+        elements.inputConfirmAddPassword.value = '';
+        elements.inputAddHint.value = '';
+
+        // Apply translations
+        document.getElementById('add-password-modal-title').textContent = t('addPasswordTitle');
+        document.getElementById('add-password-modal-desc').textContent = t('addPasswordDesc');
+        document.getElementById('label-add-password').textContent = t('newPasswordLabel');
+        document.getElementById('label-confirm-add-password').textContent = t('confirmPasswordLabel');
+        document.getElementById('label-add-hint').textContent = t('hintLabel');
+        elements.inputAddPassword.placeholder = t('newPasswordPlaceholder');
+        elements.inputConfirmAddPassword.placeholder = t('confirmNewPasswordPlaceholder');
+        elements.inputAddHint.placeholder = t('newHintPlaceholder');
+
+        elements.addPasswordModal.style.display = 'flex';
+        elements.inputAddPassword.focus();
+    }
+
+    /**
+     * Close add password modal
+     */
+    function closeAddPasswordModal() {
+        elements.addPasswordModal.style.display = 'none';
+        elements.inputAddPassword.value = '';
+        elements.inputConfirmAddPassword.value = '';
+        elements.inputAddHint.value = '';
+    }
+
+    /**
+     * Handle add password form submission
+     * Encrypts the vault with the new password
+     */
+    async function handleAddPassword() {
+        const password = elements.inputAddPassword.value;
+        const confirmPassword = elements.inputConfirmAddPassword.value;
+        const hint = elements.inputAddHint.value.trim();
+
+        // Validate password is provided
+        if (!password) {
+            showToast(I18n.t('passwordRequired'), false);
+            elements.inputAddPassword.focus();
+            return;
+        }
+
+        // Validate passwords match
+        if (password !== confirmPassword) {
+            showToast(I18n.t('passwordMismatch'), false);
+            elements.inputConfirmAddPassword.focus();
+            return;
+        }
+
+        // Validate hint is provided
+        if (!hint) {
+            showToast(I18n.t('hintRequired'), false);
+            elements.inputAddHint.focus();
+            return;
+        }
+
+        // Set encryption state
+        isVaultEncrypted = true;
+        vaultPassword = password;
+        vaultHint = hint;
+
+        // Save vault with encryption
+        try {
+            if (storageBackend === 'gdrive') {
+                await GDrive.writeVault(gdriveFileId, data);
+            } else {
+                await Storage.writeFile(fileHandle, data, vaultPassword, vaultHint);
+            }
+
+            closeAddPasswordModal();
+            updateChangePasswordVisibility();  // Update button visibility
+            showToast(I18n.t('passwordAdded'));
+        } catch (err) {
+            console.error('Failed to encrypt vault:', err);
+            // Rollback encryption state on error
+            isVaultEncrypted = false;
+            vaultPassword = null;
+            vaultHint = null;
+            showToast(I18n.t('toastError'), false);
+        }
+    }
+
+    // --- Settings Modal (2025-12-19) ---
+
+    const INACTIVITY_TIMEOUT = 10 * 60 * 1000;  // 10 minutes in milliseconds
+    const COUNTDOWN_DURATION = 10;  // 10 seconds
+    let inactivityTimer = null;
+    let countdownTimer = null;
+    let countdownValue = COUNTDOWN_DURATION;
+    let isInactivityEnabled = true;  // Default: enabled
+
+    /**
+     * Initialize inactivity timer settings from localStorage
+     */
+    function initInactivityTimer() {
+        const saved = localStorage.getItem('zip80_inactivity_enabled');
+        isInactivityEnabled = saved === null ? true : saved === 'true';
+        if (elements.checkboxInactivityTimer) {
+            elements.checkboxInactivityTimer.checked = isInactivityEnabled;
+        }
+    }
+
+    /**
+     * Start or restart the inactivity timer
+     * Only runs when a vault is open
+     */
+    function resetInactivityTimer() {
+        if (!isInactivityEnabled) return;
+        if (elements.workspace.style.display === 'none') return;  // No vault open
+
+        // Clear existing timer
+        if (inactivityTimer) {
+            clearTimeout(inactivityTimer);
+        }
+
+        // Start new timer
+        inactivityTimer = setTimeout(() => {
+            showInactivityWarning();
+        }, INACTIVITY_TIMEOUT);
+    }
+
+    /**
+     * Stop the inactivity timer completely
+     */
+    function stopInactivityTimer() {
+        if (inactivityTimer) {
+            clearTimeout(inactivityTimer);
+            inactivityTimer = null;
+        }
+        cancelInactivityWarning();
+    }
+
+    /**
+     * Show the inactivity warning modal with countdown
+     */
+    function showInactivityWarning() {
+        countdownValue = COUNTDOWN_DURATION;
+        elements.inactivityCountdown.textContent = countdownValue;
+        elements.inactivityModal.style.display = 'flex';
+
+        // Start countdown
+        countdownTimer = setInterval(() => {
+            countdownValue--;
+            elements.inactivityCountdown.textContent = countdownValue;
+
+            if (countdownValue <= 0) {
+                cancelInactivityWarning();
+                handleCloseVault();
+            }
+        }, 1000);
+    }
+
+    /**
+     * Cancel the inactivity warning and reset timer
+     */
+    function cancelInactivityWarning() {
+        if (countdownTimer) {
+            clearInterval(countdownTimer);
+            countdownTimer = null;
+        }
+        elements.inactivityModal.style.display = 'none';
+        resetInactivityTimer();  // Restart the inactivity timer
+    }
+
+    /**
+     * Handle inactivity toggle change in settings
+     */
+    function handleInactivityToggle() {
+        isInactivityEnabled = elements.checkboxInactivityTimer.checked;
+        localStorage.setItem('zip80_inactivity_enabled', isInactivityEnabled.toString());
+
+        if (isInactivityEnabled) {
+            resetInactivityTimer();
+        } else {
+            stopInactivityTimer();
+        }
+    }
+
+    /**
+     * Track user activity to reset inactivity timer
+     */
+    function setupActivityTracking() {
+        const activityEvents = ['mousemove', 'mousedown', 'keypress', 'touchstart', 'scroll'];
+        activityEvents.forEach(event => {
+            document.addEventListener(event, () => {
+                if (inactivityTimer && isInactivityEnabled) {
+                    resetInactivityTimer();
+                }
+            }, { passive: true });
+        });
+    }
+
+    /**
+     * Open settings modal
+     */
+    function openSettingsModal() {
+        const t = I18n.t;
+        document.getElementById('settings-modal-title').textContent = t('settingsTitle');
+        document.getElementById('settings-modal-desc').textContent = t('settingsDesc');
+        elements.checkboxInactivityTimer.checked = isInactivityEnabled;
+        elements.settingsModal.style.display = 'flex';
+    }
+
+    /**
+     * Close settings modal
+     */
+    function closeSettingsModal() {
+        elements.settingsModal.style.display = 'none';
+    }
+
     async function handleSave() {
         // 2025-12-16: Support both local and cloud backends
         // 2025-12-17: Use flash status indicator instead of toast
@@ -1414,6 +1710,7 @@
      * 2025-12-15: Added close vault functionality
      * 2025-12-17: Removed confirmation since auto-save means changes are always saved
      * 2025-12-17: Added History.clear() to reset undo/redo stack
+     * 2025-12-19: Added Widgets.closeAllPopouts() to close floating widgets
      */
     function handleCloseVault() {
         // Reset state
@@ -1426,12 +1723,18 @@
         // 2025-12-17: Clear undo/redo history
         if (typeof History !== 'undefined') History.clear();
 
+        // 2025-12-19: Hide all floating popout widgets (preserve them for when vault reopens)
+        if (typeof Widgets !== 'undefined') Widgets.hideAllPopouts();
+
         // Show startup screen
         elements.workspace.style.display = 'none';
         elements.startupScreen.style.display = 'flex';
 
         // 2025-12-17: Update cloud reopen link
         updateCloudReopenLink();
+
+        // 2025-12-19: Stop inactivity timer when vault is closed
+        stopInactivityTimer();
     }
 
     /**
@@ -2559,9 +2862,13 @@
         // 2025-12-16: Initialize widget system (drag-and-drop, collapse)
         Widgets.init();
         Widgets.setupPopout();  // 2025-12-19: Add popout/maximize buttons
+        Widgets.showAllPopouts();  // 2025-12-19: Restore hidden popouts from previous session
 
         // 2025-12-17: Show/hide change password option based on encryption status
         updateChangePasswordVisibility();
+
+        // 2025-12-19: Start inactivity timer when vault is opened
+        resetInactivityTimer();
     }
 
     function render() {

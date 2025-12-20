@@ -86,6 +86,7 @@
  * - 2025-12-19: Added calculator tape styles with syntax highlighting and dynamic resizing
  * - 2025-12-19: Fixed calculator cursor alignment by standardizing font-metrics to pixels
  * - 2025-12-19: Standardized widget card padding to fix header spacing alignment issues
+ * - 2025-12-19: Added Settings modal styles (settings-section, settings-item) and inactivity countdown
  * ============================================================================
  */
 
@@ -3445,4 +3446,54 @@ html.dark *::-webkit-scrollbar-thumb:hover {
 .calc-tape-highlight .calc-result {
     font-weight: 800;
     color: var(--color-text);
+}
+
+/* =============================================================================
+   2025-12-19: SETTINGS MODAL STYLES
+   ============================================================================= */
+
+.settings-section {
+    margin: var(--space-md) 0;
+}
+
+.settings-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-md);
+    background-color: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+}
+
+.settings-item-info {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+}
+
+.settings-item-label {
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.settings-item-desc {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+}
+
+/* Smaller modal for inactivity warning */
+.modal-content-sm {
+    max-width: 360px;
+    text-align: center;
+}
+
+/* Countdown number styling */
+.inactivity-countdown {
+    display: inline-block;
+    font-size: var(--font-size-2xl);
+    font-weight: 700;
+    color: var(--color-danger);
+    margin: 0 var(--space-xs);
+    min-width: 40px;
 }

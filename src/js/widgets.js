@@ -583,6 +583,30 @@ const Widgets = (() => {
     }
 
     /**
+     * Hide all popout windows (but keep them in memory)
+     * 2025-12-19: Used when closing vault to hide floating widgets without destroying them
+     */
+    function hideAllPopouts() {
+        activePopouts.forEach((entry) => {
+            if (entry.window) entry.window.style.display = 'none';
+        });
+    }
+
+    /**
+     * Show all popout windows that were previously hidden
+     * 2025-12-19: Used when opening vault to restore floating widgets
+     */
+    function showAllPopouts() {
+        activePopouts.forEach((entry, widgetId) => {
+            if (entry.window) {
+                entry.window.style.display = 'block';
+                // Refresh content in case data changed
+                refreshPopoutContent(widgetId);
+            }
+        });
+    }
+
+    /**
      * Refresh popout content from the original widget
      * @param {string} widgetId
      */
@@ -639,6 +663,8 @@ const Widgets = (() => {
         resetToDefaults,
         setupPopout,
         popoutWidget,
-        closePopout
+        closePopout,
+        hideAllPopouts,
+        showAllPopouts
     };
 })();

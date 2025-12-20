@@ -338,8 +338,13 @@ CHANGE LOG:
                         style="display: none;">
                         🔑 <span data-i18n="changePassword">Change Password</span>
                     </button>
+                    <!-- 2025-12-19: Add password (only for unencrypted vaults) -->
+                    <button id="btn-add-password" class="dropdown-item" data-action="add-password"
+                        style="display: none;">
+                        🔒 <span data-i18n="addPassword">Add Password</span>
+                    </button>
                     <div class="dropdown-divider"></div>
-                    <button class="dropdown-item" data-action="settings">
+                    <button id="btn-settings" class="dropdown-item" data-action="settings">
                         🛠️ <span data-i18n="settings">Settings</span>
                     </button>
                     <button class="dropdown-item" data-action="about">
@@ -1036,6 +1041,41 @@ CHANGE LOG:
         </div>
     </div>
 
+    <!-- 2025-12-19: Add Password Modal (for encrypting unencrypted vaults) -->
+    <div id="add-password-modal" class="modal" style="display: none;">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <h2 id="add-password-modal-title" class="modal-title">🔒 Add Password</h2>
+            <p id="add-password-modal-desc" class="modal-desc">Encrypt your vault with a password.</p>
+
+            <p id="add-encryption-warning" class="encryption-warning" data-i18n="encryptionWarning">
+                ⚠️ If you forget your password, your data cannot be recovered.
+            </p>
+            <div class="form-group">
+                <label id="label-add-password" for="input-add-password" data-i18n="newPasswordLabel">Password</label>
+                <input type="password" id="input-add-password" class="input" placeholder="Enter password">
+            </div>
+            <div class="form-group">
+                <label id="label-confirm-add-password" for="input-confirm-add-password"
+                    data-i18n="confirmPasswordLabel">Confirm Password</label>
+                <input type="password" id="input-confirm-add-password" class="input" placeholder="Confirm password">
+            </div>
+            <div class="form-group">
+                <label id="label-add-hint" for="input-add-hint" data-i18n="hintLabel">Password Hint (required)</label>
+                <input type="text" id="input-add-hint" class="input" placeholder="e.g. My favorite movie">
+            </div>
+
+            <div class="modal-actions">
+                <button id="btn-cancel-add-password" class="btn btn-secondary">
+                    <span data-i18n="cancel">Cancel</span>
+                </button>
+                <button id="btn-confirm-add-password" class="btn btn-primary">
+                    <span data-i18n="addPassword">🔒 Add Password</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- 2025-12-15: Custom Confirm Modal (replaces native confirm dialog) -->
     <div id="confirm-modal" class="modal" style="display: none;">
         <div class="modal-backdrop"></div>
@@ -1067,6 +1107,58 @@ CHANGE LOG:
             <div class="modal-actions">
                 <button id="btn-gdrive-cancel" class="btn btn-secondary">
                     <span data-i18n="cancel">Cancel</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2025-12-19: Settings Modal -->
+    <div id="settings-modal" class="modal" style="display: none;">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <h2 id="settings-modal-title" class="modal-title">🛠️ Settings</h2>
+            <p id="settings-modal-desc" class="modal-desc">Configure your application preferences.</p>
+
+            <!-- Inactivity Timer Toggle -->
+            <div class="settings-section">
+                <div class="settings-item">
+                    <div class="settings-item-info">
+                        <span class="settings-item-label" data-i18n="settingsInactivityTimer">⏱️ Inactivity Timer</span>
+                        <span class="settings-item-desc" data-i18n="settingsInactivityDesc">Close vault after 10 minutes
+                            of inactivity</span>
+                    </div>
+                    <label class="widget-toggle-switch">
+                        <input type="checkbox" id="checkbox-inactivity-timer" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="modal-actions">
+                <button id="btn-close-settings" class="btn btn-primary">
+                    <span data-i18n="close">Close</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2025-12-19: Inactivity Warning Modal -->
+    <div id="inactivity-modal" class="modal" style="display: none;">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content modal-content-sm">
+            <h2 id="inactivity-modal-title" class="modal-title">⏱️ Inactivity Warning</h2>
+            <p id="inactivity-modal-desc" class="modal-desc">
+                <span data-i18n="inactivityWarning">Vault will close due to inactivity in</span>
+                <span id="inactivity-countdown" class="inactivity-countdown">10</span>
+                <span data-i18n="inactivitySeconds">seconds</span>
+            </p>
+
+            <div class="modal-actions">
+                <button id="btn-cancel-inactivity" class="btn btn-primary">
+                    <span data-i18n="stayOpen">Stay Open</span>
+                </button>
+                <button id="btn-close-now" class="btn btn-secondary">
+                    <span data-i18n="closeNow">Close Now</span>
                 </button>
             </div>
         </div>
