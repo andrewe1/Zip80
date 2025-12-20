@@ -3670,3 +3670,14 @@ html.dark .btn-role.active {
     color: var(--color-text-muted);
     display: block;
 }
+
+/* Linked accounts separator in account tabs */
+.linked-accounts-separator {
+    width: 100%;
+    text-align: center;
+    padding: var(--space-xs) var(--space-sm);
+    color: var(--color-text-muted);
+    font-size: var(--font-size-xs);
+    border-top: 1px dashed var(--color-border);
+    margin-top: var(--space-sm);
+}

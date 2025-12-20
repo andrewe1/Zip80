@@ -1738,42 +1738,53 @@
     // --- Share Vault Modal (2025-12-19) ---
 
     /**
-     * Open share vault modal
-     * Updates labels with current translations and resets form
+     * Open share vault modal with account grid
+     * Populates grid with all accounts and checkboxes
      */
     function openShareVaultModal() {
+        if (!elements.shareVaultModal || !elements.shareAccountsGrid) return;
+
         const t = I18n.t;
 
-        // Update labels with translations
+        // Update labels
         document.getElementById('share-vault-modal-title').textContent = t('shareVaultTitle');
         document.getElementById('share-vault-modal-desc').textContent = t('shareVaultDesc');
         document.getElementById('label-share-email').textContent = t('shareEmailLabel');
-        document.getElementById('label-share-role').textContent = t('shareRoleLabel');
         elements.inputShareEmail.placeholder = t('shareEmailPlaceholder');
 
-        // Update role button labels
-        const roleButtons = elements.shareVaultModal.querySelectorAll('.btn-role');
-        roleButtons.forEach(btn => {
-            const span = btn.querySelector('[data-i18n]');
-            if (span) {
-                const key = span.dataset.i18n;
-                span.textContent = t(key);
-            }
-        });
-
-        // Update cancel/share button labels
-        document.querySelector('#btn-cancel-share [data-i18n="cancel"]').textContent = t('cancel');
-        document.querySelector('#btn-confirm-share [data-i18n="shareVaultBtn"]').textContent = t('shareVaultBtn');
-
-        // Reset form
+        // Clear previous state
         elements.inputShareEmail.value = '';
-        roleButtons.forEach(btn => {
-            if (btn.dataset.role === 'writer') {
-                btn.classList.add('active');
-            } else {
-                btn.classList.remove('active');
-            }
-        });
+
+        // Populate account grid
+        const accounts = data.accounts || [];
+
+        if (accounts.length === 0) {
+            elements.shareAccountsGrid.innerHTML = `<div class="share-empty">${t('noLinkedAccounts')}</div>`;
+        } else {
+            elements.shareAccountsGrid.innerHTML = accounts.map(account => `
+                <div class="share-account-row" data-account-id="${account.id}">
+                    <label>
+                        <input type="checkbox" class="share-checkbox" data-account-id="${account.id}">
+                        ${t('shareCheckbox')}
+                    </label>
+                    <label>
+                        <input type="checkbox" class="can-edit-checkbox" data-account-id="${account.id}" disabled>
+                        ${t('canEditCheckbox')}
+                    </label>
+                    <span class="account-name">${escapeHtml(account.name)}</span>
+                </div>
+            `).join('');
+
+            // Enable "Can Edit" checkbox when "Share" is checked
+            elements.shareAccountsGrid.querySelectorAll('.share-checkbox').forEach(checkbox => {
+                checkbox.addEventListener('change', (e) => {
+                    const row = e.target.closest('.share-account-row');
+                    const canEditCheckbox = row.querySelector('.can-edit-checkbox');
+                    canEditCheckbox.disabled = !e.target.checked;
+                    if (!e.target.checked) canEditCheckbox.checked = false;
+                });
+            });
+        }
 
         elements.shareVaultModal.style.display = 'flex';
         elements.inputShareEmail.focus();
@@ -1783,35 +1794,72 @@
      * Close share vault modal
      */
     function closeShareVaultModal() {
-        elements.shareVaultModal.style.display = 'none';
+        if (elements.shareVaultModal) {
+            elements.shareVaultModal.style.display = 'none';
+        }
     }
 
     /**
-     * Handle share vault submission
-     * Calls GDrive.shareVault with email and selected role
+     * Handle share accounts - create share entries for selected accounts
      */
     async function handleShareVault() {
-        const email = elements.inputShareEmail.value.trim();
+        const email = elements.inputShareEmail.value.trim().toLowerCase();
 
-        // Validate email
         if (!email || !email.includes('@')) {
             showToast(I18n.t('toastShareError'), false);
-            elements.inputShareEmail.focus();
             return;
         }
 
-        // Get selected role (default to 'writer')
-        const activeRoleBtn = elements.shareVaultModal.querySelector('.btn-role.active');
-        const role = activeRoleBtn ? activeRoleBtn.dataset.role : 'writer';
+        // Get selected accounts
+        const selectedShares = [];
+        elements.shareAccountsGrid.querySelectorAll('.share-account-row').forEach(row => {
+            const shareCheckbox = row.querySelector('.share-checkbox');
+            const canEditCheckbox = row.querySelector('.can-edit-checkbox');
 
-        try {
-            await GDrive.shareVault(gdriveFileId, email, role);
-            showToast(I18n.t('toastVaultShared'));
-            closeShareVaultModal();
-        } catch (err) {
-            console.error('Failed to share vault:', err);
+            if (shareCheckbox && shareCheckbox.checked) {
+                selectedShares.push({
+                    id: 'share_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+                    accountId: shareCheckbox.dataset.accountId,
+                    sharedWith: email,
+                    permission: canEditCheckbox && canEditCheckbox.checked ? 'editor' : 'viewer',
+                    createdAt: new Date().toISOString()
+                });
+            }
+        });
+
+        if (selectedShares.length === 0) {
             showToast(I18n.t('toastShareError'), false);
+            return;
         }
+
+        // Initialize shares array if not exists
+        if (!data.shares) {
+            data.shares = [];
+        }
+
+        // Add new shares (avoid duplicates)
+        for (const newShare of selectedShares) {
+            // Remove existing share for same account+email
+            data.shares = data.shares.filter(s =>
+                !(s.accountId === newShare.accountId && s.sharedWith === email)
+            );
+            data.shares.push(newShare);
+        }
+
+        // Save vault
+        await handleSave();
+
+        // Share the vault file with the recipient via Google Drive
+        if (storageBackend === 'gdrive' && gdriveFileId) {
+            try {
+                await GDrive.shareVault(gdriveFileId, email, 'reader');
+            } catch (err) {
+                console.warn('Could not share vault via Drive:', err);
+            }
+        }
+
+        closeShareVaultModal();
+        showToast(I18n.t('toastAccountsShared'), true);
     }
 
     /**
@@ -3081,6 +3129,7 @@
         const tabs = elements.accountTabs;
         tabs.innerHTML = '';
 
+        // Render regular (owned) accounts
         data.accounts.forEach(account => {
             const isActive = account.id === currentAccountId;
             const canDelete = data.accounts.length > 1;
@@ -3110,7 +3159,51 @@
 
             tabs.appendChild(tab);
         });
+
+        // 2025-12-19: Render linked (shared) accounts
+        if (data.linkedAccounts && data.linkedAccounts.length > 0) {
+            // Add separator if there are regular accounts
+            if (data.accounts.length > 0) {
+                const separator = document.createElement('div');
+                separator.className = 'linked-accounts-separator';
+                separator.innerHTML = `<span>🔗 ${I18n.t('linkedBadge')}</span>`;
+                tabs.appendChild(separator);
+            }
+
+            data.linkedAccounts.forEach(linked => {
+                const isActive = `linked_${linked.sourceVaultId}_${linked.accountId}` === currentAccountId;
+
+                const tab = document.createElement('button');
+                tab.className = `account-tab linked ${isActive ? 'active' : ''}`;
+                tab.innerHTML = `
+                    <span class="account-icon">🔗</span>
+                    <span class="account-name">${escapeHtml(linked.accountName)}</span>
+                    <span class="linked-badge">${linked.permission === 'editor' ? '✏️' : '👁️'}</span>
+                    <span class="linked-sync-time">${I18n.t('sharedBy')} ${escapeHtml(linked.ownerEmail.split('@')[0])}</span>
+                `;
+
+                tab.addEventListener('click', () => {
+                    selectLinkedAccount(linked);
+                });
+
+                tabs.appendChild(tab);
+            });
+        }
     }
+
+    /**
+     * Select a linked account for viewing
+     * 2025-12-19: Shows cached transactions for linked accounts
+     */
+    function selectLinkedAccount(linked) {
+        // Store reference as combined ID
+        currentAccountId = `linked_${linked.sourceVaultId}_${linked.accountId}`;
+        currentLinkedAccount = linked;
+        render();
+    }
+
+    // 2025-12-19: Track currently selected linked account
+    let currentLinkedAccount = null;
 
     function renderBalance() {
         const currentAccount = data.accounts.find(a => a.id === currentAccountId);
