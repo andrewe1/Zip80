@@ -461,13 +461,69 @@
     }
 
     /**
-     * Render all sticky decks
+     * Render all sticky decks (owned + linked from other users)
      */
     function renderStickyDecks() {
         if (typeof StickyNotes === 'undefined') return;
 
-        const decks = (data.stickyDecks || []).filter(d => !d._deleted);
-        StickyNotes.renderDecks(decks, saveStickyDecks, handleShareDeck);
+        const container = document.getElementById('sticky-decks-container');
+        if (!container) return;
+        container.innerHTML = '';
+
+        // Render owned decks
+        const ownedDecks = (data.stickyDecks || []).filter(d => !d._deleted);
+        StickyNotes.renderDecks(ownedDecks, saveStickyDecks, handleShareDeck);
+
+        // Render linked decks from other users with 🔗 badge
+        const linkedDecks = data.linkedDecks || [];
+        linkedDecks.forEach(linked => {
+            if (!linked.cachedDeck) return;
+
+            const deck = { ...linked.cachedDeck };
+            deck._isLinked = true;
+            deck._ownerEmail = linked.ownerEmail;
+            deck._permission = linked.permission;
+
+            const deckEl = createLinkedDeckElement(deck, linked);
+            container.appendChild(deckEl);
+        });
+    }
+
+    /**
+     * Create a linked deck element (read-only display with 🔗 badge)
+     */
+    function createLinkedDeckElement(deck, linkedInfo) {
+        const el = document.createElement('div');
+        el.className = 'sticky-deck linked';
+        el.style.left = (deck.position?.x || 400) + 'px';
+        el.style.top = (deck.position?.y || 100) + 'px';
+        el.style.setProperty('--deck-color', deck.color || '#ffeb3b');
+
+        const ownerName = linkedInfo.ownerEmail.split('@')[0];
+        const notes = deck.notes || [];
+
+        el.innerHTML = `
+            <div class="sticky-deck-header">
+                <span class="sticky-deck-title">🔗 ${escapeHtml(deck.name)}</span>
+                <span class="linked-owner">${ownerName}</span>
+            </div>
+            <div class="sticky-deck-body">
+                <ul class="sticky-notes-list">
+                    ${notes.map(note => `
+                        <li class="sticky-note-item${note.done ? ' done' : ''}">
+                            <input type="checkbox" class="sticky-note-checkbox" ${note.done ? 'checked' : ''} disabled>
+                            <span class="sticky-note-text">${escapeHtml(note.text)}</span>
+                        </li>
+                    `).join('')}
+                </ul>
+            </div>
+        `;
+
+        // Make header draggable (optional - for positioning)
+        const header = el.querySelector('.sticky-deck-header');
+        header.style.cursor = 'grab';
+
+        return el;
     }
 
     /**
@@ -587,6 +643,88 @@
             elements.shareDeckModal.querySelector('.modal-backdrop')?.addEventListener('click', closeShareDeckModal);
         }
     }
+
+    /**
+     * Check for pending deck shares and auto-link them
+     * Called on vault load
+     */
+    async function checkPendingDeckShares() {
+        if (storageBackend !== 'gdrive' || !GDrive.isSignedIn()) return;
+
+        try {
+            const pendingDeckShares = await GDrive.findPendingDeckShares();
+
+            // Initialize linkedDecks if needed
+            if (!data.linkedDecks) {
+                data.linkedDecks = [];
+            }
+
+            // Get already linked deck IDs
+            const linkedIds = data.linkedDecks.map(l =>
+                `${l.sourceVaultId}_${l.deckId}`
+            );
+
+            // Auto-link new shared decks
+            let newDecksAdded = 0;
+            for (const share of pendingDeckShares) {
+                const key = `${share.sourceVaultId}_${share.deckId}`;
+                if (!linkedIds.includes(key)) {
+                    data.linkedDecks.push({
+                        sourceVaultId: share.sourceVaultId,
+                        deckId: share.deckId,
+                        deckName: share.deckName,
+                        deckColor: share.deckColor,
+                        permission: share.permission,
+                        ownerEmail: share.ownerEmail,
+                        lastSync: new Date().toISOString(),
+                        cachedDeck: share.cachedDeck
+                    });
+                    newDecksAdded++;
+                    linkedIds.push(key);
+                }
+            }
+
+            if (newDecksAdded > 0) {
+                await handleSave();
+                renderStickyDecks();
+                console.log(`[DeckSharing] Added ${newDecksAdded} new linked decks`);
+            }
+        } catch (err) {
+            console.error('Error checking pending deck shares:', err);
+        }
+    }
+
+    /**
+     * Sync linked deck data from source vaults
+     * Called on vault load
+     */
+    async function syncLinkedDecks() {
+        if (!data.linkedDecks || data.linkedDecks.length === 0) return;
+        if (storageBackend !== 'gdrive') return;
+
+        for (const linked of data.linkedDecks) {
+            try {
+                const vaultData = await GDrive.readVault(linked.sourceVaultId);
+                const sourceDeck = (vaultData.stickyDecks || []).find(d => d.id === linked.deckId);
+
+                if (sourceDeck) {
+                    linked.deckName = sourceDeck.name;
+                    linked.deckColor = sourceDeck.color;
+                    linked.cachedDeck = sourceDeck;
+                    linked.lastSync = new Date().toISOString();
+                    linked.syncError = false;
+                } else {
+                    linked.syncError = true;
+                }
+            } catch (err) {
+                console.warn(`Failed to sync linked deck ${linked.deckId}:`, err);
+                linked.syncError = true;
+            }
+        }
+
+        await handleSave();
+    }
+
     /**
      * Setup account type selection buttons
      * 2025-12-17: Handles click events on the new icon buttons
@@ -2545,6 +2683,10 @@
             // 2025-12-19: Check for pending shared accounts and sync linked accounts
             checkPendingShares();
             syncLinkedAccounts();
+
+            // 2025-12-20: Check for pending shared decks and sync linked decks
+            checkPendingDeckShares();
+            syncLinkedDecks();
         } catch (err) {
             console.error('Failed to load cloud vault:', err);
             showToast(I18n.t('toastGoogleError'), false);

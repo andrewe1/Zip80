@@ -3919,3 +3919,12 @@ html.dark .btn-role.active {
     background: var(--color-primary);
     color: white;
 }
+
+/* Linked deck owner badge */
+.linked-owner {
+    font-size: var(--font-size-xs);
+    color: rgba(0, 0, 0, 0.5);
+    padding: 2px 6px;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: var(--radius-sm);
+}

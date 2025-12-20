@@ -725,6 +725,70 @@ const GDrive = (() => {
     }
 
     /**
+     * Find pending deck shares from vaults shared with the current user
+     * Scans shared vaults for 'deckShares' array entries matching current user's email
+     * @returns {Array} Array of pending deck shares with source vault info
+     */
+    async function findPendingDeckShares() {
+        const user = getUser();
+        if (!user || !user.email) return [];
+
+        const currentEmail = user.email.toLowerCase();
+        const pendingDeckShares = [];
+
+        try {
+            // Get all vaults (includes shared ones via sharedWithMe query)
+            const vaults = await listVaults();
+
+            for (const vault of vaults) {
+                // Skip vaults we own
+                if (vault.owners && vault.owners[0] &&
+                    vault.owners[0].emailAddress.toLowerCase() === currentEmail) {
+                    continue;
+                }
+
+                try {
+                    // Read vault data to check for deck shares
+                    const vaultData = await readVault(vault.id);
+
+                    if (vaultData.deckShares && Array.isArray(vaultData.deckShares)) {
+                        // Find deck shares addressed to current user
+                        const sharesForUser = vaultData.deckShares.filter(share =>
+                            share.sharedWith &&
+                            share.sharedWith.toLowerCase() === currentEmail &&
+                            !share.revokedAt
+                        );
+
+                        for (const share of sharesForUser) {
+                            // Find the deck details
+                            const deck = (vaultData.stickyDecks || []).find(d => d.id === share.deckId);
+                            if (deck) {
+                                pendingDeckShares.push({
+                                    sourceVaultId: vault.id,
+                                    sourceVaultName: vault.name,
+                                    ownerEmail: vault.owners?.[0]?.emailAddress || 'Unknown',
+                                    deckId: share.deckId,
+                                    deckName: deck.name,
+                                    deckColor: deck.color,
+                                    permission: share.permission,
+                                    shareId: share.id,
+                                    cachedDeck: deck  // Cache the full deck
+                                });
+                            }
+                        }
+                    }
+                } catch (err) {
+                    console.warn(`[GDrive] Could not read vault ${vault.id} for deck shares:`, err);
+                }
+            }
+        } catch (err) {
+            console.error('[GDrive] Error finding pending deck shares:', err);
+        }
+
+        return pendingDeckShares;
+    }
+
+    /**
      * Fetch linked account data from source vault
      * @param {string} sourceVaultId - Drive file ID of source vault
      * @param {string} accountId - Account ID to fetch
@@ -812,6 +876,9 @@ const GDrive = (() => {
         // 2025-12-19: Account-level sharing
         findPendingShares,
         fetchLinkedAccountData,
-        addTransactionToLinkedAccount
+        addTransactionToLinkedAccount,
+
+        // 2025-12-20: Deck sharing
+        findPendingDeckShares
     };
 })();
