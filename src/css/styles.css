@@ -3131,6 +3131,7 @@ html.dark *::-webkit-scrollbar-thumb:hover {
     opacity: 1;
     color: var(--color-primary);
 }
+
 /* =============================================================================
    2025-12-19: CALCULATOR WIDGET STYLES
    ============================================================================= */
@@ -3149,7 +3150,7 @@ html.dark *::-webkit-scrollbar-thumb:hover {
     border-radius: var(--radius-md);
     padding: var(--space-md);
     text-align: right;
-    min-height: 80px;
+    min-height: 60px;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -3176,7 +3177,7 @@ html.dark *::-webkit-scrollbar-thumb:hover {
 }
 
 .calc-btn {
-    min-height: 60px;
+    min-height: 50px;
     border-radius: var(--radius-md);
     font-size: 1.25rem;
     font-weight: 600;

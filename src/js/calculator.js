@@ -82,7 +82,10 @@ const Calculator = (() => {
         popoutWindow.innerHTML = `
             <div class="widget-popout-header">
                 <span class="widget-popout-title">🔢 ${title}</span>
-                <button class="widget-popout-close" title="Close">✕</button>
+                <div class="calc-header-btns">
+                    <button class="calc-tape-toggle" title="Show Tape">📜</button>
+                    <button class="widget-popout-close" title="Close">✕</button>
+                </div>
             </div>
             <div class="widget-popout-content">
                 <div class="calculator-container">
@@ -109,10 +112,13 @@ const Calculator = (() => {
                         <button class="calc-btn calc-btn-num" data-val="1">1</button>
                         <button class="calc-btn calc-btn-num" data-val="2">2</button>
                         <button class="calc-btn calc-btn-num" data-val="3">3</button>
-                        <button class="calc-btn calc-btn-eq" data-action="equal">=</button>
-                        
-                        <button class="calc-btn calc-btn-num" style="grid-column: span 2;" data-val="0">0</button>
                         <button class="calc-btn calc-btn-num" data-val=".">.</button>
+
+                        <button class="calc-btn calc-btn-num" style="grid-column: span 2;" data-val="0">0</button>
+                        <button class="calc-btn calc-btn-eq" style="grid-column: span 2;" data-action="equal">=</button>
+                    </div>
+                    <div id="calc-tape-container" class="calc-tape-container">
+                        <textarea id="calc-tape" class="calc-tape-textarea" placeholder="Start typing..."></textarea>
                     </div>
                 </div>
             </div>
@@ -121,6 +127,20 @@ const Calculator = (() => {
         // Event Listeners
         const closeBtn = popoutWindow.querySelector('.widget-popout-close');
         closeBtn.addEventListener('click', close);
+
+        const tapeToggle = popoutWindow.querySelector('.calc-tape-toggle');
+        const tapeContainer = popoutWindow.querySelector('#calc-tape-container');
+        const tapeArea = popoutWindow.querySelector('#calc-tape');
+
+        tapeToggle.addEventListener('click', () => {
+            const isActive = tapeContainer.style.display === 'block';
+            tapeContainer.style.display = isActive ? 'none' : 'block';
+            tapeToggle.classList.toggle('active', !isActive);
+            if (!isActive) tapeArea.focus();
+        });
+
+        tapeArea.addEventListener('input', handleTapeInput);
+        tapeArea.addEventListener('keydown', handleTapeKey);
 
         const header = popoutWindow.querySelector('.widget-popout-header');
         setupDraggable(popoutWindow, header);
@@ -160,6 +180,119 @@ const Calculator = (() => {
         if (popoutWindow) {
             popoutWindow.style.zIndex = parseInt(popoutWindow.style.zIndex) + 1;
         }
+    }
+
+    /**
+     * Handle input in the tape textarea
+     * Performs real-time evaluation of the current line
+     */
+    function handleTapeInput(e) {
+        const tapeArea = e.target;
+        const cursorPosition = tapeArea.selectionStart;
+        const originalValue = tapeArea.value;
+
+        // formatValue helper logic applied to numbers in the textarea
+        const formattedValue = originalValue.replace(/[0-9,.]+/g, (match) => {
+            // Don't format if it's just a decimal point or ends with one (user still typing)
+            if (match === '.' || match.endsWith('.')) return match;
+
+            const clean = match.replace(/,/g, '');
+            if (!isNaN(clean) && clean !== '') {
+                return formatValue(clean);
+            }
+            return match;
+        });
+
+        if (originalValue !== formattedValue) {
+            tapeArea.value = formattedValue;
+
+            // Adjust cursor position by mapping raw character count (excluding commas)
+            const rawBefore = originalValue.substring(0, cursorPosition).replace(/,/g, '');
+            let newPos = 0;
+            let rawCount = 0;
+            while (newPos < formattedValue.length && rawCount < rawBefore.length) {
+                if (formattedValue[newPos] !== ',') {
+                    rawCount++;
+                }
+                newPos++;
+            }
+            // If the character just typed caused a shift, newPos will account for it
+            tapeArea.setSelectionRange(newPos, newPos);
+        }
+
+        const lines = formattedValue.split('\n');
+        const currentLine = lines[lines.length - 1];
+
+        // Match expressions like 1,234 + 4,567
+        const result = evaluateExpression(currentLine);
+        if (result !== null) {
+            currentInput = result.toString();
+            updateScreen();
+        }
+    }
+
+    /**
+     * Handle keyboard events in the tape textarea
+     * Specifically '=' or 'Enter' for line continuation
+     */
+    function handleTapeKey(e) {
+        const tapeArea = e.target;
+
+        if (e.key === 'Enter' || e.key === '=') {
+            e.preventDefault();
+
+            const lines = tapeArea.value.split('\n');
+            const currentLine = lines[lines.length - 1];
+            const result = evaluateExpression(currentLine);
+
+            if (result !== null) {
+                // Append result to current line and start new line with result
+                // Use formatted result for the tape history
+                const formattedResult = formatValue(result);
+                tapeArea.value += ` = ${formattedResult}\n${formattedResult}`;
+
+                // Keep result in main display
+                currentInput = result.toString();
+                updateScreen();
+
+                // Scroll to bottom
+                tapeArea.scrollTop = tapeArea.scrollHeight;
+            }
+        }
+    }
+
+    /**
+     * Safely evaluate a simple mathematical expression
+     * Supports +, -, *, /
+     */
+    function evaluateExpression(expr) {
+        // Strip out commas first so we can parse numbers like 1,000.00
+        const cleanExpr = expr.replace(/,/g, '').replace(/[^0-9.+\-*/]/g, '');
+        if (!cleanExpr) return null;
+
+        try {
+            // Check for trailing operator - if present, evaluate up to it
+            let targetExpr = cleanExpr;
+            if (/[+\-*/]$/.test(cleanExpr)) {
+                targetExpr = cleanExpr.slice(0, -1);
+            }
+
+            if (!targetExpr) return null;
+
+            // Use Function for a slightly safer "eval" (still scoped but avoids leaking)
+            const res = new Function(`return ${targetExpr}`)();
+
+            if (typeof res === 'number' && isFinite(res)) {
+                // Limit precision like in the main calculator
+                if (res.toString().includes('.') && res.toString().split('.')[1].length > 8) {
+                    return parseFloat(res.toFixed(8));
+                }
+                return res;
+            }
+        } catch (e) {
+            return null;
+        }
+        return null;
     }
 
     /**
@@ -267,10 +400,20 @@ const Calculator = (() => {
         currentInput = '0';
     }
 
+    function formatValue(val) {
+        if (val === 'Error' || isNaN(val)) return val;
+        const num = parseFloat(val);
+        // Using MXN/USD style formatting (commas for thousands, dot for decimals)
+        return new Intl.NumberFormat('en-US', {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 8
+        }).format(num);
+    }
+
     function updateScreen() {
-        if (display) display.textContent = currentInput;
+        if (display) display.textContent = formatValue(currentInput);
         if (formulaDisplay) {
-            formulaDisplay.textContent = operator ? `${previousInput} ${getOpSymbol(operator)}` : '';
+            formulaDisplay.textContent = operator ? `${formatValue(previousInput)} ${getOpSymbol(operator)}` : '';
         }
     }
 

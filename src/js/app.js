@@ -649,8 +649,6 @@
             const btnCalc = document.getElementById('btn-calculator');
             if (btnCalc) {
                 btnCalc.title = t('btnCalculator');
-                const span = btnCalc.querySelector('[data-i18n="btnCalculator"]');
-                if (span) span.textContent = t('btnCalculator');
             }
 
             // Dropdown items
