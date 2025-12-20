@@ -2293,8 +2293,20 @@
             const localFileName = await Storage.getFileName(fileHandle);
             const vaultName = localFileName.replace('.json', '');
 
-            // Create new cloud vault with current data
-            const fileId = await GDrive.createVault(vaultName, data);
+            // Check if vault was previously migrated - overwrite existing cloud vault
+            let fileId;
+            const existingCloudId = data?._migratedToCloud?.cloudFileId;
+
+            if (existingCloudId) {
+                // Overwrite existing cloud vault
+                await GDrive.writeVault(existingCloudId, data);
+                fileId = existingCloudId;
+                console.log('[MoveToCloud] Overwrote existing cloud vault:', fileId);
+            } else {
+                // Create new cloud vault
+                fileId = await GDrive.createVault(vaultName, data);
+                console.log('[MoveToCloud] Created new cloud vault:', fileId);
+            }
 
             // Mark the local vault file as migrated (write migration info)
             if (localFileHandle) {
