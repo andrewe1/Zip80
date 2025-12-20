@@ -3241,14 +3241,14 @@
             elements.balanceDisplay.classList.remove('negative');
 
             // Hide credit card info for linked accounts
-            elements.creditCardInfo.style.display = 'none';
-            elements.btnEditCredit.style.display = 'none';
-            elements.btnEditAccountSettings.style.display = 'none';
-            elements.btnEditBalance.style.display = 'none';
+            if (elements.creditCardInfo) elements.creditCardInfo.style.display = 'none';
+            if (elements.btnEditCredit) elements.btnEditCredit.style.display = 'none';
+            if (elements.btnEditAccountSettings) elements.btnEditAccountSettings.style.display = 'none';
+            if (elements.btnEditBalance) elements.btnEditBalance.style.display = 'none';
 
             // Update account display
-            elements.accountName.textContent = currentLinkedAccount.accountName;
-            elements.accountCurrency.textContent = `🔗 ${t('sharedBy')} ${currentLinkedAccount.ownerEmail}`;
+            if (elements.accountName) elements.accountName.textContent = currentLinkedAccount.accountName;
+            if (elements.accountCurrency) elements.accountCurrency.textContent = `🔗 ${t('sharedBy')} ${currentLinkedAccount.ownerEmail}`;
             return;
         }
 
