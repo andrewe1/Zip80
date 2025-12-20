@@ -369,12 +369,22 @@
         btnCancelInactivity: document.getElementById('btn-cancel-inactivity'),
         btnCloseNow: document.getElementById('btn-close-now'),
 
-        // Share Vault Modal (2025-12-19)
+        // Share Accounts Modal (2025-12-19)
         btnShareVault: document.getElementById('btn-share-vault'),
         shareVaultModal: document.getElementById('share-vault-modal'),
         inputShareEmail: document.getElementById('input-share-email'),
+        shareAccountsGrid: document.getElementById('share-accounts-grid'),
         btnCancelShare: document.getElementById('btn-cancel-share'),
-        btnConfirmShare: document.getElementById('btn-confirm-share')
+        btnConfirmShare: document.getElementById('btn-confirm-share'),
+
+        // Pending Shares Notification (2025-12-19)
+        btnPendingShares: document.getElementById('btn-pending-shares'),
+        pendingSharesCount: document.getElementById('pending-shares-count'),
+
+        // Accept Shares Modal (2025-12-19)
+        acceptSharesModal: document.getElementById('accept-shares-modal'),
+        pendingSharesList: document.getElementById('pending-shares-list'),
+        btnCloseAcceptShares: document.getElementById('btn-close-accept-shares')
     };
 
     // --- Initialization ---
@@ -910,6 +920,18 @@
             elements.inputShareEmail.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') handleShareVault();
             });
+        }
+
+        // 2025-12-19: Pending shares notification button
+        if (elements.btnPendingShares) {
+            elements.btnPendingShares.addEventListener('click', openAcceptSharesModal);
+        }
+        // 2025-12-19: Accept shares modal
+        if (elements.btnCloseAcceptShares) {
+            elements.btnCloseAcceptShares.addEventListener('click', closeAcceptSharesModal);
+        }
+        if (elements.acceptSharesModal) {
+            elements.acceptSharesModal.querySelector('.modal-backdrop').addEventListener('click', closeAcceptSharesModal);
         }
 
         // 2025-12-15: Background click to deselect accounts
@@ -2276,6 +2298,10 @@
 
             showWorkspace();
             render();
+
+            // 2025-12-19: Check for pending shared accounts and sync linked accounts
+            checkPendingShares();
+            syncLinkedAccounts();
         } catch (err) {
             console.error('Failed to load cloud vault:', err);
             showToast(I18n.t('toastGoogleError'), false);
@@ -4087,6 +4113,303 @@
         // Make container relative for absolute positioning
         container.style.position = 'relative';
         container.style.height = '12px';
+    }
+
+    // --- Account-Level Sharing (2025-12-19) ---
+
+    /**
+     * Open share vault modal with account grid
+     * Populates grid with all accounts and checkboxes
+     */
+    function openShareVaultModal() {
+        if (!elements.shareVaultModal || !elements.shareAccountsGrid) return;
+
+        // Clear previous state
+        elements.inputShareEmail.value = '';
+
+        // Populate account grid
+        const accounts = data.accounts || [];
+
+        if (accounts.length === 0) {
+            elements.shareAccountsGrid.innerHTML = `<div class="share-empty">${I18n.t('noLinkedAccounts')}</div>`;
+        } else {
+            elements.shareAccountsGrid.innerHTML = accounts.map(account => `
+                <div class="share-account-row" data-account-id="${account.id}">
+                    <label>
+                        <input type="checkbox" class="share-checkbox" data-account-id="${account.id}">
+                        ${I18n.t('shareCheckbox')}
+                    </label>
+                    <label>
+                        <input type="checkbox" class="can-edit-checkbox" data-account-id="${account.id}" disabled>
+                        ${I18n.t('canEditCheckbox')}
+                    </label>
+                    <span class="account-name">${escapeHtml(account.name)}</span>
+                </div>
+            `).join('');
+
+            // Enable "Can Edit" checkbox when "Share" is checked
+            elements.shareAccountsGrid.querySelectorAll('.share-checkbox').forEach(checkbox => {
+                checkbox.addEventListener('change', (e) => {
+                    const row = e.target.closest('.share-account-row');
+                    const canEditCheckbox = row.querySelector('.can-edit-checkbox');
+                    canEditCheckbox.disabled = !e.target.checked;
+                    if (!e.target.checked) canEditCheckbox.checked = false;
+                });
+            });
+        }
+
+        elements.shareVaultModal.style.display = 'flex';
+        elements.inputShareEmail.focus();
+    }
+
+    /**
+     * Close share vault modal
+     */
+    function closeShareVaultModal() {
+        if (elements.shareVaultModal) {
+            elements.shareVaultModal.style.display = 'none';
+        }
+    }
+
+    /**
+     * Handle share accounts - create share entries for selected accounts
+     */
+    async function handleShareVault() {
+        const email = elements.inputShareEmail.value.trim().toLowerCase();
+
+        if (!email || !email.includes('@')) {
+            showToast(I18n.t('toastShareError'), false);
+            return;
+        }
+
+        // Get selected accounts
+        const selectedShares = [];
+        elements.shareAccountsGrid.querySelectorAll('.share-account-row').forEach(row => {
+            const shareCheckbox = row.querySelector('.share-checkbox');
+            const canEditCheckbox = row.querySelector('.can-edit-checkbox');
+
+            if (shareCheckbox && shareCheckbox.checked) {
+                selectedShares.push({
+                    id: 'share_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+                    accountId: shareCheckbox.dataset.accountId,
+                    sharedWith: email,
+                    permission: canEditCheckbox && canEditCheckbox.checked ? 'editor' : 'viewer',
+                    createdAt: new Date().toISOString()
+                });
+            }
+        });
+
+        if (selectedShares.length === 0) {
+            showToast(I18n.t('toastShareError'), false);
+            return;
+        }
+
+        // Initialize shares array if not exists
+        if (!data.shares) {
+            data.shares = [];
+        }
+
+        // Add new shares (avoid duplicates)
+        for (const newShare of selectedShares) {
+            // Remove existing share for same account+email
+            data.shares = data.shares.filter(s =>
+                !(s.accountId === newShare.accountId && s.sharedWith === email)
+            );
+            data.shares.push(newShare);
+        }
+
+        // Save vault
+        await handleSave();
+
+        // Share the vault file with the recipient via Google Drive
+        if (storageBackend === 'gdrive' && gdriveFileId) {
+            try {
+                await GDrive.shareVault(gdriveFileId, email, 'reader');
+            } catch (err) {
+                console.warn('Could not share vault via Drive:', err);
+            }
+        }
+
+        closeShareVaultModal();
+        showToast(I18n.t('toastAccountsShared'), true);
+    }
+
+    /**
+     * Check for pending shared accounts and show notification
+     * Called on vault load
+     */
+    async function checkPendingShares() {
+        if (storageBackend !== 'gdrive' || !GDrive.isSignedIn()) {
+            if (elements.btnPendingShares) {
+                elements.btnPendingShares.style.display = 'none';
+            }
+            return;
+        }
+
+        try {
+            const pendingShares = await GDrive.findPendingShares();
+
+            // Filter out already linked accounts
+            const linkedIds = (data.linkedAccounts || []).map(l =>
+                `${l.sourceVaultId}_${l.accountId}`
+            );
+
+            const newShares = pendingShares.filter(share =>
+                !linkedIds.includes(`${share.sourceVaultId}_${share.accountId}`)
+            );
+
+            if (newShares.length > 0 && elements.btnPendingShares) {
+                elements.pendingSharesCount.textContent = newShares.length;
+                elements.btnPendingShares.style.display = 'flex';
+                elements.btnPendingShares._pendingShares = newShares;
+            } else if (elements.btnPendingShares) {
+                elements.btnPendingShares.style.display = 'none';
+            }
+        } catch (err) {
+            console.error('Error checking pending shares:', err);
+            if (elements.btnPendingShares) {
+                elements.btnPendingShares.style.display = 'none';
+            }
+        }
+    }
+
+    /**
+     * Open accept shares modal
+     */
+    function openAcceptSharesModal() {
+        if (!elements.acceptSharesModal || !elements.pendingSharesList) return;
+
+        const pendingShares = elements.btnPendingShares._pendingShares || [];
+
+        if (pendingShares.length === 0) {
+            elements.pendingSharesList.innerHTML = `
+                <div class="pending-shares-empty">${I18n.t('noLinkedAccounts')}</div>
+            `;
+        } else {
+            elements.pendingSharesList.innerHTML = pendingShares.map((share, index) => `
+                <div class="pending-share-item" data-index="${index}">
+                    <div class="pending-share-info">
+                        <span class="pending-share-name">${escapeHtml(share.accountName)}</span>
+                        <span class="pending-share-owner">${I18n.t('sharedBy')} ${escapeHtml(share.ownerEmail)}</span>
+                        <span class="pending-share-permission">${share.permission === 'editor' ? I18n.t('shareRoleEditor') : I18n.t('shareRoleViewer')}</span>
+                    </div>
+                    <div class="pending-share-actions">
+                        <button class="btn btn-primary btn-sm btn-accept-share">${I18n.t('acceptBtn')}</button>
+                        <button class="btn btn-secondary btn-sm btn-decline-share">${I18n.t('declineBtn')}</button>
+                    </div>
+                </div>
+            `).join('');
+
+            // Add event listeners
+            elements.pendingSharesList.querySelectorAll('.btn-accept-share').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const item = e.target.closest('.pending-share-item');
+                    const index = parseInt(item.dataset.index);
+                    handleAcceptShare(pendingShares[index]);
+                    item.remove();
+                });
+            });
+
+            elements.pendingSharesList.querySelectorAll('.btn-decline-share').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const item = e.target.closest('.pending-share-item');
+                    handleDeclineShare();
+                    item.remove();
+                });
+            });
+        }
+
+        elements.acceptSharesModal.style.display = 'flex';
+    }
+
+    /**
+     * Close accept shares modal
+     */
+    function closeAcceptSharesModal() {
+        if (elements.acceptSharesModal) {
+            elements.acceptSharesModal.style.display = 'none';
+        }
+    }
+
+    /**
+     * Handle accepting a shared account
+     */
+    async function handleAcceptShare(share) {
+        // Initialize linkedAccounts array if not exists
+        if (!data.linkedAccounts) {
+            data.linkedAccounts = [];
+        }
+
+        // Add linked account reference
+        data.linkedAccounts.push({
+            sourceVaultId: share.sourceVaultId,
+            sourceVaultName: share.sourceVaultName,
+            accountId: share.accountId,
+            accountName: share.accountName,
+            permission: share.permission,
+            ownerEmail: share.ownerEmail,
+            lastSync: new Date().toISOString(),
+            cachedBalance: 0,
+            cachedTransactions: []
+        });
+
+        // Save vault
+        await handleSave();
+
+        // Sync linked account data
+        await syncLinkedAccounts();
+
+        showToast(I18n.t('toastAccountLinked'), true);
+
+        // Update pending count
+        checkPendingShares();
+
+        // Re-render UI
+        render();
+    }
+
+    /**
+     * Handle declining a shared account
+     */
+    function handleDeclineShare() {
+        showToast(I18n.t('toastAccountDeclined'), true);
+        checkPendingShares();
+    }
+
+    /**
+     * Sync all linked accounts from their source vaults
+     */
+    async function syncLinkedAccounts() {
+        if (!data.linkedAccounts || data.linkedAccounts.length === 0) return;
+        if (storageBackend !== 'gdrive') return;
+
+        for (const linked of data.linkedAccounts) {
+            try {
+                const result = await GDrive.fetchLinkedAccountData(
+                    linked.sourceVaultId,
+                    linked.accountId
+                );
+
+                if (result) {
+                    linked.accountName = result.account.name;
+                    linked.cachedBalance = Accounts.calculateBalance(
+                        result.account,
+                        result.transactions.filter(t => t.accountId === linked.accountId)
+                    );
+                    linked.cachedTransactions = result.transactions;
+                    linked.lastSync = result.syncedAt;
+                    linked.syncError = false;
+                } else {
+                    linked.syncError = true;
+                }
+            } catch (err) {
+                console.error(`Failed to sync linked account ${linked.accountId}:`, err);
+                linked.syncError = true;
+            }
+        }
+
+        // Save updated cache
+        await handleSave();
     }
 
     // --- Utilities ---

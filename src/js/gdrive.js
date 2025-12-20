@@ -660,6 +660,124 @@ const GDrive = (() => {
         picker.setVisible(true);
     }
 
+    // --- Account-Level Sharing (2025-12-19) ---
+
+    /**
+     * Find pending account shares from vaults shared with the current user
+     * Scans shared vaults for 'shares' array entries matching current user's email
+     * @returns {Array} Array of pending shares with source vault info
+     */
+    async function findPendingShares() {
+        const user = getUser();
+        if (!user || !user.email) return [];
+
+        const currentEmail = user.email.toLowerCase();
+        const pendingShares = [];
+
+        try {
+            // Get all vaults (includes shared ones via sharedWithMe query)
+            const vaults = await listVaults();
+
+            for (const vault of vaults) {
+                // Skip vaults we own
+                if (vault.owners && vault.owners[0] &&
+                    vault.owners[0].emailAddress.toLowerCase() === currentEmail) {
+                    continue;
+                }
+
+                try {
+                    // Read vault data to check for shares
+                    const vaultData = await readVault(vault.id);
+
+                    if (vaultData.shares && Array.isArray(vaultData.shares)) {
+                        // Find shares addressed to current user
+                        const sharesForUser = vaultData.shares.filter(share =>
+                            share.sharedWith &&
+                            share.sharedWith.toLowerCase() === currentEmail &&
+                            !share.revokedAt
+                        );
+
+                        for (const share of sharesForUser) {
+                            // Find the account details
+                            const account = vaultData.accounts.find(a => a.id === share.accountId);
+                            if (account) {
+                                pendingShares.push({
+                                    sourceVaultId: vault.id,
+                                    sourceVaultName: vault.name,
+                                    ownerEmail: vault.owners?.[0]?.emailAddress || 'Unknown',
+                                    accountId: share.accountId,
+                                    accountName: account.name,
+                                    permission: share.permission,
+                                    shareId: share.id
+                                });
+                            }
+                        }
+                    }
+                } catch (err) {
+                    console.warn(`[GDrive] Could not read vault ${vault.id}:`, err);
+                }
+            }
+        } catch (err) {
+            console.error('[GDrive] Error finding pending shares:', err);
+        }
+
+        return pendingShares;
+    }
+
+    /**
+     * Fetch linked account data from source vault
+     * @param {string} sourceVaultId - Drive file ID of source vault
+     * @param {string} accountId - Account ID to fetch
+     * @returns {Object} Account data with transactions, or null if not found/accessible
+     */
+    async function fetchLinkedAccountData(sourceVaultId, accountId) {
+        try {
+            const vaultData = await readVault(sourceVaultId);
+
+            const account = vaultData.accounts.find(a => a.id === accountId);
+            if (!account) return null;
+
+            // Get transactions for this account
+            const transactions = (vaultData.transactions || []).filter(t =>
+                t.accountId === accountId
+            );
+
+            return {
+                account,
+                transactions,
+                syncedAt: new Date().toISOString()
+            };
+        } catch (err) {
+            console.error('[GDrive] Error fetching linked account data:', err);
+            return null;
+        }
+    }
+
+    /**
+     * Add a transaction to a linked account in the source vault
+     * Used when an editor adds a transaction to a shared account
+     * @param {string} sourceVaultId - Drive file ID of source vault
+     * @param {Object} transaction - Transaction to add
+     * @returns {boolean} Success status
+     */
+    async function addTransactionToLinkedAccount(sourceVaultId, transaction) {
+        try {
+            const vaultData = await readVault(sourceVaultId);
+
+            if (!vaultData.transactions) {
+                vaultData.transactions = [];
+            }
+
+            vaultData.transactions.push(transaction);
+            await writeVault(sourceVaultId, vaultData);
+
+            return true;
+        } catch (err) {
+            console.error('[GDrive] Error adding transaction to linked account:', err);
+            return false;
+        }
+    }
+
     // --- Public API ---
 
     return {
@@ -689,6 +807,11 @@ const GDrive = (() => {
         shareVault,
 
         // 2025-12-19: Picker for browsing shared files
-        openPicker
+        openPicker,
+
+        // 2025-12-19: Account-level sharing
+        findPendingShares,
+        fetchLinkedAccountData,
+        addTransactionToLinkedAccount
     };
 })();

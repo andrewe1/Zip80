@@ -403,18 +403,36 @@ const I18n = (() => {
             stayOpen: 'Stay Open',
             closeNow: 'Close Now',
 
-            // Share Vault (2025-12-19)
-            shareVault: '🔗 Share Vault',
-            shareVaultTitle: '🔗 Share Vault',
-            shareVaultDesc: 'Enter the email address to share this vault with.',
+            // Share Accounts (2025-12-19)
+            shareVault: '🔗 Share Accounts',
+            shareVaultTitle: '🔗 Share Accounts',
+            shareVaultDesc: 'Select which accounts to share and set permissions.',
             shareEmailLabel: 'Email Address',
             shareEmailPlaceholder: 'e.g. person@gmail.com',
-            shareRoleLabel: 'Permission Level',
+            shareSelectAccounts: 'Select Accounts',
+            shareCheckbox: 'Share',
+            canEditCheckbox: 'Can Edit',
             shareRoleEditor: 'Can Edit',
             shareRoleViewer: 'Can View',
             shareVaultBtn: 'Share',
-            toastVaultShared: '🔗 Vault shared successfully!',
-            toastShareError: 'Could not share vault. Please check the email address.'
+            toastAccountsShared: '🔗 Accounts shared successfully!',
+            toastShareError: 'Could not share. Please check the email address.',
+
+            // Accept Shared Accounts (2025-12-19)
+            pendingShares: 'Shared',
+            acceptSharesTitle: '🔗 Shared Accounts Available',
+            acceptSharesDesc: 'Accept accounts shared with you to add them to your vault.',
+            sharedBy: 'Shared by',
+            acceptBtn: 'Accept',
+            declineBtn: 'Decline',
+            toastAccountLinked: '🔗 Account linked successfully!',
+            toastAccountDeclined: 'Share declined',
+            noLinkedAccounts: 'No shared accounts available',
+
+            // Linked Accounts Display
+            linkedBadge: '🔗 Linked',
+            lastSynced: 'Last synced',
+            syncError: 'Sync failed'
         },
 
         es: {
@@ -694,18 +712,36 @@ const I18n = (() => {
             stayOpen: 'Mantener Abierta',
             closeNow: 'Cerrar Ahora',
 
-            // Share Vault (2025-12-19)
-            shareVault: '🔗 Compartir Bóveda',
-            shareVaultTitle: '🔗 Compartir Bóveda',
-            shareVaultDesc: 'Ingresa el correo electrónico para compartir esta bóveda.',
+            // Share Accounts (2025-12-19)
+            shareVault: '🔗 Compartir Cuentas',
+            shareVaultTitle: '🔗 Compartir Cuentas',
+            shareVaultDesc: 'Selecciona qué cuentas compartir y establece permisos.',
             shareEmailLabel: 'Correo Electrónico',
             shareEmailPlaceholder: 'ej. persona@gmail.com',
-            shareRoleLabel: 'Nivel de Permiso',
+            shareSelectAccounts: 'Seleccionar Cuentas',
+            shareCheckbox: 'Compartir',
+            canEditCheckbox: 'Puede Editar',
             shareRoleEditor: 'Puede Editar',
             shareRoleViewer: 'Solo Ver',
             shareVaultBtn: 'Compartir',
-            toastVaultShared: '🔗 ¡Bóveda compartida exitosamente!',
-            toastShareError: 'No se pudo compartir. Verifica el correo electrónico.'
+            toastAccountsShared: '🔗 ¡Cuentas compartidas exitosamente!',
+            toastShareError: 'No se pudo compartir. Verifica el correo electrónico.',
+
+            // Accept Shared Accounts (2025-12-19)
+            pendingShares: 'Compartidas',
+            acceptSharesTitle: '🔗 Cuentas Compartidas Disponibles',
+            acceptSharesDesc: 'Acepta cuentas compartidas contigo para agregarlas a tu bóveda.',
+            sharedBy: 'Compartido por',
+            acceptBtn: 'Aceptar',
+            declineBtn: 'Rechazar',
+            toastAccountLinked: '🔗 ¡Cuenta vinculada exitosamente!',
+            toastAccountDeclined: 'Compartida rechazada',
+            noLinkedAccounts: 'No hay cuentas compartidas disponibles',
+
+            // Linked Accounts Display
+            linkedBadge: '🔗 Vinculada',
+            lastSynced: 'Última sincronización',
+            syncError: 'Error de sincronización'
         }
     };
 

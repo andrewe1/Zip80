@@ -3538,3 +3538,135 @@ html.dark .btn-role {
 html.dark .btn-role.active {
     background: var(--color-primary);
 }
+
+/* Modal wide variant for share/accept modals */
+.modal-content.modal-wide {
+    max-width: 500px;
+}
+
+/* Share accounts grid - list of accounts with checkboxes */
+.share-accounts-grid {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+    max-height: 250px;
+    overflow-y: auto;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-sm);
+}
+
+.share-account-row {
+    display: grid;
+    grid-template-columns: auto auto 1fr;
+    align-items: center;
+    gap: var(--space-md);
+    padding: var(--space-xs) var(--space-sm);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface);
+}
+
+.share-account-row:hover {
+    background: var(--color-bg);
+}
+
+.share-account-row label {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    cursor: pointer;
+    font-size: var(--font-size-sm);
+}
+
+.share-account-row .account-name {
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Notification button styling */
+.menu-btn-notification {
+    background: var(--color-primary);
+    color: white;
+    border-radius: var(--radius-md);
+    padding: var(--space-xs) var(--space-sm);
+    font-size: var(--font-size-sm);
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.7;
+    }
+}
+
+/* Pending shares list in accept modal */
+.pending-shares-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.pending-share-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-sm) var(--space-md);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+}
+
+.pending-share-info {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+}
+
+.pending-share-name {
+    font-weight: 600;
+}
+
+.pending-share-owner {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+}
+
+.pending-share-permission {
+    font-size: var(--font-size-xs);
+    padding: 2px 6px;
+    border-radius: var(--radius-sm);
+    background: var(--color-primary-light);
+    color: var(--color-primary);
+}
+
+.pending-share-actions {
+    display: flex;
+    gap: var(--space-sm);
+}
+
+/* Linked account badge in account tabs */
+.account-tab.linked {
+    border-left: 3px solid var(--color-primary);
+}
+
+.linked-badge {
+    font-size: var(--font-size-xs);
+    color: var(--color-primary);
+    margin-left: var(--space-xs);
+}
+
+.linked-sync-time {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+    display: block;
+}
