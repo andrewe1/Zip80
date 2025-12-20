@@ -263,6 +263,10 @@ CHANGE LOG:
                     title="Shared accounts available">
                     🔗 <span id="pending-shares-count">0</span> <span data-i18n="pendingShares">Shared</span>
                 </button>
+                <!-- 2025-12-20: New Sticky Deck Button -->
+                <button id="btn-new-deck" class="menu-btn menu-btn-options" title="New Sticky Deck">
+                    📋 <span data-i18n="newDeck">New Deck</span>
+                </button>
                 <!-- 2025-12-19: Calculator Toggle Button -->
                 <button id="btn-calculator" class="menu-btn menu-btn-options" title="Calculator">
                     🔢
@@ -1234,6 +1238,9 @@ CHANGE LOG:
         </div>
     </div>
 
+    <!-- 2025-12-20: Sticky Decks Container (floating notes) -->
+    <div id="sticky-decks-container"></div>
+
     <script src="js/i18n.js"></script>
     <script src="js/accounts.js"></script>
     <!-- 2025-12-17: Crypto module for vault encryption (must load before storage.js) -->
@@ -1249,6 +1256,8 @@ CHANGE LOG:
     <script src="js/history.js"></script>
     <script src="js/menubar.js"></script>
     <script src="js/calculator.js"></script>
+    <!-- 2025-12-20: Sticky Notes module -->
+    <script src="js/stickynotes.js"></script>
     <script src="js/app.js"></script>
 
     <!-- 2025-12-17: Title bar window controls -->

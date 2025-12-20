@@ -384,7 +384,10 @@
         // Accept Shares Modal (2025-12-19)
         acceptSharesModal: document.getElementById('accept-shares-modal'),
         pendingSharesList: document.getElementById('pending-shares-list'),
-        btnCloseAcceptShares: document.getElementById('btn-close-accept-shares')
+        btnCloseAcceptShares: document.getElementById('btn-close-accept-shares'),
+
+        // Sticky Notes (2025-12-20)
+        btnNewDeck: document.getElementById('btn-new-deck')
     };
 
     // --- Initialization ---
@@ -402,6 +405,7 @@
         setupCommaFormatting();  // 2025-12-15: Comma separators for number inputs
         setupGoogleDrive();  // 2025-12-16: Google Drive integration
         setupUndoRedo();  // 2025-12-17: Undo/Redo button handlers
+        setupStickyNotes();  // 2025-12-20: Sticky notes deck system
         await checkForRecentFile();
         updateUILanguage();
         fetchExchangeRates();  // 2025-12-16: Load exchange rates
@@ -409,6 +413,72 @@
         Calculator.init();     // 2025-12-19: Initialize calculator tool
         initInactivityTimer(); // 2025-12-19: Load inactivity timer settings
         setupActivityTracking(); // 2025-12-19: Track user activity for inactivity timer
+    }
+
+    // --- Sticky Notes (2025-12-20) ---
+
+    /**
+     * Setup sticky notes system
+     */
+    function setupStickyNotes() {
+        // New Deck button click handler
+        if (elements.btnNewDeck) {
+            elements.btnNewDeck.addEventListener('click', handleCreateDeck);
+        }
+    }
+
+    /**
+     * Create a new sticky deck
+     */
+    function handleCreateDeck() {
+        if (!data.stickyDecks) {
+            data.stickyDecks = [];
+        }
+
+        // Create new deck
+        const deck = StickyNotes.createDeck(I18n.t('deckDefaultName'));
+
+        // Set creator info
+        const user = getCurrentUserInfo();
+        if (user) {
+            deck.createdBy = user;
+        }
+
+        // Position deck with offset so multiple decks don't stack
+        const offset = data.stickyDecks.length * 30;
+        deck.position.x = 100 + offset;
+        deck.position.y = 100 + offset;
+
+        data.stickyDecks.push(deck);
+        saveStickyDecks();
+        renderStickyDecks();
+    }
+
+    /**
+     * Render all sticky decks
+     */
+    function renderStickyDecks() {
+        if (typeof StickyNotes === 'undefined') return;
+
+        const decks = (data.stickyDecks || []).filter(d => !d._deleted);
+        StickyNotes.renderDecks(decks, saveStickyDecks, handleShareDeck);
+    }
+
+    /**
+     * Save sticky decks (callback from StickyNotes module)
+     */
+    function saveStickyDecks() {
+        // Remove deleted decks
+        data.stickyDecks = (data.stickyDecks || []).filter(d => !d._deleted);
+        handleSave();
+    }
+
+    /**
+     * Handle sharing a deck
+     */
+    function handleShareDeck(deck) {
+        // TODO: Implement deck sharing (similar to account sharing)
+        showToast('Deck sharing coming soon!', true);
     }
 
     /**
@@ -3142,6 +3212,7 @@
         renderRecurringWidget();  // 2025-12-15: Recurring expenses widget
         Calendar.renderCalendarWidget();  // 2025-12-15: Calendar widget
         renderActivityLog();  // 2025-12-17: Activity log widget
+        renderStickyDecks();  // 2025-12-20: Sticky notes decks
     }
 
     function renderAccountTabs() {

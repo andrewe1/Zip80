@@ -432,7 +432,14 @@ const I18n = (() => {
             // Linked Accounts Display
             linkedBadge: '🔗 Linked',
             lastSynced: 'Last synced',
-            syncError: 'Sync failed'
+            syncError: 'Sync failed',
+
+            // Sticky Notes (2025-12-20)
+            newDeck: 'New Deck',
+            deckDefaultName: 'New Deck',
+            addNotePlaceholder: '+ Add note...',
+            deleteDeckConfirm: 'Delete this deck?',
+            shareDeck: 'Share Deck'
         },
 
         es: {
@@ -741,7 +748,14 @@ const I18n = (() => {
             // Linked Accounts Display
             linkedBadge: '🔗 Vinculada',
             lastSynced: 'Última sincronización',
-            syncError: 'Error de sincronización'
+            syncError: 'Error de sincronización',
+
+            // Sticky Notes (2025-12-20)
+            newDeck: 'Nueva Nota',
+            deckDefaultName: 'Nueva Nota',
+            addNotePlaceholder: '+ Agregar nota...',
+            deleteDeckConfirm: '¿Eliminar esta nota?',
+            shareDeck: 'Compartir Nota'
         }
     };
 
