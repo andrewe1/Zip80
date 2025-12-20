@@ -14,6 +14,7 @@
  * 
  * CHANGE LOG:
  * - 2025-12-20: Initial creation for Client ID injection
+ * - 2025-12-20: Added GOOGLE_API_KEY for Picker API
  * ============================================================================
  */
 
@@ -28,10 +29,17 @@ try {
 }
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
+const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
 
 if (!GOOGLE_CLIENT_ID) {
     console.error('ERROR: GOOGLE_CLIENT_ID not found in environment.');
     console.error('Please create a .env file with GOOGLE_CLIENT_ID=your-client-id');
+    process.exit(1);
+}
+
+if (!GOOGLE_API_KEY) {
+    console.error('ERROR: GOOGLE_API_KEY not found in environment.');
+    console.error('Please create a .env file with GOOGLE_API_KEY=your-api-key');
     process.exit(1);
 }
 
@@ -49,7 +57,8 @@ const configContent = `/**
 
 const Config = (() => {
     return {
-        GOOGLE_CLIENT_ID: '${GOOGLE_CLIENT_ID}'
+        GOOGLE_CLIENT_ID: '${GOOGLE_CLIENT_ID}',
+        GOOGLE_API_KEY: '${GOOGLE_API_KEY}'
     };
 })();
 `;
@@ -57,4 +66,4 @@ const Config = (() => {
 const outputPath = path.join(__dirname, '..', 'src', 'js', 'config.js');
 
 fs.writeFileSync(outputPath, configContent, 'utf-8');
-console.log('✅ Generated config.js with Client ID');
+console.log('✅ Generated config.js with Client ID and API Key');
