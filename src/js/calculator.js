@@ -19,6 +19,7 @@
  * 
  * 1. CHANGE LOG: 
  *    - 2025-12-19 - Init - Initial creation of calculator module
+ *    - 2025-12-19 - Edit - Added Tape with syntax highlighting, dynamic resizing, and refined display updates
  * 2. INSTRUCTION:
  *    - When editing this file, always update the Change Log above.
  *    - Explain the "WHY" behind complex logic in inline comments.
@@ -83,7 +84,6 @@ const Calculator = (() => {
             <div class="widget-popout-header">
                 <span class="widget-popout-title">🔢 ${title}</span>
                 <div class="calc-header-btns">
-                    <button class="calc-tape-toggle" title="Show Tape">📜</button>
                     <button class="widget-popout-close" title="Close">✕</button>
                 </div>
             </div>
@@ -117,7 +117,8 @@ const Calculator = (() => {
                         <button class="calc-btn calc-btn-num" style="grid-column: span 2;" data-val="0">0</button>
                         <button class="calc-btn calc-btn-eq" style="grid-column: span 2;" data-action="equal">=</button>
                     </div>
-                    <div id="calc-tape-container" class="calc-tape-container">
+                    <div id="calc-tape-container" class="calc-tape-container" style="display: block;">
+                        <div id="calc-tape-highlight" class="calc-tape-highlight"></div>
                         <textarea id="calc-tape" class="calc-tape-textarea" placeholder="Start typing..."></textarea>
                     </div>
                 </div>
@@ -128,19 +129,20 @@ const Calculator = (() => {
         const closeBtn = popoutWindow.querySelector('.widget-popout-close');
         closeBtn.addEventListener('click', close);
 
-        const tapeToggle = popoutWindow.querySelector('.calc-tape-toggle');
-        const tapeContainer = popoutWindow.querySelector('#calc-tape-container');
         const tapeArea = popoutWindow.querySelector('#calc-tape');
+        const tapeHighlight = popoutWindow.querySelector('#calc-tape-highlight');
 
-        tapeToggle.addEventListener('click', () => {
-            const isActive = tapeContainer.style.display === 'block';
-            tapeContainer.style.display = isActive ? 'none' : 'block';
-            tapeToggle.classList.toggle('active', !isActive);
-            if (!isActive) tapeArea.focus();
+        tapeArea.addEventListener('input', (e) => {
+            handleTapeInput(e);
+            updateHighlighting();
         });
-
-        tapeArea.addEventListener('input', handleTapeInput);
         tapeArea.addEventListener('keydown', handleTapeKey);
+
+        // Sync scroll
+        tapeArea.addEventListener('scroll', () => {
+            tapeHighlight.scrollTop = tapeArea.scrollTop;
+            tapeHighlight.scrollLeft = tapeArea.scrollLeft;
+        });
 
         const header = popoutWindow.querySelector('.widget-popout-header');
         setupDraggable(popoutWindow, header);
@@ -157,6 +159,16 @@ const Calculator = (() => {
         const rect = popoutWindow.getBoundingClientRect();
         popoutWindow.style.left = (window.innerWidth - rect.width) / 2 + 'px';
         popoutWindow.style.top = '100px';
+
+        // Auto-focus the tape area so 'Enter' doesn't trigger the toggle button click
+        setTimeout(() => {
+            const area = document.getElementById('calc-tape');
+            if (area) {
+                area.focus();
+                // Ensure cursor is at the end
+                area.setSelectionRange(area.value.length, area.value.length);
+            }
+        }, 50);
 
         isOpen = true;
     }
@@ -193,9 +205,7 @@ const Calculator = (() => {
 
         // formatValue helper logic applied to numbers in the textarea
         const formattedValue = originalValue.replace(/[0-9,.]+/g, (match) => {
-            // Don't format if it's just a decimal point or ends with one (user still typing)
             if (match === '.' || match.endsWith('.')) return match;
-
             const clean = match.replace(/,/g, '');
             if (!isNaN(clean) && clean !== '') {
                 return formatValue(clean);
@@ -205,8 +215,6 @@ const Calculator = (() => {
 
         if (originalValue !== formattedValue) {
             tapeArea.value = formattedValue;
-
-            // Adjust cursor position by mapping raw character count (excluding commas)
             const rawBefore = originalValue.substring(0, cursorPosition).replace(/,/g, '');
             let newPos = 0;
             let rawCount = 0;
@@ -216,19 +224,81 @@ const Calculator = (() => {
                 }
                 newPos++;
             }
-            // If the character just typed caused a shift, newPos will account for it
             tapeArea.setSelectionRange(newPos, newPos);
         }
 
         const lines = formattedValue.split('\n');
-        const currentLine = lines[lines.length - 1];
+        const currentLine = lines[lines.length - 1].trim();
 
-        // Match expressions like 1,234 + 4,567
-        const result = evaluateExpression(currentLine);
-        if (result !== null) {
-            currentInput = result.toString();
-            updateScreen();
+        if (currentLine === '') {
+            currentInput = '0';
+        } else {
+            // Check if it ends with an operator
+            const endsWithOperator = /[+\-*/×÷−]$/.test(currentLine);
+
+            if (endsWithOperator) {
+                // Show subtotal/result
+                const result = evaluateExpression(currentLine);
+                if (result !== null) {
+                    currentInput = result.toString();
+                }
+            } else {
+                // Show current operand being typed
+                const match = currentLine.match(/[0-9,.]+$/);
+                if (match) {
+                    // Strip commas for internal storage
+                    currentInput = match[0].replace(/,/g, '');
+                } else {
+                    // Fallback to result if no number piece (e.g. just started line with operator)
+                    const result = evaluateExpression(currentLine);
+                    if (result !== null) currentInput = result.toString();
+                }
+            }
         }
+
+        updateScreen();
+
+        updateHighlighting();
+    }
+
+    /**
+     * Update the background highlighting layer
+     */
+    function updateHighlighting() {
+        const tapeArea = document.getElementById('calc-tape');
+        const tapeHighlight = document.getElementById('calc-tape-highlight');
+        if (!tapeArea || !tapeHighlight) return;
+
+        let text = tapeArea.value;
+
+        // Escape HTML
+        text = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+        // Highlight operators with specific colors (+ green, - red, * orange, / yellow)
+        // and bold results after an '=' sign. Use single-pass replacement to avoid breaking tags.
+        text = text.replace(/([+\-\*/×÷−])|(=)\s*([0-9,.]+)/g, (match, op, eq, result) => {
+            if (op) {
+                let cls = '';
+                if (op === '+') cls = 'op-plus';
+                else if (op === '-' || op === '−') cls = 'op-minus';
+                else if (op === '*' || op === '×') cls = 'op-mul';
+                else if (op === '/' || op === '÷') cls = 'op-div';
+                return `<span class="${cls}">${op}</span>`;
+            }
+            if (eq && result) {
+                return `${eq} <span class="calc-result">${result}</span>`;
+            }
+            return match;
+        });
+
+        // Preserve trailing newline for scroll sync
+        if (text.endsWith('\n')) text += ' ';
+
+        tapeHighlight.innerHTML = text;
+
+        // Keep scroll in sync - ensure offset matches perfectly
+        tapeHighlight.scrollTop = tapeArea.scrollTop;
+        tapeHighlight.scrollLeft = tapeArea.scrollLeft;
     }
 
     /**
@@ -238,26 +308,66 @@ const Calculator = (() => {
     function handleTapeKey(e) {
         const tapeArea = e.target;
 
-        if (e.key === 'Enter' || e.key === '=') {
+        if (e.key === 'Enter') {
             e.preventDefault();
 
             const lines = tapeArea.value.split('\n');
             const currentLine = lines[lines.length - 1];
-            const result = evaluateExpression(currentLine);
+
+            // Improved evaluation logic to handle carry-over
+            const hasEquals = currentLine.includes('=');
+            let result = null;
+            let alreadyHasResultValue = false;
+
+            if (hasEquals) {
+                const parts = currentLine.split('=');
+                const rightSide = parts[1].trim();
+                if (rightSide) {
+                    // Already has a result value, let's carry it over to next line
+                    const cleanRight = rightSide.replace(/,/g, '');
+                    if (!isNaN(cleanRight) && cleanRight !== '') {
+                        result = parseFloat(cleanRight);
+                        alreadyHasResultValue = true;
+                    }
+                } else {
+                    // Ends with '=', evaluate the left side
+                    result = evaluateExpression(parts[0]);
+                }
+            } else {
+                // No equals yet, evaluate as usual
+                result = evaluateExpression(currentLine);
+            }
 
             if (result !== null) {
-                // Append result to current line and start new line with result
-                // Use formatted result for the tape history
                 const formattedResult = formatValue(result);
-                tapeArea.value += ` = ${formattedResult}\n${formattedResult}`;
 
-                // Keep result in main display
+                if (!alreadyHasResultValue) {
+                    // Complete the current line with the result
+                    if (!hasEquals) {
+                        tapeArea.value += ` = ${formattedResult}`;
+                    } else {
+                        // Line ended with '=', just append the value
+                        tapeArea.value += ` ${formattedResult}`;
+                    }
+                }
+
+                // Add newline and CARRY the result to the next line
+                tapeArea.value += `\n${formattedResult}`;
+
                 currentInput = result.toString();
                 updateScreen();
-
-                // Scroll to bottom
-                tapeArea.scrollTop = tapeArea.scrollHeight;
+            } else {
+                // If no result found (just a number or empty), just move to next line
+                tapeArea.value += '\n';
             }
+
+            tapeArea.dispatchEvent(new Event('input'));
+
+            // Sync scroll after state update
+            setTimeout(() => {
+                tapeArea.scrollTop = tapeArea.scrollHeight;
+                updateHighlighting();
+            }, 0);
         }
     }
 
@@ -266,24 +376,32 @@ const Calculator = (() => {
      * Supports +, -, *, /
      */
     function evaluateExpression(expr) {
-        // Strip out commas first so we can parse numbers like 1,000.00
-        const cleanExpr = expr.replace(/,/g, '').replace(/[^0-9.+\-*/]/g, '');
+        if (!expr) return null;
+
+        // Split by = to handle cases where user types it manually
+        let cleanExpr = expr.split('=')[0].trim();
+
+        // Strip trailing operator for subtotal evaluation
+        cleanExpr = cleanExpr.replace(/[+\-*/×÷−]$/, '').trim();
+
+        // Strip commas and normalize operators
+        cleanExpr = cleanExpr.replace(/,/g, '')
+            .replace(/×/g, '*')
+            .replace(/÷/g, '/')
+            .replace(/−/g, '-'); // Support visual minus too
+
+        // Remove everything except numbers, operators, parens, and spaces
+        cleanExpr = cleanExpr.replace(/[^0-9.+\-*/() ]/g, '');
+
         if (!cleanExpr) return null;
 
         try {
-            // Check for trailing operator - if present, evaluate up to it
-            let targetExpr = cleanExpr;
-            if (/[+\-*/]$/.test(cleanExpr)) {
-                targetExpr = cleanExpr.slice(0, -1);
-            }
+            // Final safety check for characters
+            if (/[^0-9.+\-*/() ]/.test(cleanExpr)) return null;
 
-            if (!targetExpr) return null;
-
-            // Use Function for a slightly safer "eval" (still scoped but avoids leaking)
-            const res = new Function(`return ${targetExpr}`)();
+            const res = new Function(`return (${cleanExpr})`)();
 
             if (typeof res === 'number' && isFinite(res)) {
-                // Limit precision like in the main calculator
                 if (res.toString().includes('.') && res.toString().split('.')[1].length > 8) {
                     return parseFloat(res.toFixed(8));
                 }
@@ -305,19 +423,39 @@ const Calculator = (() => {
         const val = btn.dataset.val;
         const action = btn.dataset.action;
 
-        if (!action || action === 'num') {
-            appendNumber(val || btn.textContent);
-        } else if (action === 'operator') {
-            setOperator(val);
-        } else if (action === 'equal') {
-            calculate();
-        } else if (action === 'clear-all') {
+        const tapeArea = document.getElementById('calc-tape');
+
+        if (action === 'clear-all') {
             reset();
-        } else if (action === 'clear') {
-            clearEntry();
+            return;
         }
 
-        updateScreen();
+        if (tapeArea) {
+            if (action === 'equal') {
+                // Focus and trigger the same logic as 'Enter'
+                tapeArea.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+                return;
+            }
+
+            if (action === 'clear') {
+                // Clear the current line in the tape
+                const lines = tapeArea.value.split('\n');
+                lines[lines.length - 1] = '';
+                tapeArea.value = lines.join('\n');
+                tapeArea.dispatchEvent(new Event('input'));
+                return;
+            }
+
+            // For numbers and operators, just append to tape
+            let toAppend = val || btn.textContent;
+            if (action === 'operator') {
+                toAppend = ` ${toAppend} `;
+            }
+
+            tapeArea.value += toAppend;
+            tapeArea.dispatchEvent(new Event('input'));
+            tapeArea.scrollTop = tapeArea.scrollHeight;
+        }
     }
 
     /**
@@ -326,16 +464,34 @@ const Calculator = (() => {
     function handleKeyboard(e) {
         if (!isOpen) return;
 
-        if (e.key >= '0' && e.key <= '9') appendNumber(e.key);
-        if (e.key === '.') appendNumber('.');
-        if (e.key === '=' || e.key === 'Enter') calculate();
-        if (e.key === 'Backspace') clearEntry();
-        if (e.key === 'Escape') close();
-        if (e.key === '+' || e.key === '-' || e.key === '*' || e.key === '/') {
-            setOperator(e.key);
+        const tapeArea = document.getElementById('calc-tape');
+        if (!tapeArea) return;
+
+        // If the user is already typing in the tape, don't double-process
+        if (document.activeElement === tapeArea) return;
+
+        if (e.key >= '0' && e.key <= '9' || e.key === '.') {
+            e.preventDefault();
+            tapeArea.value += e.key;
+            tapeArea.dispatchEvent(new Event('input'));
+        } else if (['+', '-', '*', '/'].includes(e.key)) {
+            e.preventDefault();
+            tapeArea.value += ` ${getOpSymbol(e.key)} `;
+            tapeArea.dispatchEvent(new Event('input'));
+        } else if (e.key === '=' || e.key === 'Enter') {
+            e.preventDefault();
+            tapeArea.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+        } else if (e.key === 'Backspace') {
+            e.preventDefault();
+            // Delete last character from tape
+            tapeArea.value = tapeArea.value.slice(0, -1);
+            tapeArea.dispatchEvent(new Event('input'));
+        } else if (e.key === 'Escape') {
+            e.preventDefault();
+            close();
         }
 
-        updateScreen();
+        tapeArea.scrollTop = tapeArea.scrollHeight;
     }
 
     function appendNumber(num) {
@@ -393,6 +549,15 @@ const Calculator = (() => {
         previousInput = '';
         operator = null;
         shouldResetScreen = false;
+
+        const tapeArea = document.getElementById('calc-tape');
+        if (tapeArea) {
+            tapeArea.value = '';
+            // Trigger UI update for the highlighting layer
+            updateHighlighting();
+            tapeArea.dispatchEvent(new Event('input'));
+        }
+
         updateScreen();
     }
 

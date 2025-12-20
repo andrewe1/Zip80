@@ -83,7 +83,8 @@
  * - 2025-12-19: Increased exchange chart SVG height from 45px to 65px for more visible price movements
  * - 2025-12-19: Added crypto sparkline hover dot styles matching exchange rate chart
  * - 2025-12-19: Added widget popout floating window styles (draggable, resizable)
- * - 2025-12-19: Removed height limits on lists inside popout for expanded view
+ * - 2025-12-19: Added calculator tape styles with syntax highlighting and dynamic resizing
+ * - 2025-12-19: Fixed calculator cursor alignment by standardizing font-metrics to pixels
  * - 2025-12-19: Standardized widget card padding to fix header spacing alignment issues
  * ============================================================================
  */
@@ -133,6 +134,7 @@
 
     /* Typography */
     --font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    --font-mono: 'Consolas', 'Monaco', 'Courier New', monospace;
     --font-size-sm: 0.875rem;
     --font-size-base: 1rem;
     --font-size-lg: 1.25rem;
@@ -3105,8 +3107,12 @@ html.dark *::-webkit-scrollbar-thumb:hover {
 
 .widget-popout-content {
     padding: var(--space-md);
-    max-height: calc(80vh - 60px);
+    flex: 1;
+    /* Grow to fill the window */
     overflow-y: auto;
+    display: flex;
+    /* Allow children to use flex: 1 */
+    flex-direction: column;
 }
 
 /* 2025-12-19: Remove height limits on lists inside popout so resizing shows more content */
@@ -3137,11 +3143,13 @@ html.dark *::-webkit-scrollbar-thumb:hover {
    ============================================================================= */
 
 .calculator-container {
+    flex: 1;
     display: flex;
     flex-direction: column;
     gap: var(--space-md);
     padding: var(--space-xs);
     user-select: none;
+    min-height: 480px;
 }
 
 .calc-display {
@@ -3155,6 +3163,7 @@ html.dark *::-webkit-scrollbar-thumb:hover {
     flex-direction: column;
     justify-content: center;
     overflow: hidden;
+    flex-shrink: 0;
 }
 
 .calc-formula {
@@ -3174,6 +3183,7 @@ html.dark *::-webkit-scrollbar-thumb:hover {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: var(--space-sm);
+    flex-shrink: 0;
 }
 
 .calc-btn {
@@ -3223,9 +3233,216 @@ html.dark *::-webkit-scrollbar-thumb:hover {
     border-color: var(--color-primary);
 }
 
-@media (max-width: 480px) {
-    .calc-btn {
-        min-height: 50px;
-        font-size: 1rem;
-    }
+
+
+
+
+
+.widget-popout-content {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+
+
+
+/* =============================================================================
+
+
+   2025-12-19: CALCULATOR TAPE STYLES
+
+
+   ============================================================================= */
+
+
+
+
+.calc-header-btns {
+
+
+    display: flex;
+
+
+    gap: var(--space-xs);
+
+
+}
+
+
+
+
+.calc-tape-container {
+
+
+    margin-top: var(--space-sm);
+
+
+    border-top: 1px solid var(--color-border);
+
+
+    padding-top: var(--space-sm);
+
+
+    display: block;
+
+
+    position: relative;
+
+
+    flex: 1;
+
+
+    min-height: 120px;
+
+
+}
+
+
+
+
+.calc-tape-textarea,
+
+
+.calc-tape-highlight {
+
+
+    position: absolute;
+
+
+    top: var(--space-sm);
+
+
+    left: 0;
+
+
+    width: 100%;
+
+
+    height: calc(100% - var(--space-sm));
+
+
+    padding: 16px;
+    font-family: var(--font-mono);
+    font-size: 15px;
+    line-height: 1.5;
+    letter-spacing: 0;
+    font-variant-ligatures: none;
+
+
+    white-space: pre-wrap;
+
+
+    word-wrap: break-word;
+
+
+    border: 1px solid var(--color-border);
+
+
+    border-radius: var(--radius-md);
+
+
+    box-sizing: border-box;
+    margin: 0;
+    overflow-y: scroll;
+}
+
+
+
+
+.calc-tape-textarea {
+
+
+    background: transparent !important;
+
+
+    color: transparent !important;
+
+
+    caret-color: var(--color-text);
+
+
+    resize: none;
+
+
+    outline: none;
+
+
+    z-index: 2;
+
+
+    transition: border-color 0.2s ease;
+
+
+}
+
+
+
+
+.calc-tape-highlight {
+
+
+    background-color: var(--color-surface);
+
+
+    color: var(--color-text);
+
+
+    z-index: 1;
+
+
+    overflow-y: auto;
+
+
+    pointer-events: none;
+
+
+    white-space: pre-wrap;
+
+
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+
+
+}
+
+
+
+
+.calc-tape-textarea:focus {
+
+
+    border-color: var(--color-primary);
+
+
+}
+
+
+
+
+/* Syntax Highlighting Colors */
+
+
+.calc-tape-highlight .op-plus {
+    color: #4caf50;
+}
+
+
+.calc-tape-highlight .op-minus {
+    color: #f44336;
+}
+
+
+.calc-tape-highlight .op-mul {
+    color: #ff9800;
+}
+
+
+.calc-tape-highlight .op-div {
+    color: #ffeb3b;
+}
+
+
+.calc-tape-highlight .calc-result {
+    font-weight: 800;
+    color: var(--color-text);
 }
