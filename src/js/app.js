@@ -2047,8 +2047,27 @@
             elements.activityLogTitle.textContent = '📋 ' + I18n.t('activityLogTitle');
         }
 
+        // 2025-12-19: Combine local transactions with linked account cached transactions
+        let allTransactions = [...(data.transactions || [])];
+
+        // Include transactions from linked accounts with owner attribution
+        if (data.linkedAccounts && data.linkedAccounts.length > 0) {
+            data.linkedAccounts.forEach(linked => {
+                const linkedTransactions = (linked.cachedTransactions || [])
+                    .filter(t => t.accountId === linked.accountId)
+                    .map(t => ({
+                        ...t,
+                        // Override createdBy to show the owner
+                        createdBy: { email: linked.ownerEmail, name: linked.ownerEmail.split('@')[0] },
+                        _isLinked: true,
+                        _linkedAccountName: linked.accountName
+                    }));
+                allTransactions = allTransactions.concat(linkedTransactions);
+            });
+        }
+
         // Get last 10 transactions, sorted by date descending
-        const recentTransactions = [...(data.transactions || [])]
+        const recentTransactions = allTransactions
             .sort((a, b) => new Date(b.date) - new Date(a.date))
             .slice(0, 10);
 
@@ -3322,8 +3341,10 @@
         let currency = 'USD';
 
         if (currentLinkedAccount && currentAccountId && currentAccountId.startsWith('linked_')) {
-            // Use cached transactions from linked account
-            accountTransactions = currentLinkedAccount.cachedTransactions || [];
+            // Use cached transactions from linked account, filtered by accountId
+            const allCached = currentLinkedAccount.cachedTransactions || [];
+            accountTransactions = allCached.filter(t => t.accountId === currentLinkedAccount.accountId);
+            console.log('[History] Linked account transactions:', accountTransactions.length, 'of', allCached.length, 'cached');
             // Hide add transaction form for view-only linked accounts
             const transactionForm = document.querySelector('.transaction-form');
             if (transactionForm) {
@@ -3457,12 +3478,31 @@
         // Render Bank/Cash accounts
         if (elements.bankAccountsList) {
             elements.bankAccountsList.innerHTML = '';
-            if (bankAccounts.length === 0) {
+            if (bankAccounts.length === 0 && (!data.linkedAccounts || data.linkedAccounts.length === 0)) {
                 elements.bankAccountsList.innerHTML = '<div class="widget-empty">—</div>';
             } else {
                 bankAccounts.forEach(account => {
                     elements.bankAccountsList.appendChild(createBankItem(account));
                 });
+
+                // 2025-12-19: Add linked accounts to the widget
+                if (data.linkedAccounts && data.linkedAccounts.length > 0) {
+                    data.linkedAccounts.forEach(linked => {
+                        const linkedId = `linked_${linked.sourceVaultId}_${linked.accountId}`;
+                        const isActive = linkedId === currentAccountId;
+
+                        const item = document.createElement('div');
+                        item.className = `widget-account-item linked${isActive ? ' active' : ''}`;
+                        item.innerHTML = `
+                            <span class="widget-account-name">🔗 ${escapeHtml(linked.accountName)}</span>
+                            <span class="widget-account-balance positive">
+                                ${Accounts.formatCurrency(linked.cachedBalance || 0, 'USD')} <span class="widget-currency">🔗</span>
+                            </span>
+                        `;
+                        item.addEventListener('click', () => selectLinkedAccount(linked));
+                        elements.bankAccountsList.appendChild(item);
+                    });
+                }
             }
         }
 
