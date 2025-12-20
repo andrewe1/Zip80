@@ -3788,19 +3788,22 @@
         }
 
         // Helper: Create credit card item
+        // 2025-12-20: Match bank widget layout - balance next to name, available credit below
         function createCreditItem(account) {
             const balance = Accounts.calculateBalance(data.transactions, account.id);
             const availableCredit = Accounts.calculateAvailableCredit(account, data.transactions);
             const isActive = account.id === currentAccountId;
 
             const item = document.createElement('div');
-            item.className = `widget-account-item${isActive ? ' active' : ''}`;
+            item.className = `widget-account-item widget-cc-item${isActive ? ' active' : ''}`;
             item.innerHTML = `
-                <span class="widget-account-name">💳 ${escapeHtml(account.name)}</span>
-                <div class="widget-cc-details">
-                    <div class="widget-cc-balance">${Accounts.formatCurrency(balance, account.currency)} <span class="widget-currency">${account.currency}</span></div>
-                    <div class="widget-cc-available">${t('availableCredit')}: ${Accounts.formatCurrency(availableCredit, account.currency)}</div>
+                <div class="widget-cc-row">
+                    <span class="widget-account-name">💳 ${escapeHtml(account.name)}</span>
+                    <span class="widget-account-balance negative">
+                        ${Accounts.formatCurrency(balance, account.currency)} <span class="widget-currency">${account.currency}</span>
+                    </span>
                 </div>
+                <div class="widget-cc-available">${t('availableCredit')}: <span class="widget-cc-available-amt">${Accounts.formatCurrency(availableCredit, account.currency)}</span></div>
             `;
             item.addEventListener('click', () => selectAccount(account.id));
             return item;

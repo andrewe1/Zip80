@@ -1171,20 +1171,29 @@ html.dark .save-status-error {
     color: var(--color-danger);
 }
 
-/* Credit card specific - show balance and available credit */
-.widget-cc-details {
-    text-align: right;
-    font-size: var(--font-size-base);
+/* Credit card specific - 2025-12-20: Match bank widget layout */
+.widget-cc-item {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 2px;
 }
 
-.widget-cc-balance {
-    font-weight: 600;
-    color: var(--color-danger);
+.widget-cc-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--space-sm);
 }
 
 .widget-cc-available {
-    font-size: var(--font-size-sm);
+    font-size: 0.75rem;
     color: var(--color-text-muted);
+    text-align: right;
+    padding-left: 1.5rem;
+}
+
+.widget-cc-available-amt {
+    font-weight: 600;
 }
 
 /* 2025-12-16: Crypto widget specific styles */
