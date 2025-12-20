@@ -4533,13 +4533,15 @@
 
                 if (result) {
                     linked.accountName = result.account.name;
+                    // Fix: calculateBalance expects (transactions, accountId)
                     linked.cachedBalance = Accounts.calculateBalance(
-                        result.account,
-                        result.transactions.filter(t => t.accountId === linked.accountId)
+                        result.transactions,
+                        linked.accountId
                     );
                     linked.cachedTransactions = result.transactions;
                     linked.lastSync = result.syncedAt;
                     linked.syncError = false;
+                    console.log('[Sync] Linked account', linked.accountName, 'balance:', linked.cachedBalance, 'transactions:', linked.cachedTransactions.length);
                 } else {
                     linked.syncError = true;
                 }
