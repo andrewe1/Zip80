@@ -3627,41 +3627,65 @@ html.dark .btn-role.active {
 .share-accounts-grid {
     display: flex;
     flex-direction: column;
-    gap: var(--space-xs);
-    max-height: 250px;
+    gap: 0;
+    max-height: 280px;
     overflow-y: auto;
     border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
-    padding: var(--space-sm);
+    padding: 0;
 }
 
 .share-account-row {
     display: grid;
-    grid-template-columns: auto auto 1fr;
-    align-items: center;
-    gap: var(--space-md);
-    padding: var(--space-xs) var(--space-sm);
-    border-radius: var(--radius-sm);
+    grid-template-columns: 80px 80px 1fr;
+    align-items: baseline;
+    gap: var(--space-sm);
+    padding: var(--space-md) var(--space-md);
+    background: var(--color-surface);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.share-account-row:last-child {
+    border-bottom: none;
+}
+
+/* Zebra striping - alternating row colors */
+.share-account-row:nth-child(odd) {
     background: var(--color-surface);
 }
 
-.share-account-row:hover {
+.share-account-row:nth-child(even) {
     background: var(--color-bg);
 }
 
+.share-account-row:hover {
+    background: color-mix(in srgb, var(--color-primary) 10%, var(--color-surface));
+}
+
 .share-account-row label {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: var(--space-xs);
     cursor: pointer;
     font-size: var(--font-size-sm);
+    white-space: nowrap;
 }
 
 .share-account-row .account-name {
-    font-weight: 500;
+    font-weight: 700;
+    font-size: var(--font-size-sm);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    padding-left: var(--space-sm);
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+}
+
+.share-account-row .account-icon {
+    font-size: var(--font-size-base);
+    flex-shrink: 0;
 }
 
 /* Notification button styling */

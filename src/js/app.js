@@ -2092,7 +2092,14 @@
         if (accounts.length === 0) {
             elements.shareAccountsGrid.innerHTML = `<div class="share-empty">${t('noLinkedAccounts')}</div>`;
         } else {
-            elements.shareAccountsGrid.innerHTML = accounts.map(account => `
+            elements.shareAccountsGrid.innerHTML = accounts.map(account => {
+                // Get account icon based on type (same logic as renderAccountTabs)
+                // 2025-12-20: Added icons to share modal for better visual identification
+                const accountIcon = account.type === 'crypto' ? getCryptoIcon(account.currency) :
+                    account.type === 'credit' ? '💳' :
+                        account.type === 'cash' ? '💵' : '🏦';
+
+                return `
                 <div class="share-account-row" data-account-id="${account.id}">
                     <label>
                         <input type="checkbox" class="share-checkbox" data-account-id="${account.id}">
@@ -2102,9 +2109,10 @@
                         <input type="checkbox" class="can-edit-checkbox" data-account-id="${account.id}" disabled>
                         ${t('canEditCheckbox')}
                     </label>
-                    <span class="account-name">${escapeHtml(account.name)}</span>
+                    <span class="account-name"><span class="account-icon">${accountIcon}</span> ${escapeHtml(account.name)}</span>
                 </div>
-            `).join('');
+            `;
+            }).join('');
 
             // Enable "Can Edit" checkbox when "Share" is checked
             elements.shareAccountsGrid.querySelectorAll('.share-checkbox').forEach(checkbox => {
@@ -4922,7 +4930,13 @@
         if (accounts.length === 0) {
             elements.shareAccountsGrid.innerHTML = `<div class="share-empty">${I18n.t('noLinkedAccounts')}</div>`;
         } else {
-            elements.shareAccountsGrid.innerHTML = accounts.map(account => `
+            elements.shareAccountsGrid.innerHTML = accounts.map(account => {
+                // 2025-12-20: Get account icon based on type for better visual identification
+                const accountIcon = account.type === 'crypto' ? getCryptoIcon(account.currency) :
+                    account.type === 'credit' ? '💳' :
+                        account.type === 'cash' ? '💵' : '🏦';
+
+                return `
                 <div class="share-account-row" data-account-id="${account.id}">
                     <label>
                         <input type="checkbox" class="share-checkbox" data-account-id="${account.id}">
@@ -4932,9 +4946,10 @@
                         <input type="checkbox" class="can-edit-checkbox" data-account-id="${account.id}" disabled>
                         ${I18n.t('canEditCheckbox')}
                     </label>
-                    <span class="account-name">${escapeHtml(account.name)}</span>
+                    <span class="account-name"><span class="account-icon">${accountIcon}</span> ${escapeHtml(account.name)}</span>
                 </div>
-            `).join('');
+            `;
+            }).join('');
 
             // Enable "Can Edit" checkbox when "Share" is checked
             elements.shareAccountsGrid.querySelectorAll('.share-checkbox').forEach(checkbox => {
