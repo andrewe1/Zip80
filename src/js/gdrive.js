@@ -559,6 +559,25 @@ const GDrive = (() => {
         return info.name || 'Unknown';
     }
 
+    /**
+     * Check if a vault file exists and is accessible
+     * 2025-12-20: Added for overwrite verification
+     * @param {string} fileId - Drive file ID
+     * @returns {boolean} True if vault exists and is accessible
+     */
+    async function vaultExists(fileId) {
+        try {
+            const url = `${DRIVE_API}/files/${fileId}?fields=id,trashed`;
+            const response = await driveRequest(url);
+            if (!response.ok) return false;
+            const data = await response.json();
+            return data && !data.trashed;
+        } catch (err) {
+            console.warn('[GDrive] vaultExists check failed:', err);
+            return false;
+        }
+    }
+
     // 2025-12-17: Last vault tracking for reopen feature
 
     /**
@@ -914,6 +933,9 @@ const GDrive = (() => {
         addTransactionToLinkedAccount,
 
         // 2025-12-20: Deck sharing
-        findPendingDeckShares
+        findPendingDeckShares,
+
+        // 2025-12-20: Vault existence check
+        vaultExists
     };
 })();

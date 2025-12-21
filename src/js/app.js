@@ -2298,19 +2298,29 @@
             const existingCloudId = data?._migratedToCloud?.cloudFileId;
 
             if (existingCloudId) {
-                // Try to overwrite existing cloud vault
-                try {
-                    await GDrive.writeVault(existingCloudId, data);
-                    fileId = existingCloudId;
-                    console.log('[MoveToCloud] Overwrote existing cloud vault:', fileId);
-                } catch (writeErr) {
-                    // Cloud file may have been deleted - create a new one
-                    console.warn('[MoveToCloud] Could not overwrite existing vault, creating new:', writeErr);
+                // First check if the cloud vault still exists
+                const cloudVaultExists = await GDrive.vaultExists(existingCloudId);
+
+                if (cloudVaultExists) {
+                    // Overwrite existing cloud vault
+                    try {
+                        await GDrive.writeVault(existingCloudId, data);
+                        fileId = existingCloudId;
+                        console.log('[MoveToCloud] Overwrote existing cloud vault:', fileId);
+                    } catch (writeErr) {
+                        // Write failed unexpectedly - create new
+                        console.warn('[MoveToCloud] Write failed, creating new vault:', writeErr);
+                        fileId = await GDrive.createVault(vaultName, data);
+                        console.log('[MoveToCloud] Created new cloud vault (write error fallback):', fileId);
+                    }
+                } else {
+                    // Cloud vault was deleted - create a new one
+                    console.log('[MoveToCloud] Existing cloud vault not found, creating new');
                     fileId = await GDrive.createVault(vaultName, data);
-                    console.log('[MoveToCloud] Created new cloud vault (fallback):', fileId);
+                    console.log('[MoveToCloud] Created new cloud vault (replacement):', fileId);
                 }
             } else {
-                // Create new cloud vault
+                // First time migration - create new cloud vault
                 fileId = await GDrive.createVault(vaultName, data);
                 console.log('[MoveToCloud] Created new cloud vault:', fileId);
             }
