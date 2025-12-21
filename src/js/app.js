@@ -2140,33 +2140,36 @@
 
     /**
      * Handle share accounts - create share entries for selected accounts
+     * 2025-12-20: Updated to support comma-separated emails for sharing with multiple recipients
      */
     async function handleShareVault() {
-        const email = elements.inputShareEmail.value.trim().toLowerCase();
+        const emailInput = elements.inputShareEmail.value.trim().toLowerCase();
 
-        if (!email || !email.includes('@')) {
+        // Parse comma-separated emails
+        const emails = emailInput.split(',')
+            .map(e => e.trim())
+            .filter(e => e && e.includes('@'));
+
+        if (emails.length === 0) {
             showToast(I18n.t('toastShareError'), false);
             return;
         }
 
-        // Get selected accounts
-        const selectedShares = [];
+        // Get selected accounts with their permissions
+        const selectedAccounts = [];
         elements.shareAccountsGrid.querySelectorAll('.share-account-row').forEach(row => {
             const shareCheckbox = row.querySelector('.share-checkbox');
             const canEditCheckbox = row.querySelector('.can-edit-checkbox');
 
             if (shareCheckbox && shareCheckbox.checked) {
-                selectedShares.push({
-                    id: 'share_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+                selectedAccounts.push({
                     accountId: shareCheckbox.dataset.accountId,
-                    sharedWith: email,
-                    permission: canEditCheckbox && canEditCheckbox.checked ? 'editor' : 'viewer',
-                    createdAt: new Date().toISOString()
+                    permission: canEditCheckbox && canEditCheckbox.checked ? 'editor' : 'viewer'
                 });
             }
         });
 
-        if (selectedShares.length === 0) {
+        if (selectedAccounts.length === 0) {
             showToast(I18n.t('toastShareError'), false);
             return;
         }
@@ -2176,24 +2179,35 @@
             data.shares = [];
         }
 
-        // Add new shares (avoid duplicates)
-        for (const newShare of selectedShares) {
-            // Remove existing share for same account+email
-            data.shares = data.shares.filter(s =>
-                !(s.accountId === newShare.accountId && s.sharedWith === email)
-            );
-            data.shares.push(newShare);
+        // Create share entries for each email + account combination
+        for (const email of emails) {
+            for (const account of selectedAccounts) {
+                // Remove existing share for same account+email
+                data.shares = data.shares.filter(s =>
+                    !(s.accountId === account.accountId && s.sharedWith === email)
+                );
+                // Add new share entry
+                data.shares.push({
+                    id: 'share_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+                    accountId: account.accountId,
+                    sharedWith: email,
+                    permission: account.permission,
+                    createdAt: new Date().toISOString()
+                });
+            }
         }
 
         // Save vault
         await handleSave();
 
-        // Share the vault file with the recipient via Google Drive
+        // Share the vault file with each recipient via Google Drive
         if (storageBackend === 'gdrive' && gdriveFileId) {
-            try {
-                await GDrive.shareVault(gdriveFileId, email, 'reader');
-            } catch (err) {
-                console.warn('Could not share vault via Drive:', err);
+            for (const email of emails) {
+                try {
+                    await GDrive.shareVault(gdriveFileId, email, 'reader');
+                } catch (err) {
+                    console.warn('Could not share vault via Drive with', email, ':', err);
+                }
             }
         }
 

@@ -1121,7 +1121,10 @@ CHANGE LOG:
 
             <div class="form-group">
                 <label id="label-share-email" for="input-share-email" data-i18n="shareEmailLabel">Email Address</label>
-                <input type="email" id="input-share-email" class="input" placeholder="e.g. person@gmail.com">
+                <input type="text" id="input-share-email" class="input"
+                    placeholder="e.g. person@gmail.com, another@gmail.com">
+                <small id="share-email-hint" class="form-hint" data-i18n="shareEmailHint">Share to multiple emails by
+                    separating with a comma</small>
             </div>
 
             <!-- Account grid with checkboxes -->
@@ -1131,6 +1134,9 @@ CHANGE LOG:
                     <!-- Populated by JS with account rows -->
                     <!-- Each row: checkbox Share | checkbox Can Edit | Account Name -->
                 </div>
+                <small id="share-recipient-notice" class="form-hint"><strong>Note:</strong> <span
+                        data-i18n="shareRecipientNotice">Recipients must have a Zip80 cloud vault to receive shared
+                        accounts.</span></small>
             </div>
 
             <div class="modal-actions">

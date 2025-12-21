@@ -409,6 +409,7 @@ const I18n = (() => {
             shareVaultDesc: 'Select which accounts to share and set permissions.',
             shareEmailLabel: 'Email Address',
             shareEmailPlaceholder: 'e.g. person@gmail.com',
+            shareEmailHint: 'Share to multiple emails by separating with a comma',
             shareSelectAccounts: 'Select Accounts',
             shareCheckbox: 'Share',
             canEditCheckbox: 'Can Edit',
@@ -417,6 +418,7 @@ const I18n = (() => {
             shareVaultBtn: 'Share',
             toastAccountsShared: '🔗 Accounts shared successfully!',
             toastShareError: 'Could not share. Please check the email address.',
+            shareRecipientNotice: 'Recipients must have a Zip80 cloud vault to receive shared accounts.',
 
             // Accept Shared Accounts (2025-12-19)
             pendingShares: 'Shared',
@@ -743,6 +745,7 @@ const I18n = (() => {
             shareVaultDesc: 'Selecciona qué cuentas compartir y establece permisos.',
             shareEmailLabel: 'Correo Electrónico',
             shareEmailPlaceholder: 'ej. persona@gmail.com',
+            shareEmailHint: 'Comparte a múltiples correos separándolos con una coma',
             shareSelectAccounts: 'Seleccionar Cuentas',
             shareCheckbox: 'Compartir',
             canEditCheckbox: 'Puede Editar',
@@ -751,6 +754,7 @@ const I18n = (() => {
             shareVaultBtn: 'Compartir',
             toastAccountsShared: '🔗 ¡Cuentas compartidas exitosamente!',
             toastShareError: 'No se pudo compartir. Verifica el correo electrónico.',
+            shareRecipientNotice: 'Los destinatarios deben tener una bóveda Zip80 en la nube para recibir cuentas compartidas.',
 
             // Accept Shared Accounts (2025-12-19)
             pendingShares: 'Compartidas',
