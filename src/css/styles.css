@@ -3212,9 +3212,13 @@ html.dark *::-webkit-scrollbar-thumb:hover {
 }
 
 /* 2025-12-19: Remove height limits on lists inside popout so resizing shows more content */
+/* 2025-12-22: Added history-list for transaction history popout scrolling */
 .widget-popout-content .activity-log-list,
-.widget-popout-content .recurring-list {
+.widget-popout-content .recurring-list,
+.widget-popout-content .history-list {
     max-height: none;
+    flex: 1;
+    overflow-y: auto;
 }
 
 /* Maximize button in widget header */
