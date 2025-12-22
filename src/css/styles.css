@@ -2911,6 +2911,20 @@ html.dark .activity-user.owner {
     padding: var(--space-md);
 }
 
+/* --- HISTORY LIST WIDGET (2025-12-22) --- */
+/* Transaction history list with scrolling support */
+
+.history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    max-height: 400px;
+    overflow-y: auto;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
 @media (max-width: 480px) {
     .workspace {
         padding: var(--space-md);
