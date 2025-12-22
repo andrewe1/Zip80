@@ -3234,6 +3234,8 @@ html.dark *::-webkit-scrollbar-thumb:hover {
  */
 .widget-popout-content {
     padding: var(--space-md);
+    padding-right: var(--space-xs);
+    /* Less padding on right so content is closer to scrollbar */
     overflow-y: auto;
     overflow-x: hidden;
     max-height: calc(100vh - 150px);
