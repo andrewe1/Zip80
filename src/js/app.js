@@ -91,6 +91,9 @@
  * - 2025-12-19: Added inactivity timer (10 min timeout, 10 sec countdown warning, activity tracking)
  * - 2025-12-19: Added Share Vault modal for cloud vaults (openShareVaultModal, handleShareVault)
  * - 2025-12-19: Added Browse Drive via Google Picker API (handleBrowseDrive, btnBrowseDrive)
+ * - 2025-12-22: Converted attachment modal to floating draggable/resizable window
+ * - 2025-12-22: Added image pan functionality for zoomed attachments (click and drag to pan)
+ * - 2025-12-22: Moved zoom button to header bar to prevent scrolling with image content
  */
 
 (() => {
@@ -802,9 +805,7 @@
         if (elements.btnCloseAttachment) {
             elements.btnCloseAttachment.addEventListener('click', closeAttachmentModal);
         }
-        if (elements.attachmentModal) {
-            elements.attachmentModal.querySelector('.modal-backdrop')?.addEventListener('click', closeAttachmentModal);
-        }
+        // 2025-12-22: Removed backdrop click handler - floating window has no backdrop
         if (elements.btnDownloadAttachment) {
             elements.btnDownloadAttachment.addEventListener('click', handleDownloadAttachment);
         }
@@ -815,6 +816,103 @@
         if (elements.btnZoomAttachment) {
             elements.btnZoomAttachment.addEventListener('click', handleZoomToggle);
         }
+
+        // 2025-12-22: Setup drag functionality for floating attachment viewer
+        setupAttachmentDrag();
+    }
+
+    // 2025-12-22: Drag state for attachment viewer
+    let attachmentDragTarget = null;
+    let attachmentDragOffset = { x: 0, y: 0 };
+
+    // 2025-12-22: Pan state for zoomed image
+    let imagePanActive = false;
+    let imagePanStart = { x: 0, y: 0 };
+    let imageScrollStart = { x: 0, y: 0 };
+
+    /**
+     * Setup drag functionality for the attachment viewer floating window
+     */
+    function setupAttachmentDrag() {
+        const modalContent = document.querySelector('.attachment-modal-content');
+        const modalTitle = modalContent?.querySelector('.modal-title');
+
+        if (!modalContent || !modalTitle) return;
+
+        modalTitle.addEventListener('mousedown', (e) => {
+            if (e.target.closest('.modal-close-btn')) return; // Don't drag when clicking close
+            attachmentDragTarget = modalContent;
+            const rect = modalContent.getBoundingClientRect();
+            attachmentDragOffset.x = e.clientX - rect.left;
+            attachmentDragOffset.y = e.clientY - rect.top;
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            // Window drag
+            if (attachmentDragTarget) {
+                e.preventDefault();
+                attachmentDragTarget.style.left = (e.clientX - attachmentDragOffset.x) + 'px';
+                attachmentDragTarget.style.top = (e.clientY - attachmentDragOffset.y) + 'px';
+                return;
+            }
+
+            // Image pan when zoomed
+            if (imagePanActive && elements.attachmentViewer) {
+                e.preventDefault();
+                const dx = e.clientX - imagePanStart.x;
+                const dy = e.clientY - imagePanStart.y;
+                elements.attachmentViewer.scrollLeft = imageScrollStart.x - dx;
+                elements.attachmentViewer.scrollTop = imageScrollStart.y - dy;
+            }
+        });
+
+        document.addEventListener('mouseup', () => {
+            attachmentDragTarget = null;
+            imagePanActive = false;
+        });
+
+        // Escape key to close
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && elements.attachmentModal?.style.display !== 'none') {
+                closeAttachmentModal();
+            }
+        });
+
+        // 2025-12-22: Setup image pan for zoomed images
+        setupImagePan();
+    }
+
+    /**
+     * Setup pan functionality for zoomed images in the attachment viewer
+     */
+    function setupImagePan() {
+        const viewer = document.getElementById('attachment-viewer');
+        if (!viewer) return;
+
+        viewer.addEventListener('mousedown', (e) => {
+            // Only pan when zoomed and clicking on the image or content area
+            if (!viewer.classList.contains('zoomed')) return;
+            if (e.target.closest('.btn-zoom-floating')) return; // Don't pan when clicking zoom button
+
+            imagePanActive = true;
+            imagePanStart.x = e.clientX;
+            imagePanStart.y = e.clientY;
+            imageScrollStart.x = viewer.scrollLeft;
+            imageScrollStart.y = viewer.scrollTop;
+            viewer.style.cursor = 'grabbing';
+            e.preventDefault();
+        });
+
+        viewer.addEventListener('mouseup', () => {
+            imagePanActive = false;
+            if (viewer.classList.contains('zoomed')) {
+                viewer.style.cursor = 'grab';
+            }
+        });
+
+        viewer.addEventListener('mouseleave', () => {
+            imagePanActive = false;
+        });
     }
 
     /**
@@ -946,7 +1044,7 @@
             elements.btnZoomAttachment.innerHTML = `🔍 <span>${I18n.t('zoomIn')}</span>`;
             elements.btnZoomAttachment.style.display = 'none'; // Hide by default
         }
-        elements.attachmentModal.style.display = 'flex';
+        elements.attachmentModal.style.display = 'block'; // 2025-12-22: Changed to block for floating window
         try {
             const category = Attachments.getCategory(attachment.mimeType);
             if (category === 'image' && attachment.driveFileId) {
@@ -972,6 +1070,18 @@
         if (elements.attachmentContent) elements.attachmentContent.innerHTML = '';
         currentPreviewAttachment = null;
         currentPreviewTransactionId = null;
+
+        // 2025-12-22: Reset floating window position for next open (calc-based centering)
+        const modalContent = document.querySelector('.attachment-modal-content');
+        if (modalContent) {
+            modalContent.style.left = '';
+            modalContent.style.top = '';
+        }
+        // Reset zoom state
+        if (elements.attachmentViewer) {
+            elements.attachmentViewer.classList.remove('zoomed');
+            elements.attachmentViewer.style.cursor = '';
+        }
     }
 
     async function handleDownloadAttachment() {

@@ -58,6 +58,7 @@
  * - 2025-12-22: Added setCollapsed() for programmatic collapse/expand without saving preferences
  * - 2025-12-22: Added onBeforeExpand() callback to control widget expansion based on app state
  * - 2025-12-22: Popout windows now respect collapsed state and shrink to header when collapsed
+ * - 2025-12-22: Added attachment badge click delegation for popped-out history widget
  */
 
 const Widgets = (() => {
@@ -550,6 +551,19 @@ const Widgets = (() => {
                         // Popout refresh is handled by the overall refresh loop if necessary, 
                         // but here we manually refresh to be snappy
                         setTimeout(() => refreshPopoutContent(widgetId), 500);
+                    }
+                }
+            }
+
+            // 2025-12-22: Attachment badge clicks (for history widget popout)
+            const attachBadge = e.target.closest('.attachment-badge');
+            if (attachBadge) {
+                const transactionId = attachBadge.dataset.transactionId;
+                const origWidget = document.querySelector(`.widget-card[data-widget-id="${widgetId}"]`);
+                if (origWidget && transactionId) {
+                    const origBadge = origWidget.querySelector(`.attachment-badge[data-transaction-id="${transactionId}"]`);
+                    if (origBadge) {
+                        origBadge.click(); // Trigger original attachment preview
                     }
                 }
             }

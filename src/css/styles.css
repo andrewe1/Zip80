@@ -87,6 +87,9 @@
  * - 2025-12-19: Fixed calculator cursor alignment by standardizing font-metrics to pixels
  * - 2025-12-19: Standardized widget card padding to fix header spacing alignment issues
  * - 2025-12-19: Added Settings modal styles (settings-section, settings-item) and inactivity countdown
+ * - 2025-12-22: Converted attachment modal to floating draggable/resizable window (A4 aspect ratio)
+ * - 2025-12-22: Added image pan support with custom scrollbar styling to prevent white corner glitch
+ * - 2025-12-22: Added zoom button header style (.btn-zoom-header) with proper spacing from close button
  * ============================================================================
  */
 
@@ -4233,34 +4236,94 @@ html.dark .btn-role.active {
     font-size: 0.75rem;
 }
 
-/* --- Attachment Preview Modal --- */
-.attachment-modal-content {
-    max-width: 90vw;
-    max-height: 90vh;
-    display: flex;
-    flex-direction: column;
+/* --- Attachment Preview Floating Window (2025-12-22) --- */
+/* Converted from modal to floating draggable/resizable window */
+
+/* Container - no backdrop, acts as positioning context only */
+#attachment-modal {
+    /* No backdrop - just a container for the floating window */
+    display: none;
+    /* JS controls visibility */
 }
 
-.modal-close-btn {
+#attachment-modal .modal-backdrop {
+    display: none;
+    /* Hide the backdrop completely */
+}
+
+/* The floating window itself */
+.attachment-modal-content {
+    position: fixed;
+    z-index: 10010;
+    /* Higher than widget popouts */
+    min-width: 400px;
+    min-height: 350px;
+    /* A4 aspect ratio: ~1:1.414 (width:height) - 550 x 778 */
+    width: 550px;
+    height: 780px;
+    max-width: 95vw;
+    max-height: 90vh;
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.05);
+    overflow: hidden;
+    resize: both;
+    display: flex;
+    flex-direction: column;
+    transition: box-shadow 0.2s ease;
+    /* Centered position using calc() - no transform for traditional resize behavior */
+    left: calc(50% - 275px);
+    top: calc(50% - 390px);
+    /* Remove any inherited padding from modal-content class */
+    padding: 0;
+}
+
+.attachment-modal-content:active,
+.attachment-modal-content:focus-within {
+    box-shadow: 0 20px 80px rgba(0, 0, 0, 0.5), 0 0 0 1px var(--color-primary-muted);
+}
+
+/* Draggable header for attachment window */
+.attachment-modal-content .modal-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-sm) var(--space-md);
+    background-color: var(--color-background);
+    border-bottom: 1px solid var(--color-border);
+    cursor: grab;
+    user-select: none;
+    margin: 0;
+}
+
+.attachment-modal-content .modal-title:active {
+    cursor: grabbing;
+}
+
+/* Close button positioned in header area */
+.attachment-modal-content .modal-close-btn {
     position: absolute;
-    top: var(--space-md);
+    top: var(--space-sm);
     right: var(--space-md);
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    background-color: var(--color-bg);
+    width: 28px;
+    height: 28px;
+    border-radius: var(--radius-sm);
+    background-color: transparent;
     border: none;
-    font-size: var(--font-size-lg);
+    font-size: 1.1rem;
+    color: var(--color-text-muted);
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: background-color 0.15s ease;
+    transition: all 0.15s ease;
     z-index: 1;
 }
 
-.modal-close-btn:hover {
-    background-color: var(--color-border);
+.attachment-modal-content .modal-close-btn:hover {
+    background-color: var(--color-danger);
+    color: white;
 }
 
 .attachment-viewer {
@@ -4295,34 +4358,62 @@ html.dark .btn-role.active {
     display: block;
 }
 
-/* Zoomed state: full size with scroll, centered */
+/* Zoomed state: full size with scroll, pannable */
+.attachment-viewer.zoomed {
+    cursor: grab;
+    overflow: auto;
+}
+
+/* Custom scrollbars for zoomed viewer to prevent white box glitch */
+.attachment-viewer.zoomed::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+.attachment-viewer.zoomed::-webkit-scrollbar-track {
+    background: var(--color-bg);
+}
+
+.attachment-viewer.zoomed::-webkit-scrollbar-thumb {
+    background: var(--color-border);
+    border-radius: 5px;
+}
+
+.attachment-viewer.zoomed::-webkit-scrollbar-corner {
+    background: var(--color-bg);
+}
+
+.attachment-viewer.zoomed .attachment-content {
+    /* Allow content to be larger than container */
+    display: block;
+}
+
 .attachment-viewer.zoomed .attachment-content img {
     max-width: none;
     max-height: none;
-    /* Image stays centered via flexbox parent */
+    cursor: grab;
 }
 
-/* Floating zoom button in top-right of viewer */
-.btn-zoom-floating {
-    position: absolute;
-    top: var(--space-sm);
-    right: var(--space-sm);
-    z-index: 10;
-    padding: 8px 12px;
+/* Zoom button in header - next to Attachments title */
+.btn-zoom-header {
+    margin-left: auto;
+    margin-right: 40px;
+    /* Space for close button */
+    padding: 6px 12px;
     font-size: var(--font-size-sm);
-    background-color: rgba(0, 0, 0, 0.6);
+    background-color: var(--color-primary);
     color: white;
     border: none;
     border-radius: var(--radius-sm);
     cursor: pointer;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: 4px;
     transition: background-color 0.15s ease;
 }
 
-.btn-zoom-floating:hover {
-    background-color: rgba(0, 0, 0, 0.8);
+.btn-zoom-header:hover {
+    background-color: var(--color-primary-dark);
 }
 
 .attachment-viewer iframe {
