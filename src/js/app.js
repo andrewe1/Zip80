@@ -4000,6 +4000,11 @@
         Widgets.setupPopout();  // 2025-12-19: Add popout/maximize buttons
         Widgets.showAllPopouts();  // 2025-12-19: Restore hidden popouts from previous session
 
+        // 2025-12-22: Prevent balance widget from expanding when no account is selected
+        Widgets.onBeforeExpand('balance', () => {
+            return currentAccountId !== null;
+        });
+
         // 2025-12-17: Show/hide change password option based on encryption status
         updateChangePasswordVisibility();
 
@@ -4117,8 +4122,8 @@
 
         // 2025-12-19: Check if viewing a linked account
         if (currentLinkedAccount && currentAccountId && currentAccountId.startsWith('linked_')) {
-            // Show linked account balance
-            if (balanceCard) balanceCard.style.display = 'block';
+            // Show linked account balance - expand widget
+            Widgets.setCollapsed('balance', false);
 
             const t = I18n.t;
             elements.balanceLabel.textContent = t('balance');
@@ -4142,14 +4147,14 @@
 
         const currentAccount = data.accounts.find(a => a.id === currentAccountId);
 
-        // 2025-12-15: Hide entire balance card when no account is selected
+        // 2025-12-22: Collapse balance widget when no account is selected
         if (!currentAccount) {
-            if (balanceCard) balanceCard.style.display = 'none';
+            Widgets.setCollapsed('balance', true);
             return;
         }
 
-        // Show balance card when account is selected
-        if (balanceCard) balanceCard.style.display = 'block';
+        // 2025-12-22: Expand balance widget when account is selected
+        Widgets.setCollapsed('balance', false);
 
         const balance = Accounts.calculateBalance(data.transactions, currentAccountId);
         const t = I18n.t;
@@ -4224,6 +4229,13 @@
         const list = elements.historyList;
         list.innerHTML = '';
 
+        // 2025-12-22: Show different message when no account is selected
+        if (!currentAccountId) {
+            elements.emptyState.textContent = I18n.t('selectAccountToSeeHistory');
+            elements.emptyState.style.display = 'block';
+            return;
+        }
+
         // 2025-12-19: Check if viewing a linked account - use cached transactions
         let accountTransactions;
         let currency = 'USD';
@@ -4254,6 +4266,8 @@
         }
 
         if (accountTransactions.length === 0) {
+            // Reset to default "no transactions" message
+            elements.emptyState.textContent = I18n.t('emptyState');
             elements.emptyState.style.display = 'block';
             return;
         }

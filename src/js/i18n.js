@@ -162,6 +162,7 @@ const I18n = (() => {
             historyTitle: 'History',
             btnExport: '📥 Export JSON',
             emptyState: 'No transactions yet. Add one above!',
+            selectAccountToSeeHistory: 'Select an account to see the history',
 
             // Toast messages
             toastSaved: '✅ Saved!',
@@ -512,6 +513,7 @@ const I18n = (() => {
             historyTitle: 'Historial',
             btnExport: '📥 Exportar JSON',
             emptyState: '¡No hay transacciones aún. Agrega una arriba!',
+            selectAccountToSeeHistory: 'Selecciona una cuenta para ver el historial',
 
             // Toast messages
             toastSaved: '✅ ¡Guardado!',

@@ -55,6 +55,9 @@
  * - 2025-12-19: Added event delegation for interactive elements in popout (buttons, dropdowns, inputs)
  * - 2025-12-19: Popout syncs with original widget and preserves select/input values on refresh
  * - 2025-12-22: Auto-hide docked widget when popped out, auto-show when floating window closes
+ * - 2025-12-22: Added setCollapsed() for programmatic collapse/expand without saving preferences
+ * - 2025-12-22: Added onBeforeExpand() callback to control widget expansion based on app state
+ * - 2025-12-22: Popout windows now respect collapsed state and shrink to header when collapsed
  */
 
 const Widgets = (() => {
@@ -169,6 +172,19 @@ const Widgets = (() => {
         });
     }
 
+    // 2025-12-22: Callbacks for widgets that need to control expansion behavior
+    const beforeExpandCallbacks = {};
+
+    /**
+     * Register a callback to be called before a widget expands
+     * Return false from the callback to prevent expansion
+     * @param {string} widgetId 
+     * @param {Function} callback - Returns boolean, false prevents expansion
+     */
+    function onBeforeExpand(widgetId, callback) {
+        beforeExpandCallbacks[widgetId] = callback;
+    }
+
     /**
      * Toggle collapse state for a widget
      * @param {string} widgetId - The widget's data-widget-id value
@@ -176,6 +192,17 @@ const Widgets = (() => {
     function toggleCollapse(widgetId) {
         const widget = document.querySelector(`[data-widget-id="${widgetId}"]`);
         if (!widget) return;
+
+        const isCurrentlyCollapsed = widget.classList.contains('collapsed');
+
+        // 2025-12-22: If widget is collapsed and trying to expand, check beforeExpand callback
+        if (isCurrentlyCollapsed && beforeExpandCallbacks[widgetId]) {
+            const canExpand = beforeExpandCallbacks[widgetId]();
+            if (canExpand === false) {
+                // Prevent expansion - widget stays collapsed
+                return;
+            }
+        }
 
         const isCollapsed = widget.classList.toggle('collapsed');
 
@@ -185,6 +212,48 @@ const Widgets = (() => {
         }
         preferences[widgetId].collapsed = isCollapsed;
         savePreferences();
+    }
+
+    /**
+     * 2025-12-22: Set collapsed state for a widget (without saving to preferences)
+     * Used for automatic collapse/expand based on app state (e.g., no account selected)
+     * @param {string} widgetId - The widget's data-widget-id value
+     * @param {boolean} collapsed - Whether the widget should be collapsed
+     */
+    function setCollapsed(widgetId, collapsed) {
+        const widget = document.querySelector(`[data-widget-id="${widgetId}"]`);
+        if (!widget) return;
+
+        if (collapsed) {
+            widget.classList.add('collapsed');
+        } else {
+            widget.classList.remove('collapsed');
+        }
+
+        // Also update any popout window for this widget
+        const popoutWin = document.querySelector(`#popout-${widgetId}`);
+        if (popoutWin) {
+            const content = popoutWin.querySelector('.widget-popout-content');
+            if (collapsed) {
+                // Collapse popout: hide content and shrink window
+                if (content) content.style.display = 'none';
+                popoutWin.classList.add('collapsed');
+                // Store original height and shrink
+                if (!popoutWin.dataset.originalHeight) {
+                    popoutWin.dataset.originalHeight = popoutWin.style.height || getComputedStyle(popoutWin).height;
+                }
+                popoutWin.style.height = 'auto';
+                popoutWin.style.minHeight = '50px';
+            } else {
+                // Expand popout: show content and restore height
+                if (content) content.style.display = '';
+                popoutWin.classList.remove('collapsed');
+                if (popoutWin.dataset.originalHeight) {
+                    popoutWin.style.height = popoutWin.dataset.originalHeight;
+                    popoutWin.style.minHeight = '';
+                }
+            }
+        }
     }
 
     /**
@@ -574,6 +643,15 @@ const Widgets = (() => {
 
         // 2025-12-22: Auto-hide the docked widget when popped out
         widget.style.display = 'none';
+
+        // 2025-12-22: If the docked widget is collapsed, collapse the popout too
+        if (widget.classList.contains('collapsed')) {
+            const popoutContent = win.querySelector('.widget-popout-content');
+            if (popoutContent) popoutContent.style.display = 'none';
+            win.classList.add('collapsed');
+            win.style.height = 'auto';
+            win.style.minHeight = '50px';
+        }
     }
 
     /**
@@ -668,6 +746,8 @@ const Widgets = (() => {
     return {
         init,
         toggleCollapse,
+        setCollapsed,  // 2025-12-22: For auto-collapse/expand based on app state
+        onBeforeExpand,  // 2025-12-22: Register callback to control expansion
         isCollapsed,
         setEnabled,
         getEnabled,
