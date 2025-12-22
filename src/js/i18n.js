@@ -459,7 +459,19 @@ const I18n = (() => {
             moveToCloudOverwriteDesc: 'This vault was previously uploaded to the cloud. Moving it again will overwrite the existing cloud vault with any local changes.',
             localVaultMigratedNotice: '⚠️ This vault was previously moved to the cloud on ${date}. Changes made here will stay local only.',
             dismissNotice: 'Dismiss',
-            dismissNoticeForever: "Don't show again"
+            dismissNoticeForever: "Don't show again",
+
+            // Attachments (2025-12-22)
+            attachFile: 'Attach File',
+            attachments: 'Attachments',
+            attachmentLimitReached: 'Maximum 5 attachments per transaction',
+            attachmentTooLarge: 'File too large (max 15 MB)',
+            attachmentInvalidType: 'File type not supported',
+            attachmentUploading: 'Uploading...',
+            attachmentUploadError: 'Failed to upload attachment',
+            attachmentDeleteConfirm: 'Delete this attachment?',
+            download: 'Download',
+            deleteAttachment: 'Delete'
         },
 
         es: {
@@ -795,7 +807,19 @@ const I18n = (() => {
             moveToCloudOverwriteDesc: 'Esta bóveda fue subida previamente a la nube. Moverla de nuevo sobrescribirá la bóveda en la nube existente con los cambios locales.',
             localVaultMigratedNotice: '⚠️ Esta bóveda fue movida a la nube el ${date}. Los cambios hechos aquí permanecerán solo en local.',
             dismissNotice: 'Descartar',
-            dismissNoticeForever: 'No mostrar de nuevo'
+            dismissNoticeForever: 'No mostrar de nuevo',
+
+            // Attachments (2025-12-22)
+            attachFile: 'Adjuntar Archivo',
+            attachments: 'Adjuntos',
+            attachmentLimitReached: 'Máximo 5 adjuntos por transacción',
+            attachmentTooLarge: 'Archivo muy grande (máx 15 MB)',
+            attachmentInvalidType: 'Tipo de archivo no soportado',
+            attachmentUploading: 'Subiendo...',
+            attachmentUploadError: 'Error al subir adjunto',
+            attachmentDeleteConfirm: '¿Eliminar este adjunto?',
+            download: 'Descargar',
+            deleteAttachment: 'Eliminar'
         }
     };
 

@@ -896,7 +896,292 @@ const GDrive = (() => {
         }
     }
 
+    // 2025-12-22: Attachment Management Functions
+
+    /**
+     * Get or create the attachments folder for a vault
+     * Creates a folder named "{vaultName}_attachments" in the same location
+     * @param {string} vaultFileId - Drive file ID of the vault
+     * @returns {string} Folder ID of attachments folder
+     */
+    async function getOrCreateAttachmentsFolder(vaultFileId) {
+        // Get vault info to determine name and parent folder
+        const url = `${DRIVE_API}/files/${vaultFileId}?fields=name,parents`;
+        const response = await driveRequest(url);
+
+        if (!response.ok) {
+            throw new Error('Failed to get vault info for attachments folder');
+        }
+
+        const vaultInfo = await response.json();
+        const vaultName = vaultInfo.name.replace(/\.json$/i, '');
+        const folderName = `${vaultName}_attachments`;
+        const parentId = vaultInfo.parents?.[0] || 'root';
+
+        // Check if folder already exists
+        const searchQuery = `name='${folderName}' and mimeType='application/vnd.google-apps.folder' and '${parentId}' in parents and trashed=false`;
+        const searchUrl = `${DRIVE_API}/files?q=${encodeURIComponent(searchQuery)}&fields=files(id,name)`;
+        const searchResponse = await driveRequest(searchUrl);
+
+        if (searchResponse.ok) {
+            const searchData = await searchResponse.json();
+            if (searchData.files && searchData.files.length > 0) {
+                console.log('[GDrive] Found existing attachments folder:', folderName);
+                return searchData.files[0].id;
+            }
+        }
+
+        // Create new folder
+        const createUrl = `${DRIVE_API}/files`;
+        const createResponse = await driveRequest(createUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                name: folderName,
+                mimeType: 'application/vnd.google-apps.folder',
+                parents: [parentId]
+            })
+        });
+
+        if (!createResponse.ok) {
+            const error = await createResponse.text();
+            throw new Error(`Failed to create attachments folder: ${error}`);
+        }
+
+        const folder = await createResponse.json();
+        console.log('[GDrive] Created attachments folder:', folderName, folder.id);
+        return folder.id;
+    }
+
+    /**
+     * Upload an attachment file to the attachments folder
+     * Uses resumable upload for reliability
+     * @param {string} folderId - Parent folder ID
+     * @param {File} file - File to upload
+     * @param {string} attachmentId - Unique attachment ID for filename
+     * @param {Function} onProgress - Optional progress callback (0-100)
+     * @returns {Object} { driveFileId, webViewLink }
+     */
+    async function uploadAttachment(folderId, file, attachmentId, onProgress) {
+        // Use a prefixed filename for easy identification
+        const filename = `${attachmentId}_${file.name}`;
+
+        // Create the file metadata
+        const metadata = {
+            name: filename,
+            parents: [folderId]
+        };
+
+        // For smaller files (< 5MB), use simple upload
+        if (file.size < 5 * 1024 * 1024) {
+            return await simpleUpload(file, metadata, onProgress);
+        }
+
+        // For larger files, use resumable upload
+        return await resumableUpload(file, metadata, onProgress);
+    }
+
+    /**
+     * Simple upload for small files (< 5MB)
+     */
+    async function simpleUpload(file, metadata, onProgress) {
+        const boundary = '-------zip80attboundary';
+        const delimiter = `\r\n--${boundary}\r\n`;
+        const closeDelimiter = `\r\n--${boundary}--`;
+
+        // Read file as base64
+        const fileContent = await readFileAsBase64(file);
+
+        const body =
+            delimiter +
+            'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
+            JSON.stringify(metadata) +
+            delimiter +
+            `Content-Type: ${file.type}\r\n` +
+            'Content-Transfer-Encoding: base64\r\n\r\n' +
+            fileContent +
+            closeDelimiter;
+
+        if (onProgress) onProgress(50);
+
+        const response = await driveRequest(
+            `${DRIVE_UPLOAD_API}/files?uploadType=multipart&fields=id,webViewLink`,
+            {
+                method: 'POST',
+                headers: {
+                    'Content-Type': `multipart/related; boundary=${boundary}`
+                },
+                body: body
+            }
+        );
+
+        if (!response.ok) {
+            const error = await response.text();
+            throw new Error(`Upload failed: ${error}`);
+        }
+
+        if (onProgress) onProgress(100);
+
+        const result = await response.json();
+        return {
+            driveFileId: result.id,
+            webViewLink: result.webViewLink
+        };
+    }
+
+    /**
+     * Resumable upload for larger files
+     */
+    async function resumableUpload(file, metadata, onProgress) {
+        // Step 1: Initiate resumable upload session
+        const initResponse = await driveRequest(
+            `${DRIVE_UPLOAD_API}/files?uploadType=resumable`,
+            {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(metadata)
+            }
+        );
+
+        if (!initResponse.ok) {
+            throw new Error('Failed to initiate upload');
+        }
+
+        const uploadUrl = initResponse.headers.get('Location');
+        if (!uploadUrl) {
+            throw new Error('No upload URL returned');
+        }
+
+        // Step 2: Upload file content in chunks
+        const chunkSize = 256 * 1024; // 256 KB chunks
+        const totalChunks = Math.ceil(file.size / chunkSize);
+        let uploadedBytes = 0;
+
+        for (let i = 0; i < totalChunks; i++) {
+            const start = i * chunkSize;
+            const end = Math.min(start + chunkSize, file.size);
+            const chunk = file.slice(start, end);
+
+            const uploadResponse = await fetch(uploadUrl, {
+                method: 'PUT',
+                headers: {
+                    'Content-Range': `bytes ${start}-${end - 1}/${file.size}`,
+                    'Content-Type': file.type
+                },
+                body: chunk
+            });
+
+            uploadedBytes = end;
+            if (onProgress) {
+                onProgress(Math.round((uploadedBytes / file.size) * 100));
+            }
+
+            // If this is the last chunk, we get the file info
+            if (uploadResponse.ok && i === totalChunks - 1) {
+                const result = await uploadResponse.json();
+                return {
+                    driveFileId: result.id,
+                    webViewLink: result.webViewLink
+                };
+            }
+        }
+
+        throw new Error('Upload incomplete');
+    }
+
+    /**
+     * Read file as base64 string
+     */
+    function readFileAsBase64(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => {
+                // Remove the data URL prefix (e.g., "data:image/png;base64,")
+                const base64 = reader.result.split(',')[1];
+                resolve(base64);
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+    }
+
+    /**
+     * Download an attachment file from Drive
+     * @param {string} fileId - Drive file ID
+     * @returns {Blob} File blob
+     */
+    async function downloadAttachment(fileId) {
+        const url = `${DRIVE_API}/files/${fileId}?alt=media`;
+        const response = await driveRequest(url);
+
+        if (!response.ok) {
+            throw new Error('Failed to download attachment');
+        }
+
+        return response.blob();
+    }
+
+    /**
+     * Get attachment file metadata (for preview URL)
+     * @param {string} fileId - Drive file ID
+     * @returns {Object} File metadata including webViewLink
+     */
+    async function getAttachmentInfo(fileId) {
+        const url = `${DRIVE_API}/files/${fileId}?fields=id,name,mimeType,size,webViewLink,thumbnailLink`;
+        const response = await driveRequest(url);
+
+        if (!response.ok) {
+            throw new Error('Failed to get attachment info');
+        }
+
+        return response.json();
+    }
+
+    /**
+     * Delete an attachment from Drive
+     * @param {string} fileId - Drive file ID
+     * @returns {boolean} Success status
+     */
+    async function deleteAttachment(fileId) {
+        const url = `${DRIVE_API}/files/${fileId}`;
+        const response = await driveRequest(url, { method: 'DELETE' });
+
+        if (!response.ok && response.status !== 404) {
+            throw new Error('Failed to delete attachment');
+        }
+
+        return true;
+    }
+
+    /**
+     * Share the attachments folder with another user
+     * Mirrors vault sharing permissions
+     * @param {string} folderId - Attachments folder ID
+     * @param {string} email - Email to share with
+     * @param {string} role - Permission role ('reader' or 'writer')
+     */
+    async function shareAttachmentsFolder(folderId, email, role = 'reader') {
+        const url = `${DRIVE_API}/files/${folderId}/permissions`;
+
+        const response = await driveRequest(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                type: 'user',
+                role: role,
+                emailAddress: email,
+                sendNotificationEmail: false  // Don't spam with folder notifications
+            })
+        });
+
+        if (!response.ok) {
+            console.warn('[GDrive] Failed to share attachments folder:', await response.text());
+            // Don't throw - attachment folder sharing is not critical
+        }
+    }
+
     // --- Public API ---
+
 
     return {
         // Initialization
@@ -936,6 +1221,14 @@ const GDrive = (() => {
         findPendingDeckShares,
 
         // 2025-12-20: Vault existence check
-        vaultExists
+        vaultExists,
+
+        // 2025-12-22: Attachment management
+        getOrCreateAttachmentsFolder,
+        uploadAttachment,
+        downloadAttachment,
+        getAttachmentInfo,
+        deleteAttachment,
+        shareAttachmentsFolder
     };
 })();

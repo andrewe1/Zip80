@@ -399,7 +399,23 @@
         shareDeckModal: document.getElementById('share-deck-modal'),
         inputShareDeckEmail: document.getElementById('input-share-deck-email'),
         btnCancelShareDeck: document.getElementById('btn-cancel-share-deck'),
-        btnConfirmShareDeck: document.getElementById('btn-confirm-share-deck')
+        btnConfirmShareDeck: document.getElementById('btn-confirm-share-deck'),
+
+        // Attachments (2025-12-22)
+        btnAttach: document.getElementById('btn-attach'),
+        inputAttachment: document.getElementById('input-attachment'),
+        attachmentList: document.getElementById('attachment-list'),
+        attachmentProgress: document.getElementById('attachment-progress'),
+        progressBarFill: document.getElementById('progress-bar-fill'),
+        progressText: document.getElementById('progress-text'),
+        attachmentModal: document.getElementById('attachment-modal'),
+        attachmentViewer: document.getElementById('attachment-viewer'),
+        attachmentInfo: document.getElementById('attachment-info'),
+        attachmentFilename: document.getElementById('attachment-filename'),
+        attachmentSize: document.getElementById('attachment-size'),
+        btnCloseAttachment: document.getElementById('btn-close-attachment'),
+        btnDownloadAttachment: document.getElementById('btn-download-attachment'),
+        btnDeleteAttachment: document.getElementById('btn-delete-attachment')
     };
 
     // --- Initialization ---
@@ -425,6 +441,7 @@
         Calculator.init();     // 2025-12-19: Initialize calculator tool
         initInactivityTimer(); // 2025-12-19: Load inactivity timer settings
         setupActivityTracking(); // 2025-12-19: Track user activity for inactivity timer
+        setupAttachments();    // 2025-12-22: Transaction attachments
     }
 
     // --- Sticky Notes (2025-12-20) ---
@@ -478,9 +495,9 @@
         if (!container) return;
         container.innerHTML = '';
 
-        // Render owned decks
+        // Render owned decks (pass showConfirm for themed delete confirmation)
         const ownedDecks = (data.stickyDecks || []).filter(d => !d._deleted);
-        StickyNotes.renderDecks(ownedDecks, saveStickyDecks, handleShareDeck);
+        StickyNotes.renderDecks(ownedDecks, saveStickyDecks, handleShareDeck, showConfirm);
 
         // Render linked decks from other users with 🔗 badge
         const linkedDecks = data.linkedDecks || [];
@@ -758,7 +775,216 @@
         });
     }
 
+    // --- Attachments (2025-12-22) ---
+
+    // Staged files waiting to be uploaded with transaction
+    let stagedAttachments = [];
+    // Currently viewing attachment (for preview modal)
+    let currentPreviewAttachment = null;
+    let currentPreviewTransactionId = null;
+    // Cached attachments folder ID for current vault
+    let attachmentsFolderId = null;
+
     /**
+     * Setup attachment event listeners
+     */
+    function setupAttachments() {
+        if (elements.btnAttach) {
+            elements.btnAttach.addEventListener('click', () => {
+                elements.inputAttachment?.click();
+            });
+        }
+        if (elements.inputAttachment) {
+            elements.inputAttachment.addEventListener('change', handleFilesSelected);
+        }
+        if (elements.btnCloseAttachment) {
+            elements.btnCloseAttachment.addEventListener('click', closeAttachmentModal);
+        }
+        if (elements.attachmentModal) {
+            elements.attachmentModal.querySelector('.modal-backdrop')?.addEventListener('click', closeAttachmentModal);
+        }
+        if (elements.btnDownloadAttachment) {
+            elements.btnDownloadAttachment.addEventListener('click', handleDownloadAttachment);
+        }
+        if (elements.btnDeleteAttachment) {
+            elements.btnDeleteAttachment.addEventListener('click', handleDeleteAttachment);
+        }
+    }
+
+    /**
+     * Handle files selected from file picker
+     */
+    function handleFilesSelected(e) {
+        const files = Array.from(e.target.files || []);
+        if (files.length === 0) return;
+
+        const currentCount = stagedAttachments.length;
+        const { validFiles, errors } = Attachments.validateFiles(files, currentCount);
+
+        if (errors.length > 0) {
+            showToast(I18n.t(errors[0]), false);
+        }
+
+        validFiles.forEach(file => {
+            stagedAttachments.push({
+                file: file,
+                id: `staged_${Date.now()}_${stagedAttachments.length}`,
+                filename: file.name,
+                mimeType: file.type,
+                size: file.size
+            });
+        });
+
+        e.target.value = '';
+        renderStagedAttachments();
+    }
+
+    /**
+     * Render staged attachments in the form
+     */
+    function renderStagedAttachments() {
+        if (!elements.attachmentList) return;
+        if (stagedAttachments.length === 0) {
+            elements.attachmentList.innerHTML = '';
+            return;
+        }
+
+        elements.attachmentList.innerHTML = stagedAttachments.map(att => {
+            const icon = Attachments.getIcon(att.mimeType);
+            const size = Attachments.formatSize(att.size);
+            const isImage = Attachments.getCategory(att.mimeType) === 'image';
+            let thumbnailContent;
+            if (isImage && att.file) {
+                const objectUrl = URL.createObjectURL(att.file);
+                thumbnailContent = `<img src="${objectUrl}" alt="${escapeHtml(att.filename)}">`;
+            } else {
+                thumbnailContent = `<span class="file-icon">${icon}</span>`;
+            }
+            return `<div class="attachment-thumbnail" data-id="${att.id}" title="${escapeHtml(att.filename)} (${size})">${thumbnailContent}<button class="remove-btn" data-id="${att.id}">×</button></div>`;
+        }).join('');
+
+        elements.attachmentList.querySelectorAll('.remove-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                stagedAttachments = stagedAttachments.filter(a => a.id !== btn.dataset.id);
+                renderStagedAttachments();
+            });
+        });
+    }
+
+    /**
+     * Upload staged attachments for a transaction
+     */
+    async function uploadStagedAttachments(transactionId) {
+        if (stagedAttachments.length === 0) return [];
+        const uploadedAttachments = [];
+
+        if (elements.attachmentProgress) elements.attachmentProgress.style.display = 'flex';
+
+        try {
+            if (storageBackend === 'gdrive' && gdriveFileId) {
+                if (!attachmentsFolderId) {
+                    attachmentsFolderId = await GDrive.getOrCreateAttachmentsFolder(gdriveFileId);
+                }
+                for (let i = 0; i < stagedAttachments.length; i++) {
+                    const staged = stagedAttachments[i];
+                    const attachmentId = Attachments.generateId(transactionId, i);
+                    try {
+                        updateUploadProgress((i / stagedAttachments.length) * 100);
+                        const result = await GDrive.uploadAttachment(attachmentsFolderId, staged.file, attachmentId, (p) => updateUploadProgress(((i + p / 100) / stagedAttachments.length) * 100));
+                        uploadedAttachments.push({ id: attachmentId, filename: staged.filename, mimeType: staged.mimeType, size: staged.size, uploadedAt: new Date().toISOString(), driveFileId: result.driveFileId, localFilename: null });
+                    } catch (err) { console.error('Upload failed:', staged.filename, err); }
+                }
+            } else {
+                stagedAttachments.forEach((staged, i) => {
+                    const attachmentId = Attachments.generateId(transactionId, i);
+                    uploadedAttachments.push({ id: attachmentId, filename: staged.filename, mimeType: staged.mimeType, size: staged.size, uploadedAt: new Date().toISOString(), driveFileId: null, localFilename: Attachments.generateLocalFilename(attachmentId, staged.filename) });
+                });
+            }
+        } finally {
+            if (elements.attachmentProgress) elements.attachmentProgress.style.display = 'none';
+            stagedAttachments = [];
+            renderStagedAttachments();
+        }
+        return uploadedAttachments;
+    }
+
+    function updateUploadProgress(percent) {
+        if (elements.progressBarFill) elements.progressBarFill.style.width = `${percent}%`;
+    }
+
+    async function openAttachmentPreview(attachment, transactionId) {
+        if (!elements.attachmentModal || !elements.attachmentViewer) return;
+        currentPreviewAttachment = attachment;
+        currentPreviewTransactionId = transactionId;
+        if (elements.attachmentFilename) elements.attachmentFilename.textContent = attachment.filename;
+        if (elements.attachmentSize) elements.attachmentSize.textContent = Attachments.formatSize(attachment.size);
+        elements.attachmentViewer.innerHTML = '<div class="attachment-loading"></div>';
+        elements.attachmentModal.style.display = 'flex';
+        try {
+            const category = Attachments.getCategory(attachment.mimeType);
+            if (category === 'image' && attachment.driveFileId) {
+                const blob = await GDrive.downloadAttachment(attachment.driveFileId);
+                elements.attachmentViewer.innerHTML = `<img src="${URL.createObjectURL(blob)}" alt="${escapeHtml(attachment.filename)}">`;
+            } else if (category === 'pdf' && attachment.driveFileId) {
+                const info = await GDrive.getAttachmentInfo(attachment.driveFileId);
+                elements.attachmentViewer.innerHTML = info.webViewLink ? `<iframe src="${info.webViewLink}"></iframe>` : `<div class="doc-preview"><span class="doc-icon">📄</span></div>`;
+            } else {
+                elements.attachmentViewer.innerHTML = `<div class="doc-preview"><span class="doc-icon">${Attachments.getIcon(attachment.mimeType)}</span><span class="doc-name">${escapeHtml(attachment.filename)}</span></div>`;
+            }
+        } catch (err) {
+            elements.attachmentViewer.innerHTML = '<div class="doc-preview"><span class="doc-icon">⚠️</span></div>';
+        }
+    }
+
+    function closeAttachmentModal() {
+        if (elements.attachmentModal) elements.attachmentModal.style.display = 'none';
+        if (elements.attachmentViewer) elements.attachmentViewer.innerHTML = '';
+        currentPreviewAttachment = null;
+        currentPreviewTransactionId = null;
+    }
+
+    async function handleDownloadAttachment() {
+        if (!currentPreviewAttachment?.driveFileId) return;
+        try {
+            const blob = await GDrive.downloadAttachment(currentPreviewAttachment.driveFileId);
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = currentPreviewAttachment.filename;
+            a.click();
+        } catch (err) { showToast(I18n.t('attachmentUploadError'), false); }
+    }
+
+    async function handleDeleteAttachment() {
+        if (!currentPreviewAttachment || !currentPreviewTransactionId) return;
+        if (!(await showConfirm(I18n.t('attachmentDeleteConfirm')))) return;
+        try {
+            if (currentPreviewAttachment.driveFileId) await GDrive.deleteAttachment(currentPreviewAttachment.driveFileId);
+            const tx = data.transactions.find(t => t.id === currentPreviewTransactionId);
+            if (tx?.attachments) {
+                tx.attachments = tx.attachments.filter(a => a.id !== currentPreviewAttachment.id);
+                await handleSave();
+                render();
+            }
+            closeAttachmentModal();
+        } catch (err) { showToast(I18n.t('attachmentUploadError'), false); }
+    }
+
+    function renderAttachmentBadge(transaction) {
+        if (!transaction.attachments?.length) return '';
+        return `<span class="attachment-badge"><span class="badge-icon">📎</span>${transaction.attachments.length}</span>`;
+    }
+
+    function clearAttachmentState() {
+        stagedAttachments = [];
+        attachmentsFolderId = null;
+        currentPreviewAttachment = null;
+        currentPreviewTransactionId = null;
+        if (elements.attachmentList) elements.attachmentList.innerHTML = '';
+    }
+
+    /**
+
  * Setup credit card UI elements
  * 2025-12-15: Populates day dropdowns (1-31) for payment due and statement close
  * 2025-12-16: Added crypto currency switching logic
@@ -3653,6 +3879,7 @@
         } else {
             // Create regular transaction
             // 2025-12-17: Include createdBy for Activity Log attribution
+            // 2025-12-22: Added attachments support
             const userInfo = getCurrentUserInfo();
             const transaction = {
                 id: Date.now(),
@@ -3661,11 +3888,27 @@
                 amt: mode === 'income' ? amount : -amount,
                 category: category,
                 date: new Date().toISOString(),
-                createdBy: userInfo  // null for local vaults, {email, name} for cloud
+                createdBy: userInfo,  // null for local vaults, {email, name} for cloud
+                attachments: []       // 2025-12-22: Populated after upload
             };
             saveToHistory();  // 2025-12-17: Save state before modifying data
             data.transactions.push(transaction);
+
+            // 2025-12-22: Upload staged attachments if any
+            if (stagedAttachments.length > 0) {
+                uploadStagedAttachments(transaction.id).then(attachments => {
+                    if (attachments.length > 0) {
+                        transaction.attachments = attachments;
+                        handleSave();
+                        render();
+                    }
+                }).catch(err => {
+                    console.error('Attachment upload error:', err);
+                    showToast(I18n.t('attachmentUploadError'), false);
+                });
+            }
         }
+
 
         // Reset form
         elements.inputDesc.value = '';
@@ -4013,6 +4256,7 @@
             li.innerHTML = `
                 <div class="item-details">
                     <span class="item-desc">${escapeHtml(displayDesc)}</span>
+                    ${t.attachments && t.attachments.length > 0 ? `<span class="attachment-badge" data-transaction-id="${t.id}" title="${t.attachments.length} ${I18n.t('attachments')}"><span class="badge-icon">📎</span>${t.attachments.length}</span>` : ''}
                     <span class="item-date">${formatDate(t.date)}</span>
                 </div>
                 <div class="item-actions">
@@ -4035,6 +4279,14 @@
             li.querySelector('.delete').addEventListener('click', () => {
                 deleteTransaction(t.id);
             });
+
+            // 2025-12-22: Attachment badge click handler
+            const attachBadge = li.querySelector('.attachment-badge');
+            if (attachBadge && t.attachments && t.attachments.length > 0) {
+                attachBadge.addEventListener('click', () => {
+                    openAttachmentPreview(t.attachments[0], t.id);
+                });
+            }
 
             list.appendChild(li);
         });

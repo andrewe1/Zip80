@@ -108,15 +108,16 @@ const StickyNotes = (() => {
      * @param {array} decks - Array of deck objects
      * @param {function} onSave - Callback to save changes
      * @param {function} onShare - Callback to share deck
+     * @param {function} onConfirm - Async callback for themed confirm dialogs
      */
-    function renderDecks(decks, onSave, onShare) {
+    function renderDecks(decks, onSave, onShare, onConfirm) {
         const container = document.getElementById('sticky-decks-container');
         if (!container) return;
 
         container.innerHTML = '';
 
         (decks || []).forEach(deck => {
-            const deckEl = createDeckElement(deck, onSave, onShare);
+            const deckEl = createDeckElement(deck, onSave, onShare, onConfirm);
             container.appendChild(deckEl);
         });
     }
@@ -124,7 +125,7 @@ const StickyNotes = (() => {
     /**
      * Create a deck DOM element
      */
-    function createDeckElement(deck, onSave, onShare) {
+    function createDeckElement(deck, onSave, onShare, onConfirm) {
         const el = document.createElement('div');
         el.className = `sticky-deck${deck.collapsed ? ' collapsed' : ''}`;
         el.dataset.deckId = deck.id;
@@ -166,7 +167,7 @@ const StickyNotes = (() => {
         `;
 
         // Wire up events
-        setupDeckEvents(el, deck, onSave, onShare);
+        setupDeckEvents(el, deck, onSave, onShare, onConfirm);
 
         return el;
     }
@@ -174,7 +175,7 @@ const StickyNotes = (() => {
     /**
      * Setup event listeners for a deck element
      */
-    function setupDeckEvents(el, deck, onSave, onShare) {
+    function setupDeckEvents(el, deck, onSave, onShare, onConfirm) {
         const header = el.querySelector('.sticky-deck-header');
         const titleEl = el.querySelector('.sticky-deck-title');
         const btnCollapse = el.querySelector('.btn-collapse');
@@ -227,9 +228,13 @@ const StickyNotes = (() => {
             if (onShare) onShare(deck);
         });
 
-        // Close (delete) deck
-        btnClose.addEventListener('click', () => {
-            if (confirm('Delete this deck?')) {
+        // Close (delete) deck - uses themed confirm dialog via callback
+        btnClose.addEventListener('click', async () => {
+            // Use themed confirm if provided, otherwise fall back to native
+            const confirmed = onConfirm
+                ? await onConfirm(typeof I18n !== 'undefined' ? I18n.t('deleteDeckConfirm') : 'Delete this deck?')
+                : confirm('Delete this deck?');
+            if (confirmed) {
                 deck._deleted = true;
                 el.remove();
                 onSave();

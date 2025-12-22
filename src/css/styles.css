@@ -1571,7 +1571,7 @@ html.dark .btn-dismiss-notice:hover {
 .modal-desc {
     color: var(--color-text-muted);
     margin-bottom: var(--space-lg);
-    font-size: var(--font-size-sm);
+    font-size: var(--font-size-base);
 }
 
 /* 2025-12-15: Credit card modal and balance card styles */
@@ -4050,4 +4050,295 @@ html.dark .btn-role.active {
     padding: 2px 6px;
     background: rgba(255, 255, 255, 0.3);
     border-radius: var(--radius-sm);
+}
+
+/* ==========================================================================
+   2025-12-22: ATTACHMENT SYSTEM
+   ========================================================================== */
+
+/* --- Transaction Form Attachment Section --- */
+.attachment-section {
+    margin-bottom: var(--space-md);
+}
+
+.attachment-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    flex-wrap: wrap;
+}
+
+/* Attachment thumbnails container */
+.attachment-list {
+    display: flex;
+    gap: var(--space-sm);
+    flex-wrap: wrap;
+    margin-bottom: var(--space-sm);
+}
+
+.attachment-list:empty {
+    display: none;
+}
+
+/* Individual attachment thumbnail */
+.attachment-thumbnail {
+    position: relative;
+    width: 60px;
+    height: 60px;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    background-color: var(--color-bg);
+    border: 2px solid var(--color-border);
+    cursor: pointer;
+    transition: border-color 0.15s ease, transform 0.15s ease;
+}
+
+.attachment-thumbnail:hover {
+    border-color: var(--color-primary);
+    transform: scale(1.05);
+}
+
+.attachment-thumbnail img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Non-image file icon display */
+.attachment-thumbnail .file-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    font-size: 1.5rem;
+    background-color: var(--color-surface);
+}
+
+/* Remove button on thumbnail */
+.attachment-thumbnail .remove-btn {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background-color: var(--color-danger);
+    color: white;
+    border: none;
+    font-size: 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+}
+
+.attachment-thumbnail:hover .remove-btn {
+    opacity: 1;
+}
+
+/* Upload progress indicator */
+.attachment-progress {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    flex: 1;
+    max-width: 200px;
+}
+
+.progress-bar-track {
+    flex: 1;
+    height: 6px;
+    background-color: var(--color-border);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    background-color: var(--color-primary);
+    border-radius: 3px;
+    width: 0%;
+    transition: width 0.2s ease;
+}
+
+.progress-text {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+    white-space: nowrap;
+}
+
+/* --- Attachment Badge in Transaction History --- */
+.attachment-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+    padding: 2px 6px;
+    background-color: var(--color-bg);
+    border-radius: var(--radius-sm);
+    margin-left: var(--space-xs);
+}
+
+.attachment-badge .badge-icon {
+    font-size: 0.75rem;
+}
+
+/* --- Attachment Preview Modal --- */
+.attachment-modal-content {
+    max-width: 90vw;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-close-btn {
+    position: absolute;
+    top: var(--space-md);
+    right: var(--space-md);
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background-color: var(--color-bg);
+    border: none;
+    font-size: var(--font-size-lg);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.15s ease;
+    z-index: 1;
+}
+
+.modal-close-btn:hover {
+    background-color: var(--color-border);
+}
+
+.attachment-viewer {
+    flex: 1;
+    min-height: 300px;
+    max-height: 60vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--color-bg);
+    border-radius: var(--radius-md);
+    margin-bottom: var(--space-md);
+    overflow: hidden;
+}
+
+.attachment-viewer img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+.attachment-viewer iframe {
+    width: 100%;
+    height: 100%;
+    min-height: 400px;
+    border: none;
+    border-radius: var(--radius-md);
+}
+
+.attachment-viewer .doc-preview {
+    text-align: center;
+    padding: var(--space-xl);
+}
+
+.attachment-viewer .doc-preview .doc-icon {
+    font-size: 4rem;
+    margin-bottom: var(--space-md);
+}
+
+.attachment-viewer .doc-preview .doc-name {
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.attachment-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-sm);
+    background-color: var(--color-bg);
+    border-radius: var(--radius-sm);
+    margin-bottom: var(--space-md);
+}
+
+.attachment-filename {
+    font-weight: 500;
+    color: var(--color-text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 70%;
+}
+
+.attachment-size {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+}
+
+/* --- Staged Attachment List (before upload) --- */
+.staged-attachment {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: var(--space-xs) var(--space-sm);
+    background-color: var(--color-bg);
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-sm);
+}
+
+.staged-attachment .staged-icon {
+    font-size: 1rem;
+}
+
+.staged-attachment .staged-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 150px;
+}
+
+.staged-attachment .staged-size {
+    color: var(--color-text-muted);
+}
+
+.staged-attachment .staged-remove {
+    background: none;
+    border: none;
+    color: var(--color-danger);
+    cursor: pointer;
+    font-size: 0.75rem;
+    padding: 2px;
+}
+
+/* Loading spinner for attachment uploads */
+.attachment-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-md);
+}
+
+.attachment-loading::after {
+    content: '';
+    width: 24px;
+    height: 24px;
+    border: 3px solid var(--color-border);
+    border-top-color: var(--color-primary);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
 }
