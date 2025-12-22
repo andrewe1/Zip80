@@ -4181,6 +4181,13 @@ html.dark .btn-role.active {
     background-color: var(--color-bg);
     border-radius: var(--radius-sm);
     margin-left: var(--space-xs);
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.attachment-badge:hover {
+    background-color: var(--color-primary);
+    color: white;
 }
 
 .attachment-badge .badge-icon {
@@ -4220,20 +4227,63 @@ html.dark .btn-role.active {
 .attachment-viewer {
     flex: 1;
     min-height: 300px;
-    max-height: 60vh;
+    max-height: 70vh;
+    width: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
     background-color: var(--color-bg);
     border-radius: var(--radius-md);
     margin-bottom: var(--space-md);
-    overflow: hidden;
+    overflow: auto;
+    position: relative;
 }
 
-.attachment-viewer img {
+/* Inner content container */
+.attachment-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+}
+
+/* Default: fit to container */
+.attachment-content img {
     max-width: 100%;
-    max-height: 100%;
+    max-height: 70vh;
     object-fit: contain;
+    display: block;
+}
+
+/* Zoomed state: full size with scroll, centered */
+.attachment-viewer.zoomed .attachment-content img {
+    max-width: none;
+    max-height: none;
+    /* Image stays centered via flexbox parent */
+}
+
+/* Floating zoom button in top-right of viewer */
+.btn-zoom-floating {
+    position: absolute;
+    top: var(--space-sm);
+    right: var(--space-sm);
+    z-index: 10;
+    padding: 8px 12px;
+    font-size: var(--font-size-sm);
+    background-color: rgba(0, 0, 0, 0.6);
+    color: white;
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    transition: background-color 0.15s ease;
+}
+
+.btn-zoom-floating:hover {
+    background-color: rgba(0, 0, 0, 0.8);
 }
 
 .attachment-viewer iframe {

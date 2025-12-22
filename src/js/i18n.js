@@ -471,7 +471,9 @@ const I18n = (() => {
             attachmentUploadError: 'Failed to upload attachment',
             attachmentDeleteConfirm: 'Delete this attachment?',
             download: 'Download',
-            deleteAttachment: 'Delete'
+            deleteAttachment: 'Delete',
+            zoomIn: 'Zoom In',
+            zoomOut: 'Zoom Out'
         },
 
         es: {
@@ -819,7 +821,9 @@ const I18n = (() => {
             attachmentUploadError: 'Error al subir adjunto',
             attachmentDeleteConfirm: '¿Eliminar este adjunto?',
             download: 'Descargar',
-            deleteAttachment: 'Eliminar'
+            deleteAttachment: 'Eliminar',
+            zoomIn: 'Acercar',
+            zoomOut: 'Alejar'
         }
     };
 

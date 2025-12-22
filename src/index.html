@@ -1237,7 +1237,12 @@ CHANGE LOG:
             <h2 id="attachment-modal-title" class="modal-title">📎 <span data-i18n="attachments">Attachments</span></h2>
 
             <div id="attachment-viewer" class="attachment-viewer">
-                <!-- Image/PDF preview rendered by JS -->
+                <div id="attachment-content" class="attachment-content">
+                    <!-- Image/PDF preview rendered by JS -->
+                </div>
+                <button id="btn-zoom-attachment" class="btn-zoom-floating" style="display: none;">
+                    🔍 <span data-i18n="zoomIn">Zoom In</span>
+                </button>
             </div>
 
             <div id="attachment-info" class="attachment-info">

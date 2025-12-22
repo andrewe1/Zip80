@@ -410,10 +410,12 @@
         progressText: document.getElementById('progress-text'),
         attachmentModal: document.getElementById('attachment-modal'),
         attachmentViewer: document.getElementById('attachment-viewer'),
+        attachmentContent: document.getElementById('attachment-content'),
         attachmentInfo: document.getElementById('attachment-info'),
         attachmentFilename: document.getElementById('attachment-filename'),
         attachmentSize: document.getElementById('attachment-size'),
         btnCloseAttachment: document.getElementById('btn-close-attachment'),
+        btnZoomAttachment: document.getElementById('btn-zoom-attachment'),
         btnDownloadAttachment: document.getElementById('btn-download-attachment'),
         btnDeleteAttachment: document.getElementById('btn-delete-attachment')
     };
@@ -809,6 +811,24 @@
         if (elements.btnDeleteAttachment) {
             elements.btnDeleteAttachment.addEventListener('click', handleDeleteAttachment);
         }
+        // 2025-12-22: Zoom toggle button for image preview
+        if (elements.btnZoomAttachment) {
+            elements.btnZoomAttachment.addEventListener('click', handleZoomToggle);
+        }
+    }
+
+    /**
+     * Toggle zoom state for image preview
+     */
+    function handleZoomToggle() {
+        if (!elements.attachmentViewer) return;
+        const isZoomed = elements.attachmentViewer.classList.toggle('zoomed');
+        // Update button text
+        if (elements.btnZoomAttachment) {
+            elements.btnZoomAttachment.innerHTML = isZoomed
+                ? `🔍 <span>${I18n.t('zoomOut')}</span>`
+                : `🔍 <span>${I18n.t('zoomIn')}</span>`;
+        }
     }
 
     /**
@@ -914,32 +934,42 @@
     }
 
     async function openAttachmentPreview(attachment, transactionId) {
-        if (!elements.attachmentModal || !elements.attachmentViewer) return;
+        if (!elements.attachmentModal || !elements.attachmentContent) return;
         currentPreviewAttachment = attachment;
         currentPreviewTransactionId = transactionId;
         if (elements.attachmentFilename) elements.attachmentFilename.textContent = attachment.filename;
         if (elements.attachmentSize) elements.attachmentSize.textContent = Attachments.formatSize(attachment.size);
-        elements.attachmentViewer.innerHTML = '<div class="attachment-loading"></div>';
+        elements.attachmentContent.innerHTML = '<div class="attachment-loading"></div>';
+        elements.attachmentViewer.classList.remove('zoomed'); // Reset zoom state
+        // Reset zoom button
+        if (elements.btnZoomAttachment) {
+            elements.btnZoomAttachment.innerHTML = `🔍 <span>${I18n.t('zoomIn')}</span>`;
+            elements.btnZoomAttachment.style.display = 'none'; // Hide by default
+        }
         elements.attachmentModal.style.display = 'flex';
         try {
             const category = Attachments.getCategory(attachment.mimeType);
             if (category === 'image' && attachment.driveFileId) {
                 const blob = await GDrive.downloadAttachment(attachment.driveFileId);
-                elements.attachmentViewer.innerHTML = `<img src="${URL.createObjectURL(blob)}" alt="${escapeHtml(attachment.filename)}">`;
+                elements.attachmentContent.innerHTML = `<img src="${URL.createObjectURL(blob)}" alt="${escapeHtml(attachment.filename)}">`;
+                // Show zoom button for images
+                if (elements.btnZoomAttachment) {
+                    elements.btnZoomAttachment.style.display = 'inline-flex';
+                }
             } else if (category === 'pdf' && attachment.driveFileId) {
                 const info = await GDrive.getAttachmentInfo(attachment.driveFileId);
-                elements.attachmentViewer.innerHTML = info.webViewLink ? `<iframe src="${info.webViewLink}"></iframe>` : `<div class="doc-preview"><span class="doc-icon">📄</span></div>`;
+                elements.attachmentContent.innerHTML = info.webViewLink ? `<iframe src="${info.webViewLink}"></iframe>` : `<div class="doc-preview"><span class="doc-icon">📄</span></div>`;
             } else {
-                elements.attachmentViewer.innerHTML = `<div class="doc-preview"><span class="doc-icon">${Attachments.getIcon(attachment.mimeType)}</span><span class="doc-name">${escapeHtml(attachment.filename)}</span></div>`;
+                elements.attachmentContent.innerHTML = `<div class="doc-preview"><span class="doc-icon">${Attachments.getIcon(attachment.mimeType)}</span><span class="doc-name">${escapeHtml(attachment.filename)}</span></div>`;
             }
         } catch (err) {
-            elements.attachmentViewer.innerHTML = '<div class="doc-preview"><span class="doc-icon">⚠️</span></div>';
+            elements.attachmentContent.innerHTML = '<div class="doc-preview"><span class="doc-icon">⚠️</span></div>';
         }
     }
 
     function closeAttachmentModal() {
         if (elements.attachmentModal) elements.attachmentModal.style.display = 'none';
-        if (elements.attachmentViewer) elements.attachmentViewer.innerHTML = '';
+        if (elements.attachmentContent) elements.attachmentContent.innerHTML = '';
         currentPreviewAttachment = null;
         currentPreviewTransactionId = null;
     }
