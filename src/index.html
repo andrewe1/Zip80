@@ -537,18 +537,20 @@ CHANGE LOG:
 
                 </section>
 
-                <!-- History Card -->
-                <section class="card">
-                    <div class="card-header">
-                        <h2 id="history-title" class="card-title">History</h2>
+                <!-- 2025-12-22: History Card - converted to widget structure for popout/collapse support -->
+                <section class="card widget-card" data-widget-id="history">
+                    <div class="widget-header">
+                        <h2 id="history-title" class="widget-title">📜 History</h2>
                         <button id="btn-export" class="btn btn-secondary btn-sm">
                             <span data-i18n="btnExport">📥 Export JSON</span>
                         </button>
                     </div>
-                    <ul id="history-list" class="history-list">
-                        <!-- Transactions rendered here -->
-                    </ul>
-                    <p id="empty-state" class="empty-state">No transactions yet. Add one above!</p>
+                    <div class="widget-content">
+                        <ul id="history-list" class="history-list">
+                            <!-- Transactions rendered here -->
+                        </ul>
+                        <p id="empty-state" class="empty-state">No transactions yet. Add one above!</p>
+                    </div>
                 </section>
             </div><!-- end workspace-main -->
 

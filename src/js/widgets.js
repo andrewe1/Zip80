@@ -70,7 +70,8 @@ const Widgets = (() => {
         'recurring': { order: 4, collapsed: false, enabled: true, group: 'bottom-row' },
         'exchange': { order: 5, collapsed: false, enabled: true, group: 'bottom-row' },
         'crypto-rates': { order: 6, collapsed: false, enabled: true, group: 'bottom-row' },  // 2025-12-19
-        'activity-log': { order: 7, collapsed: false, enabled: true, group: 'bottom-row' }
+        'activity-log': { order: 7, collapsed: false, enabled: true, group: 'bottom-row' },
+        'history': { order: 8, collapsed: false, enabled: true, group: 'main' }  // 2025-12-22
     };
 
     let sortableInstances = [];
