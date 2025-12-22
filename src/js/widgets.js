@@ -54,6 +54,7 @@
  * - 2025-12-19: Added setupPopout(), popoutWidget(), closePopout(), refreshPopoutContent()
  * - 2025-12-19: Added event delegation for interactive elements in popout (buttons, dropdowns, inputs)
  * - 2025-12-19: Popout syncs with original widget and preserves select/input values on refresh
+ * - 2025-12-22: Auto-hide docked widget when popped out, auto-show when floating window closes
  */
 
 const Widgets = (() => {
@@ -567,6 +568,9 @@ const Widgets = (() => {
         win.style.left = centerX + 'px';
         win.style.top = Math.max(50, centerY) + 'px';
         win.style.visibility = 'visible';
+
+        // 2025-12-22: Auto-hide the docked widget when popped out
+        widget.style.display = 'none';
     }
 
     /**
@@ -579,6 +583,12 @@ const Widgets = (() => {
             if (entry.observer) entry.observer.disconnect();
             if (entry.window) entry.window.remove();
             activePopouts.delete(widgetId);
+
+            // 2025-12-22: Auto-show the docked widget when popout is closed
+            const widget = document.querySelector(`.widget-card[data-widget-id="${widgetId}"]`);
+            if (widget) {
+                widget.style.display = '';
+            }
         }
     }
 
