@@ -63,15 +63,17 @@ const Widgets = (() => {
     // Default widget configuration
     // Add new widgets here with their default settings
     const DEFAULT_WIDGETS = {
-        'balance-bank': { order: 0, collapsed: false, enabled: true, group: 'balance-row' },
-        'balance-credit': { order: 1, collapsed: false, enabled: true, group: 'balance-row' },
-        'balance-crypto': { order: 2, collapsed: false, enabled: true, group: 'balance-row' },
-        'calendar': { order: 3, collapsed: false, enabled: true, group: 'main' },
-        'recurring': { order: 4, collapsed: false, enabled: true, group: 'bottom-row' },
-        'exchange': { order: 5, collapsed: false, enabled: true, group: 'bottom-row' },
-        'crypto-rates': { order: 6, collapsed: false, enabled: true, group: 'bottom-row' },  // 2025-12-19
-        'activity-log': { order: 7, collapsed: false, enabled: true, group: 'bottom-row' },
-        'history': { order: 8, collapsed: false, enabled: true, group: 'main' }  // 2025-12-22
+        'accounts': { order: 0, collapsed: false, enabled: true, group: 'main' },  // 2025-12-22
+        'balance': { order: 1, collapsed: false, enabled: true, group: 'main' },   // 2025-12-22
+        'history': { order: 2, collapsed: false, enabled: true, group: 'main' },   // 2025-12-22
+        'balance-bank': { order: 3, collapsed: false, enabled: true, group: 'balance-row' },
+        'balance-credit': { order: 4, collapsed: false, enabled: true, group: 'balance-row' },
+        'balance-crypto': { order: 5, collapsed: false, enabled: true, group: 'balance-row' },
+        'calendar': { order: 6, collapsed: false, enabled: true, group: 'sidebar' },
+        'recurring': { order: 7, collapsed: false, enabled: true, group: 'bottom-row' },
+        'exchange': { order: 8, collapsed: false, enabled: true, group: 'bottom-row' },
+        'crypto-rates': { order: 9, collapsed: false, enabled: true, group: 'bottom-row' },
+        'activity-log': { order: 10, collapsed: false, enabled: true, group: 'bottom-row' }
     };
 
     let sortableInstances = [];

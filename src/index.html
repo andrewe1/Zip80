@@ -399,142 +399,149 @@ CHANGE LOG:
             <!-- Main Content -->
             <div class="workspace-main">
 
-                <!-- Account Selector -->
-                <section class="card account-card">
-                    <div class="account-header">
-                        <h2 id="accounts-title" class="card-title">Accounts</h2>
+                <!-- 2025-12-22: Account Selector - converted to widget structure for popout/collapse support -->
+                <section class="card widget-card account-card" data-widget-id="accounts">
+                    <div class="widget-header account-header">
+                        <h2 id="accounts-title" class="widget-title">💰 Accounts</h2>
                         <button id="btn-new-account" class="btn btn-secondary btn-sm">
                             <span data-i18n="newAccount">+ New Account</span>
                         </button>
                     </div>
-                    <div id="account-tabs" class="account-tabs">
-                        <!-- Account tabs rendered here -->
+                    <div class="widget-content">
+                        <div id="account-tabs" class="account-tabs">
+                            <!-- Account tabs rendered here -->
+                        </div>
                     </div>
                 </section>
 
-                <!-- Balance Card (2025-12-15: Added credit card info section, combined with transaction form) -->
-                <section class="card balance-card">
-                    <div id="balance-label" class="balance-label">Current Balance</div>
-                    <div class="balance-row">
-                        <div id="balance-display" class="balance-value">$0.00</div>
+                <!-- 2025-12-22: Balance Card - converted to widget structure for popout/collapse support -->
+                <section class="card widget-card balance-card" data-widget-id="balance">
+                    <div class="widget-header">
+                        <h2 id="balance-title" class="widget-title">💵 Balance & Transactions</h2>
                     </div>
-                    <div id="account-currency" class="account-currency">USD</div>
-                    <button id="btn-edit-balance" class="btn btn-secondary btn-sm"
-                        style="margin-top: var(--space-sm); width: 100%;">
-                        ✏️ <span data-i18n="adjustAmount">Adjust Amount</span>
-                    </button>
-
-                    <!-- Credit Card Info (shown for credit accounts) -->
-                    <div id="credit-card-info" class="credit-card-info" style="display: none;">
-                        <div class="credit-info-row">
-                            <span id="credit-available-label">Available Credit:</span>
-                            <span id="credit-available-value">$0.00</span>
+                    <div class="widget-content">
+                        <div id="balance-label" class="balance-label">Current Balance</div>
+                        <div class="balance-row">
+                            <div id="balance-display" class="balance-value">$0.00</div>
                         </div>
-                        <div class="credit-info-row">
-                            <span id="credit-limit-label">Limit:</span>
-                            <span id="credit-limit-value">$0.00</span>
-                        </div>
-                        <div class="credit-info-row">
-                            <span id="credit-dates-label"></span>
-                            <span id="credit-dates-value"></span>
-                        </div>
-                        <!-- 2025-12-15: Edit CC settings button -->
-                        <button id="btn-edit-credit" class="btn btn-secondary btn-sm"
+                        <div id="account-currency" class="account-currency">USD</div>
+                        <button id="btn-edit-balance" class="btn btn-secondary btn-sm"
                             style="margin-top: var(--space-sm); width: 100%;">
-                            ⚙️ <span data-i18n="editCreditSettings">Edit Settings</span>
+                            ✏️ <span data-i18n="adjustAmount">Adjust Amount</span>
                         </button>
-                    </div>
 
-                    <!-- Account Settings (shown for checking/cash accounts) -->
-                    <div id="account-settings-info" class="credit-card-info" style="display: none;">
-                        <button id="btn-edit-account-settings" class="btn btn-secondary btn-sm" style="width: 100%;">
-                            ⚙️ <span data-i18n="editCreditSettings">Edit Settings</span>
-                        </button>
-                    </div>
-
-                    <!-- 2025-12-16: Crypto account info (shows crypto balance below USD value) -->
-                    <div id="crypto-account-info" class="crypto-account-info" style="display: none;">
-                        <div class="crypto-balance-row">
-                            <span id="crypto-balance-value">0.00000000 BTC</span>
-                        </div>
-                    </div>
-
-                    <!-- 2025-12-15: Add Transaction Form (combined into balance card) -->
-                    <div class="transaction-form-divider"></div>
-                    <h3 id="add-transaction-title" class="transaction-form-title">Add Transaction</h3>
-
-                    <!-- Transaction Mode Toggle -->
-                    <div class="transaction-mode-row">
-                        <button id="btn-mode-expense" class="btn btn-mode-toggle active" data-mode="expense">
-                            <span data-i18n="modeExpense">➖ Expense</span>
-                        </button>
-                        <button id="btn-mode-income" class="btn btn-mode-toggle" data-mode="income">
-                            <span data-i18n="modeIncome">➕ Income</span>
-                        </button>
-                    </div>
-
-                    <!-- Category Icons (shown only for expense mode) -->
-                    <div id="category-icons" class="category-icons-row">
-                        <button class="category-icon active" data-category="general" title="General">💸</button>
-                        <button class="category-icon" data-category="food" title="Food">🍔</button>
-                        <button class="category-icon" data-category="utilities" title="Utilities">💡</button>
-                        <button class="category-icon" data-category="transport" title="Transportation">🚗</button>
-                        <button class="category-icon" data-category="housing" title="Housing">🏠</button>
-                        <button class="category-icon" data-category="health" title="Health">🏥</button>
-                        <button class="category-icon" data-category="fun" title="Entertainment">🎮</button>
-                        <button class="category-icon" data-category="work" title="Work/Employee">💼</button>
-                    </div>
-
-                    <!-- Recurring Toggle (shown only for expense mode) -->
-                    <div id="recurring-toggle-row" class="recurring-toggle-row">
-                        <label class="recurring-toggle-label">
-                            <input type="checkbox" id="checkbox-recurring" class="recurring-checkbox">
-                            <span data-i18n="recurringToggle">🔁 Recurring?</span>
-                        </label>
-                    </div>
-
-                    <!-- Recurring Frequency Row (shown when recurring is checked) -->
-                    <div id="recurring-frequency-row" class="recurring-frequency-row" style="display: none;">
-                        <span data-i18n="recurringEvery">Every</span>
-                        <input type="number" id="input-recurring-months" class="input input-sm" value="1" min="1"
-                            max="12">
-                        <span data-i18n="recurringMonths">month(s)</span>
-                    </div>
-
-                    <div class="form-group">
-                        <input type="text" id="input-desc" class="input"
-                            placeholder="Description (e.g. Rent, Groceries)">
-                    </div>
-                    <div class="form-group">
-                        <input type="text" inputmode="decimal" id="input-amount" class="input"
-                            placeholder="Amount (0.00)" min="0">
-                    </div>
-
-                    <!-- 2025-12-22: Attachment Section -->
-                    <div class="attachment-section">
-                        <div id="attachment-list" class="attachment-list">
-                            <!-- Attachment thumbnails rendered by JS -->
-                        </div>
-                        <div class="attachment-row">
-                            <button type="button" id="btn-attach" class="btn btn-secondary btn-sm">
-                                📎 <span data-i18n="attachFile">Attach File</span>
+                        <!-- Credit Card Info (shown for credit accounts) -->
+                        <div id="credit-card-info" class="credit-card-info" style="display: none;">
+                            <div class="credit-info-row">
+                                <span id="credit-available-label">Available Credit:</span>
+                                <span id="credit-available-value">$0.00</span>
+                            </div>
+                            <div class="credit-info-row">
+                                <span id="credit-limit-label">Limit:</span>
+                                <span id="credit-limit-value">$0.00</span>
+                            </div>
+                            <div class="credit-info-row">
+                                <span id="credit-dates-label"></span>
+                                <span id="credit-dates-value"></span>
+                            </div>
+                            <!-- 2025-12-15: Edit CC settings button -->
+                            <button id="btn-edit-credit" class="btn btn-secondary btn-sm"
+                                style="margin-top: var(--space-sm); width: 100%;">
+                                ⚙️ <span data-i18n="editCreditSettings">Edit Settings</span>
                             </button>
-                            <input type="file" id="input-attachment" multiple hidden
-                                accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,.doc,.docx,.xls,.xlsx">
-                            <div id="attachment-progress" class="attachment-progress" style="display:none">
-                                <div class="progress-bar-track">
-                                    <div id="progress-bar-fill" class="progress-bar-fill"></div>
-                                </div>
-                                <span id="progress-text" class="progress-text"
-                                    data-i18n="attachmentUploading">Uploading...</span>
+                        </div>
+
+                        <!-- Account Settings (shown for checking/cash accounts) -->
+                        <div id="account-settings-info" class="credit-card-info" style="display: none;">
+                            <button id="btn-edit-account-settings" class="btn btn-secondary btn-sm"
+                                style="width: 100%;">
+                                ⚙️ <span data-i18n="editCreditSettings">Edit Settings</span>
+                            </button>
+                        </div>
+
+                        <!-- 2025-12-16: Crypto account info (shows crypto balance below USD value) -->
+                        <div id="crypto-account-info" class="crypto-account-info" style="display: none;">
+                            <div class="crypto-balance-row">
+                                <span id="crypto-balance-value">0.00000000 BTC</span>
                             </div>
                         </div>
+
+                        <!-- 2025-12-15: Add Transaction Form (combined into balance card) -->
+                        <div class="transaction-form-divider"></div>
+                        <h3 id="add-transaction-title" class="transaction-form-title">Add Transaction</h3>
+
+                        <!-- Transaction Mode Toggle -->
+                        <div class="transaction-mode-row">
+                            <button id="btn-mode-expense" class="btn btn-mode-toggle active" data-mode="expense">
+                                <span data-i18n="modeExpense">➖ Expense</span>
+                            </button>
+                            <button id="btn-mode-income" class="btn btn-mode-toggle" data-mode="income">
+                                <span data-i18n="modeIncome">➕ Income</span>
+                            </button>
+                        </div>
+
+                        <!-- Category Icons (shown only for expense mode) -->
+                        <div id="category-icons" class="category-icons-row">
+                            <button class="category-icon active" data-category="general" title="General">💸</button>
+                            <button class="category-icon" data-category="food" title="Food">🍔</button>
+                            <button class="category-icon" data-category="utilities" title="Utilities">💡</button>
+                            <button class="category-icon" data-category="transport" title="Transportation">🚗</button>
+                            <button class="category-icon" data-category="housing" title="Housing">🏠</button>
+                            <button class="category-icon" data-category="health" title="Health">🏥</button>
+                            <button class="category-icon" data-category="fun" title="Entertainment">🎮</button>
+                            <button class="category-icon" data-category="work" title="Work/Employee">💼</button>
+                        </div>
+
+                        <!-- Recurring Toggle (shown only for expense mode) -->
+                        <div id="recurring-toggle-row" class="recurring-toggle-row">
+                            <label class="recurring-toggle-label">
+                                <input type="checkbox" id="checkbox-recurring" class="recurring-checkbox">
+                                <span data-i18n="recurringToggle">🔁 Recurring?</span>
+                            </label>
+                        </div>
+
+                        <!-- Recurring Frequency Row (shown when recurring is checked) -->
+                        <div id="recurring-frequency-row" class="recurring-frequency-row" style="display: none;">
+                            <span data-i18n="recurringEvery">Every</span>
+                            <input type="number" id="input-recurring-months" class="input input-sm" value="1" min="1"
+                                max="12">
+                            <span data-i18n="recurringMonths">month(s)</span>
+                        </div>
+
+                        <div class="form-group">
+                            <input type="text" id="input-desc" class="input"
+                                placeholder="Description (e.g. Rent, Groceries)">
+                        </div>
+                        <div class="form-group">
+                            <input type="text" inputmode="decimal" id="input-amount" class="input"
+                                placeholder="Amount (0.00)" min="0">
+                        </div>
+
+                        <!-- 2025-12-22: Attachment Section -->
+                        <div class="attachment-section">
+                            <div id="attachment-list" class="attachment-list">
+                                <!-- Attachment thumbnails rendered by JS -->
+                            </div>
+                            <div class="attachment-row">
+                                <button type="button" id="btn-attach" class="btn btn-secondary btn-sm">
+                                    📎 <span data-i18n="attachFile">Attach File</span>
+                                </button>
+                                <input type="file" id="input-attachment" multiple hidden
+                                    accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,.doc,.docx,.xls,.xlsx">
+                                <div id="attachment-progress" class="attachment-progress" style="display:none">
+                                    <div class="progress-bar-track">
+                                        <div id="progress-bar-fill" class="progress-bar-fill"></div>
+                                    </div>
+                                    <span id="progress-text" class="progress-text"
+                                        data-i18n="attachmentUploading">Uploading...</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button id="btn-add-transaction" class="btn btn-danger btn-action btn-full">
+                            <span data-i18n="btnAddTransaction">💸 Add Expense</span>
+                        </button>
                     </div>
-
-                    <button id="btn-add-transaction" class="btn btn-danger btn-action btn-full">
-                        <span data-i18n="btnAddTransaction">💸 Add Expense</span>
-                    </button>
-
                 </section>
 
                 <!-- 2025-12-22: History Card - converted to widget structure for popout/collapse support -->
