@@ -3145,6 +3145,8 @@ html.dark *::-webkit-scrollbar-thumb:hover {
     z-index: 9999;
     min-width: 350px;
     min-height: 200px;
+    height: 500px;
+    /* 2025-12-22: Default height to enable flex scrolling */
     max-width: 90vw;
     max-height: 90vh;
     background-color: var(--color-surface);
@@ -3204,10 +3206,10 @@ html.dark *::-webkit-scrollbar-thumb:hover {
 .widget-popout-content {
     padding: var(--space-md);
     flex: 1;
-    /* Grow to fill the window */
+    min-height: 0;
+    /* 2025-12-22: Critical for flex scroll - prevents flex items from overflowing */
     overflow-y: auto;
     display: flex;
-    /* Allow children to use flex: 1 */
     flex-direction: column;
 }
 
@@ -3218,6 +3220,8 @@ html.dark *::-webkit-scrollbar-thumb:hover {
 .widget-popout-content .history-list {
     max-height: none;
     flex: 1;
+    min-height: 0;
+    /* Enable scrolling in flex context */
     overflow-y: auto;
 }
 
