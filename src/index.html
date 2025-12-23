@@ -1331,6 +1331,52 @@ CHANGE LOG:
                 </div>
             </div>
 
+            <!-- 2025-12-22: Auto Backup Toggle (cloud vaults only) -->
+            <div id="settings-backup-section" class="settings-section" style="display: none;">
+                <div class="settings-item">
+                    <div class="settings-item-info">
+                        <span class="settings-item-label" data-i18n="settingsAutoBackup">💾 Auto Backup</span>
+                        <span class="settings-item-desc" data-i18n="settingsAutoBackupDesc">Backup cloud vault locally
+                            every 3 days</span>
+                    </div>
+                    <label class="widget-toggle-switch">
+                        <input type="checkbox" id="checkbox-auto-backup" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="settings-item">
+                    <div class="settings-item-info">
+                        <span class="settings-item-label" data-i18n="settingsBackupNow">💾 Backup Now</span>
+                        <span class="settings-item-desc" data-i18n="settingsBackupNowDesc">Create a local backup
+                            immediately</span>
+                    </div>
+                    <button id="btn-backup-now" class="btn btn-secondary btn-sm">
+                        <span data-i18n="backupNowBtn">Backup</span>
+                    </button>
+                </div>
+                <div class="settings-item">
+                    <div class="settings-item-info">
+                        <span class="settings-item-label" data-i18n="settingsIncludeAttachments">📎 Include
+                            Attachments</span>
+                        <span class="settings-item-desc" data-i18n="settingsIncludeAttachmentsDesc">Download attachments
+                            (slower)</span>
+                    </div>
+                    <label class="widget-toggle-switch">
+                        <input type="checkbox" id="checkbox-backup-attachments">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="settings-item">
+                    <div class="settings-item-info">
+                        <span class="settings-item-label" data-i18n="settingsBackupPath">📁 Backup Location</span>
+                        <span class="settings-item-desc" id="backup-path-display">Default</span>
+                    </div>
+                    <button id="btn-browse-backup-path" class="btn btn-secondary btn-sm">
+                        <span data-i18n="browse">Browse</span>
+                    </button>
+                </div>
+            </div>
+
             <div class="modal-actions">
                 <button id="btn-close-settings" class="btn btn-primary">
                     <span data-i18n="close">Close</span>

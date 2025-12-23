@@ -8,6 +8,7 @@
  * Exposes safe file system APIs via contextBridge.
  * 
  * CHANGE LOG:
+ * - 2025-12-22: Added backup APIs (folder selection, binary writes, path helpers)
  * - 2025-12-15: Initial creation
  * 
  * ==============================================================================
@@ -56,5 +57,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
     minimizeWindow: () => ipcRenderer.send('window-minimize'),
     maximizeWindow: () => ipcRenderer.send('window-maximize'),
     closeWindow: () => ipcRenderer.send('window-close'),
-    isMaximized: () => ipcRenderer.invoke('window-is-maximized')
+    isMaximized: () => ipcRenderer.invoke('window-is-maximized'),
+
+    // 2025-12-22: Auto-backup support
+    getAppDataPath: () => ipcRenderer.invoke('get-app-data-path'),
+    ensureDir: (dirPath) => ipcRenderer.invoke('ensure-dir', dirPath),
+    listFiles: (dirPath) => ipcRenderer.invoke('list-files', dirPath),
+    deleteFile: (filePath) => ipcRenderer.invoke('delete-file', filePath),
+    selectFolder: () => ipcRenderer.invoke('select-folder'),
+    writeFileBinary: (filePath, base64Data) => ipcRenderer.invoke('write-file-binary', filePath, base64Data)
 });

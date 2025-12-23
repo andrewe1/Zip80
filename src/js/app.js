@@ -94,6 +94,7 @@
  * - 2025-12-22: Converted attachment modal to floating draggable/resizable window
  * - 2025-12-22: Added image pan functionality for zoomed attachments (click and drag to pan)
  * - 2025-12-22: Moved zoom button to header bar to prevent scrolling with image content
+ * - 2025-12-22: Added auto-backup for cloud vaults (every 3 days, configurable in settings, backup now button)
  */
 
 (() => {
@@ -372,6 +373,14 @@
         btnCancelInactivity: document.getElementById('btn-cancel-inactivity'),
         btnCloseNow: document.getElementById('btn-close-now'),
 
+        // Auto Backup (2025-12-22)
+        settingsBackupSection: document.getElementById('settings-backup-section'),
+        checkboxAutoBackup: document.getElementById('checkbox-auto-backup'),
+        btnBackupNow: document.getElementById('btn-backup-now'),
+        checkboxBackupAttachments: document.getElementById('checkbox-backup-attachments'),
+        backupPathDisplay: document.getElementById('backup-path-display'),
+        btnBrowseBackupPath: document.getElementById('btn-browse-backup-path'),
+
         // Share Accounts Modal (2025-12-19)
         btnShareVault: document.getElementById('btn-share-vault'),
         btnMoveToCloud: document.getElementById('btn-move-to-cloud'),  // 2025-12-20: Move local vault to cloud
@@ -447,6 +456,7 @@
         initInactivityTimer(); // 2025-12-19: Load inactivity timer settings
         setupActivityTracking(); // 2025-12-19: Track user activity for inactivity timer
         setupAttachments();    // 2025-12-22: Transaction attachments
+        setupAutoBackup();     // 2025-12-22: Auto-backup for cloud vaults
     }
 
     // --- Sticky Notes (2025-12-20) ---
@@ -2422,6 +2432,22 @@
         document.getElementById('settings-modal-title').textContent = t('settingsTitle');
         document.getElementById('settings-modal-desc').textContent = t('settingsDesc');
         elements.checkboxInactivityTimer.checked = isInactivityEnabled;
+
+        // 2025-12-22: Show backup section only for cloud vaults in Electron
+        if (elements.settingsBackupSection) {
+            const showBackup = storageBackend === 'gdrive' && Storage.isElectron;
+            elements.settingsBackupSection.style.display = showBackup ? 'block' : 'none';
+            if (showBackup) {
+                if (elements.checkboxAutoBackup) {
+                    elements.checkboxAutoBackup.checked = isAutoBackupEnabled();
+                }
+                if (elements.checkboxBackupAttachments) {
+                    elements.checkboxBackupAttachments.checked = isBackupAttachmentsEnabled();
+                }
+                updateBackupPathDisplay();
+            }
+        }
+
         elements.settingsModal.style.display = 'flex';
     }
 
@@ -2432,7 +2458,303 @@
         elements.settingsModal.style.display = 'none';
     }
 
-    // --- Share Vault Modal (2025-12-19) ---
+    // --- Auto Backup (2025-12-22) ---
+
+    const BACKUP_INTERVAL_DAYS = 3;
+    const BACKUP_FOLDER_NAME = 'zip80_backups';
+    const MAX_BACKUPS_PER_VAULT = 5;
+    const AUTO_BACKUP_KEY = 'zip80_auto_backup_enabled';
+    const BACKUP_ATTACHMENTS_KEY = 'zip80_backup_attachments_enabled';
+    const BACKUP_CUSTOM_PATH_KEY = 'zip80_backup_custom_path';
+
+    /**
+     * Check if auto-backup is enabled (default: true)
+     */
+    function isAutoBackupEnabled() {
+        const saved = localStorage.getItem(AUTO_BACKUP_KEY);
+        return saved === null ? true : saved === 'true';
+    }
+
+    /**
+     * Set auto-backup enabled state
+     */
+    function setAutoBackupEnabled(enabled) {
+        localStorage.setItem(AUTO_BACKUP_KEY, enabled.toString());
+    }
+
+    /**
+     * Check if attachment backup is enabled (default: false)
+     */
+    function isBackupAttachmentsEnabled() {
+        return localStorage.getItem(BACKUP_ATTACHMENTS_KEY) === 'true';
+    }
+
+    /**
+     * Set attachment backup enabled state
+     */
+    function setBackupAttachmentsEnabled(enabled) {
+        localStorage.setItem(BACKUP_ATTACHMENTS_KEY, enabled.toString());
+    }
+
+    /**
+     * Get custom backup path (null = default)
+     */
+    function getCustomBackupPath() {
+        return localStorage.getItem(BACKUP_CUSTOM_PATH_KEY) || null;
+    }
+
+    /**
+     * Set custom backup path
+     */
+    function setCustomBackupPath(path) {
+        if (path) {
+            localStorage.setItem(BACKUP_CUSTOM_PATH_KEY, path);
+        } else {
+            localStorage.removeItem(BACKUP_CUSTOM_PATH_KEY);
+        }
+    }
+
+    /**
+     * Get the localStorage key for last backup date of a vault
+     */
+    function getBackupDateKey(vaultId) {
+        return `zip80_backup_${vaultId}_last`;
+    }
+
+    /**
+     * Check if backup is needed and run automatically
+     * Called after loading a cloud vault
+     */
+    async function checkAndRunAutoBackup() {
+        // Only run for cloud vaults in Electron
+        if (storageBackend !== 'gdrive' || !gdriveFileId) return;
+        if (!Storage.isElectron) return;
+        if (!isAutoBackupEnabled()) return;
+
+        const lastBackupKey = getBackupDateKey(gdriveFileId);
+        const lastBackup = localStorage.getItem(lastBackupKey);
+
+        if (lastBackup) {
+            const lastDate = new Date(lastBackup);
+            const now = new Date();
+            const daysSince = (now - lastDate) / (1000 * 60 * 60 * 24);
+
+            if (daysSince < BACKUP_INTERVAL_DAYS) {
+                console.log(`[AutoBackup] Last backup was ${daysSince.toFixed(1)} days ago, skipping`);
+                return;
+            }
+        }
+
+        // Run backup
+        console.log('[AutoBackup] Starting automatic backup...');
+        await performAutoBackup();
+    }
+
+    /**
+     * Perform the actual backup - save vault data to local file
+     */
+    async function performAutoBackup() {
+        if (!Storage.isElectron || !window.electronAPI) {
+            showToast(I18n.t('toastBackupError'), true);
+            return;
+        }
+
+        try {
+            // Determine backup directory (custom path or default)
+            const customPath = getCustomBackupPath();
+            let backupDir;
+            if (customPath) {
+                backupDir = customPath;
+            } else {
+                const appDataPath = await window.electronAPI.getAppDataPath();
+                backupDir = `${appDataPath}/${BACKUP_FOLDER_NAME}`;
+            }
+
+            // Ensure backup directory exists
+            await window.electronAPI.ensureDir(backupDir);
+
+            // Get vault name (from GDrive for cloud vaults, or use generic name)
+            let vaultName = 'vault';
+            if (storageBackend === 'gdrive' && gdriveFileId) {
+                try {
+                    vaultName = await GDrive.getVaultName(gdriveFileId);
+                } catch (e) {
+                    console.warn('[AutoBackup] Could not get vault name:', e);
+                }
+            }
+            // Sanitize filename
+            vaultName = vaultName.replace(/\.json$/i, '').replace(/[<>:"/\\|?*]/g, '_');
+
+            const dateStr = new Date().toISOString().slice(0, 10);
+            const backupFilename = `${vaultName}_backup_${dateStr}.json`;
+            const backupPath = `${backupDir}/${backupFilename}`;
+
+            // Write vault JSON backup
+            await window.electronAPI.writeFile(backupPath, data);
+
+            // Optionally backup attachments
+            if (isBackupAttachmentsEnabled() && storageBackend === 'gdrive') {
+                await backupAttachments(backupDir, vaultName, dateStr);
+            }
+
+            // Update last backup date
+            localStorage.setItem(getBackupDateKey(gdriveFileId), new Date().toISOString());
+
+            // Clean up old backups (keep only MAX_BACKUPS_PER_VAULT)
+            await cleanupOldBackups(backupDir, vaultName);
+
+            console.log(`[AutoBackup] Backup saved to ${backupPath}`);
+            showToast(`${I18n.t('toastBackupCreated')} ${backupDir}`);
+        } catch (err) {
+            console.error('[AutoBackup] Error:', err);
+            showToast(I18n.t('toastBackupError'), true);
+        }
+    }
+
+    /**
+     * Backup all attachments from transactions
+     */
+    async function backupAttachments(backupDir, vaultName, dateStr) {
+        const attachmentsDir = `${backupDir}/${vaultName}_attachments_${dateStr}`;
+        await window.electronAPI.ensureDir(attachmentsDir);
+
+        let count = 0;
+        for (const tx of (data.transactions || [])) {
+            if (!tx.attachments || tx.attachments.length === 0) continue;
+
+            for (const attachment of tx.attachments) {
+                if (!attachment.driveFileId) continue;
+
+                try {
+                    // Download from GDrive
+                    const blob = await GDrive.downloadAttachment(attachment.driveFileId);
+                    const base64 = await blobToBase64(blob);
+
+                    // Save to local file
+                    const filename = attachment.name || `attachment_${attachment.driveFileId}`;
+                    await window.electronAPI.writeFileBinary(`${attachmentsDir}/${filename}`, base64);
+                    count++;
+                } catch (e) {
+                    console.warn(`[AutoBackup] Could not backup attachment ${attachment.name}:`, e);
+                }
+            }
+        }
+
+        if (count > 0) {
+            console.log(`[AutoBackup] Backed up ${count} attachments`);
+        }
+    }
+
+    /**
+     * Convert Blob to base64 string
+     */
+    function blobToBase64(blob) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                const base64 = reader.result.split(',')[1];
+                resolve(base64);
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+        });
+    }
+
+    /**
+     * Clean up old backups, keeping only the most recent ones
+     */
+    async function cleanupOldBackups(backupDir, vaultNamePrefix) {
+        if (!window.electronAPI) return;
+
+        try {
+            const result = await window.electronAPI.listFiles(backupDir);
+            if (!result.success || !result.files) return;
+
+            // Filter files for this vault
+            const vaultBackups = result.files
+                .filter(f => f.startsWith(vaultNamePrefix + '_backup_') && f.endsWith('.json'))
+                .sort()
+                .reverse();
+
+            // Delete excess backups
+            if (vaultBackups.length > MAX_BACKUPS_PER_VAULT) {
+                const toDelete = vaultBackups.slice(MAX_BACKUPS_PER_VAULT);
+                for (const filename of toDelete) {
+                    await window.electronAPI.deleteFile(`${backupDir}/${filename}`);
+                    console.log(`[AutoBackup] Deleted old backup: ${filename}`);
+                }
+            }
+        } catch (err) {
+            console.warn('[AutoBackup] Cleanup error:', err);
+        }
+    }
+
+    /**
+     * Handle manual "Backup Now" button click
+     */
+    async function handleBackupNow() {
+        if (!Storage.isElectron) {
+            showToast(I18n.t('toastBackupError'), true);
+            return;
+        }
+        await performAutoBackup();
+    }
+
+    /**
+     * Setup auto-backup event listeners
+     * Called during init
+     */
+    function setupAutoBackup() {
+        // Toggle checkbox
+        if (elements.checkboxAutoBackup) {
+            elements.checkboxAutoBackup.addEventListener('change', () => {
+                setAutoBackupEnabled(elements.checkboxAutoBackup.checked);
+            });
+        }
+
+        // Backup Now button
+        if (elements.btnBackupNow) {
+            elements.btnBackupNow.addEventListener('click', handleBackupNow);
+        }
+
+        // Attachments checkbox
+        if (elements.checkboxBackupAttachments) {
+            elements.checkboxBackupAttachments.addEventListener('change', () => {
+                setBackupAttachmentsEnabled(elements.checkboxBackupAttachments.checked);
+            });
+        }
+
+        // Browse backup path button
+        if (elements.btnBrowseBackupPath) {
+            elements.btnBrowseBackupPath.addEventListener('click', async () => {
+                if (!window.electronAPI) return;
+                const path = await window.electronAPI.selectFolder();
+                if (path) {
+                    setCustomBackupPath(path);
+                    updateBackupPathDisplay();
+                }
+            });
+        }
+    }
+
+    /**
+     * Update the backup path display in settings
+     */
+    function updateBackupPathDisplay() {
+        if (!elements.backupPathDisplay) return;
+        const customPath = getCustomBackupPath();
+        if (customPath) {
+            // Show shortened path
+            const parts = customPath.split(/[/\\]/);
+            const shortPath = parts.length > 2 ? '.../' + parts.slice(-2).join('/') : customPath;
+            elements.backupPathDisplay.textContent = shortPath;
+            elements.backupPathDisplay.title = customPath;
+        } else {
+            elements.backupPathDisplay.textContent = I18n.t('backupPathDefault') || 'Default';
+            elements.backupPathDisplay.title = '';
+        }
+    }
+
 
     /**
      * Open share vault modal with account grid
@@ -4129,6 +4451,9 @@
 
         // 2025-12-19: Start inactivity timer when vault is opened
         resetInactivityTimer();
+
+        // 2025-12-22: Check if auto-backup is needed for cloud vaults
+        checkAndRunAutoBackup();
     }
 
     function render() {

@@ -398,6 +398,20 @@ const I18n = (() => {
             settingsInactivityDesc: 'Close vault after 10 minutes of inactivity',
             close: 'Close',
 
+            // Auto Backup (2025-12-22)
+            settingsAutoBackup: '💾 Auto Backup',
+            settingsAutoBackupDesc: 'Backup cloud vault locally every 3 days',
+            settingsBackupNow: '💾 Backup Now',
+            settingsBackupNowDesc: 'Create a local backup immediately',
+            backupNowBtn: 'Backup',
+            toastBackupCreated: '💾 Backup saved!',
+            toastBackupError: 'Could not create backup',
+            settingsIncludeAttachments: '📎 Include Attachments',
+            settingsIncludeAttachmentsDesc: 'Download attachments (slower)',
+            settingsBackupPath: '📁 Backup Location',
+            backupPathDefault: 'Default',
+            browse: 'Browse',
+
             // Inactivity Warning (2025-12-19)
             inactivityWarning: 'Vault will close due to inactivity in',
             inactivitySeconds: 'seconds',
@@ -748,6 +762,20 @@ const I18n = (() => {
             settingsInactivityTimer: '⏱️ Temporizador de Inactividad',
             settingsInactivityDesc: 'Cerrar bóveda después de 10 minutos de inactividad',
             close: 'Cerrar',
+
+            // Auto Backup (2025-12-22)
+            settingsAutoBackup: '💾 Respaldo Automático',
+            settingsAutoBackupDesc: 'Respaldar bóveda de nube localmente cada 3 días',
+            settingsBackupNow: '💾 Respaldar Ahora',
+            settingsBackupNowDesc: 'Crear un respaldo local inmediatamente',
+            backupNowBtn: 'Respaldar',
+            toastBackupCreated: '💾 ¡Respaldo guardado!',
+            toastBackupError: 'No se pudo crear el respaldo',
+            settingsIncludeAttachments: '📎 Incluir Adjuntos',
+            settingsIncludeAttachmentsDesc: 'Descargar adjuntos (más lento)',
+            settingsBackupPath: '📁 Ubicación de Respaldo',
+            backupPathDefault: 'Predeterminado',
+            browse: 'Explorar',
 
             // Inactivity Warning (2025-12-19)
             inactivityWarning: 'La bóveda se cerrará por inactividad en',

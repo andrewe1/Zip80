@@ -8,6 +8,7 @@
  * operations via IPC (Inter-Process Communication).
  * 
  * CHANGE LOG:
+ * - 2025-12-22: Added IPC handlers for backup feature (folder selection, binary file write)
  * - 2025-12-17: Integrated electron-updater for automatic GitHub releases
  * - 2025-12-16: Added local HTTP server (port 17280) for Google OAuth compatibility
  * - 2025-12-16: Changed loadFile() to loadURL() for OAuth to work in Electron
@@ -346,4 +347,70 @@ ipcMain.handle('get-file-name', async (event, filePath) => {
 // Check if file exists
 ipcMain.handle('file-exists', async (event, filePath) => {
     return fs.existsSync(filePath);
+});
+
+// --- 2025-12-22: Auto-Backup IPC Handlers ---
+
+// Get app data path for backup storage
+ipcMain.handle('get-app-data-path', async () => {
+    return userDataPath;
+});
+
+// Ensure directory exists (create if needed)
+ipcMain.handle('ensure-dir', async (event, dirPath) => {
+    try {
+        if (!fs.existsSync(dirPath)) {
+            fs.mkdirSync(dirPath, { recursive: true });
+        }
+        return { success: true };
+    } catch (e) {
+        return { success: false, error: e.message };
+    }
+});
+
+// List files in a directory
+ipcMain.handle('list-files', async (event, dirPath) => {
+    try {
+        if (!fs.existsSync(dirPath)) {
+            return { success: true, files: [] };
+        }
+        const files = fs.readdirSync(dirPath);
+        return { success: true, files };
+    } catch (e) {
+        return { success: false, error: e.message };
+    }
+});
+
+// Delete a file
+ipcMain.handle('delete-file', async (event, filePath) => {
+    try {
+        if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
+        }
+        return { success: true };
+    } catch (e) {
+        return { success: false, error: e.message };
+    }
+});
+
+// 2025-12-22: Select folder dialog for custom backup path
+ipcMain.handle('select-folder', async () => {
+    const result = await dialog.showOpenDialog(mainWindow, {
+        properties: ['openDirectory']
+    });
+    if (result.canceled || result.filePaths.length === 0) {
+        return null;
+    }
+    return result.filePaths[0];
+});
+
+// 2025-12-22: Write binary file (for attachment backups)
+ipcMain.handle('write-file-binary', async (event, filePath, base64Data) => {
+    try {
+        const buffer = Buffer.from(base64Data, 'base64');
+        fs.writeFileSync(filePath, buffer);
+        return { success: true };
+    } catch (e) {
+        return { success: false, error: e.message };
+    }
 });
