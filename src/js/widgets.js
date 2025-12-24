@@ -60,6 +60,7 @@
  * - 2025-12-22: Popout windows now respect collapsed state and shrink to header when collapsed
  * - 2025-12-22: Added attachment badge click delegation for popped-out history widget
  * - 2025-12-23: Added SortableJS initialization for workspace-main (left-side widgets) to enable drag-and-drop
+ * - 2025-12-23: Added collapse toggle button to popout window headers for expand/collapse when floating
  */
 
 const Widgets = (() => {
@@ -560,8 +561,10 @@ const Widgets = (() => {
         win.dataset.widgetId = widgetId;
         win.style.zIndex = ++topZIndex;
 
+        // 2025-12-23: Added collapse toggle button to popout header
         win.innerHTML = `
             <div class="widget-popout-header">
+                <button class="widget-popout-collapse" title="Collapse/Expand">▼</button>
                 <span class="widget-popout-title">${title}</span>
                 <button class="widget-popout-close" title="Close">✕</button>
             </div>
@@ -573,6 +576,13 @@ const Widgets = (() => {
         closeBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             closePopout(widgetId);
+        });
+
+        // 2025-12-23: Collapse toggle button handler for popout windows
+        const collapseBtn = win.querySelector('.widget-popout-collapse');
+        collapseBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            togglePopoutCollapse(widgetId);
         });
 
         // Drag handler
@@ -703,9 +713,12 @@ const Widgets = (() => {
         widget.style.display = 'none';
 
         // 2025-12-22: If the docked widget is collapsed, collapse the popout too
+        // 2025-12-23: Also update the collapse button icon
         if (widget.classList.contains('collapsed')) {
             const popoutContent = win.querySelector('.widget-popout-content');
+            const collapseBtn = win.querySelector('.widget-popout-collapse');
             if (popoutContent) popoutContent.style.display = 'none';
+            if (collapseBtn) collapseBtn.textContent = '▶';  // Collapsed arrow
             win.classList.add('collapsed');
             win.style.height = 'auto';
             win.style.minHeight = '50px';
@@ -727,6 +740,54 @@ const Widgets = (() => {
             const widget = document.querySelector(`.widget-card[data-widget-id="${widgetId}"]`);
             if (widget) {
                 widget.style.display = '';
+            }
+        }
+    }
+
+    /**
+     * 2025-12-23: Toggle collapse state for a popout window
+     * Syncs state with the original docked widget
+     * @param {string} widgetId
+     */
+    function togglePopoutCollapse(widgetId) {
+        const entry = activePopouts.get(widgetId);
+        if (!entry || !entry.window) return;
+
+        const win = entry.window;
+        const content = win.querySelector('.widget-popout-content');
+        const collapseBtn = win.querySelector('.widget-popout-collapse');
+        const isCollapsed = win.classList.contains('collapsed');
+
+        if (isCollapsed) {
+            // Expand the popout
+            if (content) content.style.display = '';
+            win.classList.remove('collapsed');
+            if (collapseBtn) collapseBtn.textContent = '▼';
+            // Restore original height
+            if (win.dataset.originalHeight) {
+                win.style.height = win.dataset.originalHeight;
+                win.style.minHeight = '';
+            }
+        } else {
+            // Collapse the popout
+            if (content) content.style.display = 'none';
+            win.classList.add('collapsed');
+            if (collapseBtn) collapseBtn.textContent = '▶';
+            // Store and shrink
+            if (!win.dataset.originalHeight) {
+                win.dataset.originalHeight = win.style.height || getComputedStyle(win).height;
+            }
+            win.style.height = 'auto';
+            win.style.minHeight = '50px';
+        }
+
+        // Sync state to original docked widget (without saving to preferences)
+        const widget = document.querySelector(`.widget-card[data-widget-id="${widgetId}"]`);
+        if (widget) {
+            if (isCollapsed) {
+                widget.classList.remove('collapsed');
+            } else {
+                widget.classList.add('collapsed');
             }
         }
     }
