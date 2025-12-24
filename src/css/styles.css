@@ -92,6 +92,8 @@
  * - 2025-12-22: Added zoom button header style (.btn-zoom-header) with proper spacing from close button
  * - 2025-12-23: Added full-width styling for main widgets when dragged to sidebar (cross-container drag support)
  * - 2025-12-23: Added collapse toggle button styles for popout window headers
+ * - 2025-12-23: Converted workspace-sidebar from flex to CSS Grid (2-column) for flattened widget layout
+ * - 2025-12-23: Added .sidebar-widget-half and .sidebar-widget-full classes for grid column spanning
  * ============================================================================
  */
 
@@ -965,6 +967,10 @@ html.dark .save-status-error {
     flex: 1;
     max-width: 520px;
     min-width: 0;
+    /* 2025-12-23: Flex column layout for consistent SortableJS behavior */
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
 }
 
 .workspace-sidebar {
@@ -972,9 +978,27 @@ html.dark .save-status-error {
     flex-shrink: 0;
     position: sticky;
     top: var(--space-lg);
+    /* 2025-12-23: CSS Grid for flattened widget layout - all widgets as direct children */
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-md);
+    align-items: start;
+    align-content: start;
 }
 
-/* 2025-12-15: Two-widget side-by-side layout */
+/* 2025-12-23: Widget sizing classes for the flattened sidebar */
+.sidebar-widget-half {
+    /* Takes one column (default grid behavior) */
+    min-width: 0;
+    /* Prevent overflow in grid cells */
+}
+
+.sidebar-widget-full {
+    /* Spans both columns for full-width widgets like Calendar */
+    grid-column: span 2;
+}
+
+/* 2025-12-15: Two-widget side-by-side layout (legacy - kept for compatibility) */
 /* 2025-12-16: Default stretch for matching heights, collapsed widgets shrink via align-self */
 /* 2025-12-23: Changed to align-items: start so collapsed widgets don't stretch */
 .balance-widgets-row {
@@ -986,16 +1010,10 @@ html.dark .save-status-error {
     /* margin handled by sidebar flex gap */
 }
 
-/* Remove margin from cards inside sidebar to prevent double spacing */
-.workspace-sidebar .card {
+/* Remove margin from cards inside grid containers to prevent double spacing */
+.workspace-sidebar .card,
+.workspace-main .card {
     margin-bottom: 0;
-}
-
-/* Add consistent gap between all sidebar widgets */
-.workspace-sidebar {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-md);
 }
 
 /* Consistent padding handled by .widget-card */

@@ -61,6 +61,9 @@
  * - 2025-12-22: Added attachment badge click delegation for popped-out history widget
  * - 2025-12-23: Added SortableJS initialization for workspace-main (left-side widgets) to enable drag-and-drop
  * - 2025-12-23: Added collapse toggle button to popout window headers for expand/collapse when floating
+ * - 2025-12-23: Flattened sidebar structure - all widgets are now direct children for independent dragging
+ * - 2025-12-23: Removed row sortables; sidebar uses single SortableJS instance with CSS Grid layout
+ * - 2025-12-23: Added invertSwap and swapThreshold options to improve drag-to-top behavior
  */
 
 const Widgets = (() => {
@@ -319,50 +322,34 @@ const Widgets = (() => {
 
         console.log('Widgets: Initializing SortableJS...');
 
-        // Make widgets within each row swappable (Bank/Credit, Recurring/Exchange)
-        const widgetRows = document.querySelectorAll('.balance-widgets-row');
-        console.log('Widgets: Found', widgetRows.length, 'widget rows');
+        // 2025-12-23: Shared group for cross-container dragging (sidebar and main workspace)
+        const sharedGroup = {
+            name: 'workspace-widgets',
+            pull: true,
+            put: true
+        };
 
-        widgetRows.forEach((row, index) => {
-            const widgets = row.querySelectorAll('.widget-card');
-            console.log('Widgets: Row', index, 'has', widgets.length, 'widgets');
-
-            if (widgets.length > 1) {
-                const sortable = new Sortable(row, {
-                    animation: 200,
-                    handle: '.widget-drag-handle',
-                    ghostClass: 'widget-ghost',
-                    chosenClass: 'widget-chosen',
-                    dragClass: 'widget-drag',
-                    draggable: '.widget-card',
-                    onStart: function (evt) {
-                        console.log('Widgets: Drag started on', evt.item.dataset.widgetId);
-                    },
-                    onEnd: handleDragEnd
-                });
-                sortableInstances.push(sortable);
-            }
-        });
-
-        // 2025-12-23: Shared group name for cross-container dragging between main and sidebar
-        const sharedGroup = 'workspace-widgets';
-
-        // Make the main sidebar sortable for reordering rows and standalone widgets
+        // 2025-12-23: Flattened sidebar - all widgets are direct children, no row containers
         const sidebar = document.querySelector('.workspace-sidebar');
         if (sidebar) {
-            const directChildren = sidebar.querySelectorAll(':scope > .card.widget-card, :scope > .balance-widgets-row');
-            console.log('Widgets: Sidebar has', directChildren.length, 'draggable children');
+            const sidebarWidgets = sidebar.querySelectorAll(':scope > .widget-card');
+            console.log('Widgets: Sidebar has', sidebarWidgets.length, 'draggable widgets');
 
             const sidebarSortable = new Sortable(sidebar, {
-                group: sharedGroup,  // 2025-12-23: Enable cross-container dragging
+                group: sharedGroup,  // Allow cross-container dragging with main workspace
                 animation: 200,
                 handle: '.widget-drag-handle',
                 ghostClass: 'widget-ghost',
                 chosenClass: 'widget-chosen',
                 dragClass: 'widget-drag',
-                draggable: '.card.widget-card, .balance-widgets-row',
+                draggable: '.widget-card',
+                // 2025-12-23: Improved swap detection for independent widget dragging
+                invertSwap: true,
+                swapThreshold: 0.3,
+                emptyInsertThreshold: 50,
+                fallbackTolerance: 5,
                 onStart: function (evt) {
-                    console.log('Widgets: Sidebar drag started');
+                    console.log('Widgets: Sidebar drag started on', evt.item.dataset.widgetId);
                 },
                 onEnd: handleDragEnd
             });
@@ -384,6 +371,11 @@ const Widgets = (() => {
                 chosenClass: 'widget-chosen',
                 dragClass: 'widget-drag',
                 draggable: '.widget-card',
+                // 2025-12-23: Improved swap detection for drag reordering
+                invertSwap: true,
+                swapThreshold: 0.3,
+                emptyInsertThreshold: 50,
+                fallbackTolerance: 5,
                 onStart: function (evt) {
                     console.log('Widgets: Main workspace drag started on', evt.item.dataset.widgetId);
                 },
