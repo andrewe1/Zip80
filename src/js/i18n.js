@@ -488,7 +488,14 @@ const I18n = (() => {
             download: 'Download',
             deleteAttachment: 'Delete',
             zoomIn: 'Zoom In',
-            zoomOut: 'Zoom Out'
+            zoomOut: 'Zoom Out',
+
+            // Stocks Widget (2025-12-23)
+            widgetStocks: 'Stocks',
+            stocksCustomize: 'Customize',
+            stocksModalDesc: 'Select up to 10 stocks to display in your widget.',
+            stocksMaxLimit: 'Maximum 10 stocks allowed',
+            loading: 'Loading...'
         },
 
         es: {
@@ -853,7 +860,14 @@ const I18n = (() => {
             download: 'Descargar',
             deleteAttachment: 'Eliminar',
             zoomIn: 'Acercar',
-            zoomOut: 'Alejar'
+            zoomOut: 'Alejar',
+
+            // Stocks Widget (2025-12-23)
+            widgetStocks: 'Acciones',
+            stocksCustomize: 'Personalizar',
+            stocksModalDesc: 'Selecciona hasta 10 acciones para mostrar en tu widget.',
+            stocksMaxLimit: 'Máximo 10 acciones permitidas',
+            loading: 'Cargando...'
         }
     };
 

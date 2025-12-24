@@ -429,7 +429,18 @@
         btnCloseAttachment: document.getElementById('btn-close-attachment'),
         btnZoomAttachment: document.getElementById('btn-zoom-attachment'),
         btnDownloadAttachment: document.getElementById('btn-download-attachment'),
-        btnDeleteAttachment: document.getElementById('btn-delete-attachment')
+        btnDeleteAttachment: document.getElementById('btn-delete-attachment'),
+
+        // Stocks Widget (2025-12-23)
+        stocksList: document.getElementById('stocks-list'),
+        stocksEmpty: document.getElementById('stocks-empty'),
+        stocksUpdated: document.getElementById('stocks-updated'),
+        btnCustomizeStocks: document.getElementById('btn-customize-stocks'),
+        stocksModal: document.getElementById('stocks-modal'),
+        inputStockSearch: document.getElementById('input-stock-search'),
+        stockSelectionList: document.getElementById('stock-selection-list'),
+        btnCancelStocks: document.getElementById('btn-cancel-stocks'),
+        btnSaveStocks: document.getElementById('btn-save-stocks')
     };
 
     // --- Initialization ---
@@ -457,6 +468,8 @@
         setupActivityTracking(); // 2025-12-19: Track user activity for inactivity timer
         setupAttachments();    // 2025-12-22: Transaction attachments
         setupAutoBackup();     // 2025-12-22: Auto-backup for cloud vaults
+        setupStocksWidget();   // 2025-12-23: Stocks widget
+        fetchStockPrices();    // 2025-12-23: Load stock prices
     }
 
     // --- Sticky Notes (2025-12-20) ---
@@ -5985,6 +5998,316 @@
         setTimeout(() => {
             toast.classList.remove('show');
         }, 2000);
+    }
+
+    // --- Stocks Widget (2025-12-23) ---
+
+    const STOCKS_STORAGE_KEY = 'zip80_stocks_preferences';
+    const DEFAULT_STOCKS = [
+        { symbol: 'AAPL', name: 'Apple Inc.' },
+        { symbol: 'MSFT', name: 'Microsoft Corp.' },
+        { symbol: 'GOOGL', name: 'Alphabet Inc.' },
+        { symbol: 'AMZN', name: 'Amazon.com Inc.' },
+        { symbol: 'TSLA', name: 'Tesla Inc.' }
+    ];
+
+    // Available stocks for customization modal
+    const AVAILABLE_STOCKS = [
+        { symbol: 'AAPL', name: 'Apple Inc.' },
+        { symbol: 'MSFT', name: 'Microsoft Corp.' },
+        { symbol: 'GOOGL', name: 'Alphabet Inc.' },
+        { symbol: 'AMZN', name: 'Amazon.com Inc.' },
+        { symbol: 'TSLA', name: 'Tesla Inc.' },
+        { symbol: 'NVDA', name: 'NVIDIA Corp.' },
+        { symbol: 'META', name: 'Meta Platforms' },
+        { symbol: 'BRK-B', name: 'Berkshire Hathaway' },
+        { symbol: 'JPM', name: 'JPMorgan Chase' },
+        { symbol: 'V', name: 'Visa Inc.' },
+        { symbol: 'JNJ', name: 'Johnson & Johnson' },
+        { symbol: 'WMT', name: 'Walmart Inc.' },
+        { symbol: 'PG', name: 'Procter & Gamble' },
+        { symbol: 'MA', name: 'Mastercard Inc.' },
+        { symbol: 'UNH', name: 'UnitedHealth Group' },
+        { symbol: 'HD', name: 'Home Depot' },
+        { symbol: 'DIS', name: 'Walt Disney Co.' },
+        { symbol: 'NFLX', name: 'Netflix Inc.' },
+        { symbol: 'INTC', name: 'Intel Corp.' },
+        { symbol: 'AMD', name: 'AMD Inc.' }
+    ];
+
+    let stocksData = {};  // Cached stock data { symbol: { price, change, changePercent } }
+    let selectedStocks = [];  // User's selected stocks
+
+    /**
+     * Load stock preferences from localStorage
+     */
+    function loadStockPreferences() {
+        try {
+            const saved = localStorage.getItem(STOCKS_STORAGE_KEY);
+            if (saved) {
+                selectedStocks = JSON.parse(saved);
+            } else {
+                selectedStocks = DEFAULT_STOCKS.map(s => s.symbol);
+            }
+        } catch (e) {
+            console.error('Failed to load stock preferences:', e);
+            selectedStocks = DEFAULT_STOCKS.map(s => s.symbol);
+        }
+    }
+
+    /**
+     * Save stock preferences to localStorage
+     */
+    function saveStockPreferences() {
+        try {
+            localStorage.setItem(STOCKS_STORAGE_KEY, JSON.stringify(selectedStocks));
+        } catch (e) {
+            console.error('Failed to save stock preferences:', e);
+        }
+    }
+
+    /**
+     * Fetch stock prices from Yahoo Finance API
+     */
+    async function fetchStockPrices() {
+        loadStockPreferences();
+
+        if (selectedStocks.length === 0) {
+            renderStocksWidget();
+            return;
+        }
+
+        if (elements.stocksUpdated) {
+            elements.stocksUpdated.textContent = I18n.t('loading') || 'Loading...';
+        }
+
+        // Fetch each stock individually (Yahoo Finance doesn't allow batch requests easily)
+        // Using CORS proxy because Yahoo Finance blocks cross-origin requests
+        // Fetch sequentially with delay to avoid proxy rate limiting
+        const CORS_PROXY = 'https://api.allorigins.win/raw?url=';
+
+        const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+        // Fetch a single stock with retry logic
+        const fetchStock = async (symbol, retries = 2) => {
+            for (let attempt = 0; attempt <= retries; attempt++) {
+                try {
+                    const yahooUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=1d`;
+                    const url = CORS_PROXY + encodeURIComponent(yahooUrl);
+
+                    if (attempt > 0) console.log(`[Stocks] Retry ${attempt} for ${symbol}...`);
+                    else console.log(`[Stocks] Fetching ${symbol}...`);
+
+                    const response = await fetch(url);
+
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+                    const data = await response.json();
+                    const quote = data.chart?.result?.[0];
+
+                    if (quote && quote.meta) {
+                        const meta = quote.meta;
+                        const price = meta.regularMarketPrice;
+                        const previousClose = meta.previousClose || meta.chartPreviousClose || price;
+                        const change = price - previousClose;
+                        const changePercent = previousClose ? (change / previousClose) * 100 : 0;
+
+                        console.log(`[Stocks] ${symbol}: $${price} (${changePercent.toFixed(2)}%)`);
+
+                        stocksData[symbol] = {
+                            price: price,
+                            change: change,
+                            changePercent: changePercent,
+                            name: AVAILABLE_STOCKS.find(s => s.symbol === symbol)?.name || symbol
+                        };
+                        return; // Success, exit retry loop
+                    } else {
+                        throw new Error('No quote data in response');
+                    }
+                } catch (err) {
+                    console.warn(`[Stocks] Attempt ${attempt + 1} failed for ${symbol}:`, err.message);
+                    if (attempt < retries) {
+                        await delay(500); // Wait before retry
+                    } else {
+                        // All retries failed
+                        if (!stocksData[symbol]) {
+                            stocksData[symbol] = { price: null, change: 0, changePercent: 0, name: symbol, error: true };
+                        }
+                    }
+                }
+            }
+        };
+
+        for (const symbol of selectedStocks) {
+            await fetchStock(symbol);
+            await delay(300); // Delay between stocks
+        }
+
+        renderStocksWidget();
+
+        // Update timestamp
+        if (elements.stocksUpdated) {
+            const now = new Date();
+            elements.stocksUpdated.textContent = `Updated ${now.toLocaleTimeString()}`;
+        }
+    }
+
+    /**
+     * Render stocks widget with current data
+     */
+    function renderStocksWidget() {
+        if (!elements.stocksList) return;
+
+        if (selectedStocks.length === 0) {
+            elements.stocksList.innerHTML = '';
+            if (elements.stocksEmpty) elements.stocksEmpty.style.display = 'block';
+            return;
+        }
+
+        if (elements.stocksEmpty) elements.stocksEmpty.style.display = 'none';
+
+        elements.stocksList.innerHTML = selectedStocks.map(symbol => {
+            const stock = stocksData[symbol] || { price: null, change: 0, changePercent: 0 };
+            const stockInfo = AVAILABLE_STOCKS.find(s => s.symbol === symbol);
+            const name = stockInfo?.name || symbol;
+
+            const priceStr = stock.price !== null ? `$${stock.price.toFixed(2)}` : '--';
+            const changeClass = stock.change > 0 ? 'positive' : (stock.change < 0 ? 'negative' : 'neutral');
+            const changeSign = stock.change > 0 ? '+' : '';
+            const changeStr = stock.price !== null ? `${changeSign}${stock.changePercent.toFixed(2)}%` : '--';
+
+            return `
+                <div class="stock-item">
+                    <div class="stock-item-left">
+                        <span class="stock-symbol">${symbol}</span>
+                        <span class="stock-name">${escapeHtml(name)}</span>
+                    </div>
+                    <div class="stock-item-right">
+                        <span class="stock-price">${priceStr}</span>
+                        <span class="stock-change ${changeClass}">${changeStr}</span>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    /**
+     * Open stocks customize modal
+     */
+    function openStocksModal() {
+        if (!elements.stocksModal) return;
+
+        loadStockPreferences();
+        renderStockSelectionList();
+
+        elements.stocksModal.style.display = 'flex';
+        if (elements.inputStockSearch) {
+            elements.inputStockSearch.value = '';
+            elements.inputStockSearch.focus();
+        }
+    }
+
+    /**
+     * Close stocks customize modal
+     */
+    function closeStocksModal() {
+        if (elements.stocksModal) {
+            elements.stocksModal.style.display = 'none';
+        }
+    }
+
+    /**
+     * Render stock selection list in modal
+     */
+    function renderStockSelectionList(filter = '') {
+        if (!elements.stockSelectionList) return;
+
+        const filterLower = filter.toLowerCase();
+        const filteredStocks = AVAILABLE_STOCKS.filter(stock =>
+            stock.symbol.toLowerCase().includes(filterLower) ||
+            stock.name.toLowerCase().includes(filterLower)
+        );
+
+        elements.stockSelectionList.innerHTML = filteredStocks.map(stock => {
+            const isSelected = selectedStocks.includes(stock.symbol);
+            return `
+                <label class="stock-select-item ${isSelected ? 'selected' : ''}" data-symbol="${stock.symbol}">
+                    <input type="checkbox" ${isSelected ? 'checked' : ''}>
+                    <div class="stock-select-info">
+                        <span class="stock-select-symbol">${stock.symbol}</span>
+                        <span class="stock-select-name">${escapeHtml(stock.name)}</span>
+                    </div>
+                </label>
+            `;
+        }).join('');
+
+        // Add checkbox change listeners
+        elements.stockSelectionList.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+            checkbox.addEventListener('change', (e) => {
+                const item = e.target.closest('.stock-select-item');
+                const symbol = item.dataset.symbol;
+
+                if (e.target.checked) {
+                    if (!selectedStocks.includes(symbol) && selectedStocks.length < 10) {
+                        selectedStocks.push(symbol);
+                        item.classList.add('selected');
+                    } else if (selectedStocks.length >= 10) {
+                        e.target.checked = false;
+                        showToast(I18n.t('stocksMaxLimit') || 'Maximum 10 stocks allowed', false);
+                    }
+                } else {
+                    selectedStocks = selectedStocks.filter(s => s !== symbol);
+                    item.classList.remove('selected');
+                }
+            });
+        });
+    }
+
+    /**
+     * Save stock selection from modal
+     */
+    function saveStockSelection() {
+        saveStockPreferences();
+        closeStocksModal();
+        fetchStockPrices();  // Refresh with new selection
+    }
+
+    /**
+     * Setup stocks widget event listeners
+     */
+    function setupStocksWidget() {
+        // Customize button
+        if (elements.btnCustomizeStocks) {
+            elements.btnCustomizeStocks.addEventListener('click', openStocksModal);
+        }
+
+        // Modal cancel button
+        if (elements.btnCancelStocks) {
+            elements.btnCancelStocks.addEventListener('click', () => {
+                loadStockPreferences();  // Reset to saved
+                closeStocksModal();
+            });
+        }
+
+        // Modal save button
+        if (elements.btnSaveStocks) {
+            elements.btnSaveStocks.addEventListener('click', saveStockSelection);
+        }
+
+        // Search input
+        if (elements.inputStockSearch) {
+            elements.inputStockSearch.addEventListener('input', (e) => {
+                renderStockSelectionList(e.target.value);
+            });
+        }
+
+        // Close on backdrop click
+        if (elements.stocksModal) {
+            elements.stocksModal.querySelector('.modal-backdrop')?.addEventListener('click', closeStocksModal);
+        }
+
+        // Auto-refresh every 5 minutes
+        setInterval(fetchStockPrices, 5 * 60 * 1000);
     }
 
     // --- Expose functions to window for popout delegation (2025-12-19) ---

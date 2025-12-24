@@ -976,10 +976,13 @@ html.dark .save-status-error {
 
 /* 2025-12-15: Two-widget side-by-side layout */
 /* 2025-12-16: Default stretch for matching heights, collapsed widgets shrink via align-self */
+/* 2025-12-23: Changed to align-items: start so collapsed widgets don't stretch */
 .balance-widgets-row {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: var(--space-md);
+    align-items: start;
+    /* Widgets take only the space they need */
     /* margin handled by sidebar flex gap */
 }
 
@@ -4558,4 +4561,158 @@ html.dark .btn-role.active {
     to {
         transform: rotate(360deg);
     }
+}
+
+/* ==========================================================================
+   2025-12-23: STOCKS WIDGET
+   ========================================================================== */
+
+.stocks-widget-card {
+    /* Same sizing as other bottom-row widgets */
+    min-width: 200px;
+}
+
+.stocks-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+}
+
+.stock-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-xs) var(--space-sm);
+    background-color: var(--color-bg);
+    border-radius: var(--radius-sm);
+    transition: background-color 0.15s ease;
+}
+
+.stock-item:hover {
+    background-color: var(--color-border);
+}
+
+.stock-item-left {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    flex: 1;
+}
+
+.stock-symbol {
+    font-weight: 700;
+    font-size: var(--font-size-sm);
+    color: var(--color-text);
+}
+
+.stock-name {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 120px;
+}
+
+.stock-item-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+}
+
+.stock-price {
+    font-weight: 600;
+    font-size: var(--font-size-sm);
+    color: var(--color-text);
+}
+
+.stock-change {
+    font-size: var(--font-size-xs);
+    font-weight: 500;
+    padding: 2px 6px;
+    border-radius: var(--radius-sm);
+}
+
+.stock-change.positive {
+    color: var(--color-success);
+    background-color: rgba(22, 163, 74, 0.1);
+}
+
+.stock-change.negative {
+    color: var(--color-danger);
+    background-color: rgba(220, 38, 38, 0.1);
+}
+
+.stock-change.neutral {
+    color: var(--color-text-muted);
+    background-color: var(--color-bg);
+}
+
+.stocks-empty {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+    text-align: center;
+    padding: var(--space-md);
+}
+
+.stocks-customize-btn {
+    width: 100%;
+    margin-top: var(--space-sm);
+}
+
+/* Stock Selection Modal */
+.stock-selection-list {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    margin-bottom: var(--space-md);
+}
+
+.stock-select-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: var(--space-sm) var(--space-md);
+    border-bottom: 1px solid var(--color-border);
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.stock-select-item:last-child {
+    border-bottom: none;
+}
+
+.stock-select-item:hover {
+    background-color: var(--color-bg);
+}
+
+.stock-select-item input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: var(--color-primary);
+}
+
+.stock-select-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+}
+
+.stock-select-symbol {
+    font-weight: 600;
+    font-size: var(--font-size-sm);
+}
+
+.stock-select-name {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+}
+
+.stock-select-item.selected {
+    background-color: rgba(37, 99, 235, 0.1);
 }

@@ -343,6 +343,14 @@ CHANGE LOG:
                             <span class="toggle-slider"></span>
                         </label>
                     </div>
+                    <div class="widget-toggle-item" data-widget="stocks">
+                        <span class="widget-toggle-label"><span class="toggle-icon">📈</span> <span
+                                data-i18n="widgetStocks">Stocks</span></span>
+                        <label class="widget-toggle-switch">
+                            <input type="checkbox" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
                     <div class="widget-toggle-item" data-widget="activity-log">
                         <span class="widget-toggle-label"><span class="toggle-icon">📋</span> <span
                                 data-i18n="widgetActivityLog">Activity Log</span></span>
@@ -795,6 +803,26 @@ CHANGE LOG:
                             <p id="crypto-updated" class="exchange-updated">Loading...</p>
                         </div>
                     </div>
+                </div><!-- end balance-widgets-row -->
+
+                <!-- 2025-12-23: Stocks and Activity Log row -->
+                <div class="balance-widgets-row">
+                    <!-- 2025-12-23: Stocks Widget for stock price tracking -->
+                    <div class="card widget-card stocks-widget-card" data-widget-id="stocks">
+                        <div class="widget-header">
+                            <h3 id="stocks-widget-title" class="widget-title">📈 Stocks</h3>
+                        </div>
+                        <div class="widget-content">
+                            <div id="stocks-list" class="stocks-list">
+                                <!-- Stock items rendered by JS -->
+                            </div>
+                            <p id="stocks-empty" class="stocks-empty" style="display: none;">No stocks to display</p>
+                            <p id="stocks-updated" class="exchange-updated">Loading...</p>
+                            <button id="btn-customize-stocks" class="btn btn-secondary btn-sm stocks-customize-btn">
+                                ⚙️ <span data-i18n="stocksCustomize">Customize</span>
+                            </button>
+                        </div>
+                    </div>
 
                     <!-- 2025-12-17: Activity Log Widget for shared vault attribution -->
                     <div class="card widget-card" data-widget-id="activity-log">
@@ -807,7 +835,7 @@ CHANGE LOG:
                             </div>
                         </div>
                     </div>
-                </div>
+                </div><!-- end stocks row -->
             </aside>
         </div><!-- end workspace-layout -->
     </main>
@@ -1402,6 +1430,32 @@ CHANGE LOG:
                 </button>
                 <button id="btn-close-now" class="btn btn-secondary">
                     <span data-i18n="closeNow">Close Now</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2025-12-23: Stocks Customize Modal -->
+    <div id="stocks-modal" class="modal" style="display: none;">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content modal-content-lg">
+            <h2 id="stocks-modal-title" class="modal-title">📈 Customize Stocks</h2>
+            <p class="modal-desc" data-i18n="stocksModalDesc">Select up to 10 stocks to display in your widget.</p>
+
+            <div class="form-group">
+                <input type="text" id="input-stock-search" class="input" placeholder="Search stocks (e.g. AAPL, Tesla)">
+            </div>
+
+            <div id="stock-selection-list" class="stock-selection-list">
+                <!-- Stock checkboxes rendered by JS -->
+            </div>
+
+            <div class="modal-actions">
+                <button id="btn-cancel-stocks" class="btn btn-secondary">
+                    <span data-i18n="cancel">Cancel</span>
+                </button>
+                <button id="btn-save-stocks" class="btn btn-primary">
+                    <span data-i18n="save">Save</span>
                 </button>
             </div>
         </div>
