@@ -1036,6 +1036,12 @@ html.dark .save-status-error {
     width: 100%;
 }
 
+/* 2025-12-23: Main workspace widgets stay full width when collapsed */
+.workspace-main .widget-card.collapsed {
+    align-self: stretch;
+    width: 100%;
+}
+
 .widget-header {
     display: flex;
     align-items: center;
