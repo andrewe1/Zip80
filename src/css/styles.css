@@ -90,6 +90,7 @@
  * - 2025-12-22: Converted attachment modal to floating draggable/resizable window (A4 aspect ratio)
  * - 2025-12-22: Added image pan support with custom scrollbar styling to prevent white corner glitch
  * - 2025-12-22: Added zoom button header style (.btn-zoom-header) with proper spacing from close button
+ * - 2025-12-23: Added full-width styling for main widgets when dragged to sidebar (cross-container drag support)
  * ============================================================================
  */
 
@@ -1097,6 +1098,18 @@ html.dark .save-status-error {
 .workspace-sidebar.sortable-fallback {
     min-height: 50px;
 }
+
+/* 2025-12-23: Ensure main workspace widgets (Balance & Transactions, History, Accounts) 
+   span full width when dragged to sidebar */
+.workspace-sidebar>.balance-card,
+.workspace-sidebar>.account-card,
+.workspace-sidebar>[data-widget-id="balance"],
+.workspace-sidebar>[data-widget-id="accounts"],
+.workspace-sidebar>[data-widget-id="history"] {
+    width: 100%;
+    min-width: 0;
+}
+
 
 .widget-title {
     font-size: 0.85rem;

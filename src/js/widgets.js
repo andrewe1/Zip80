@@ -59,6 +59,7 @@
  * - 2025-12-22: Added onBeforeExpand() callback to control widget expansion based on app state
  * - 2025-12-22: Popout windows now respect collapsed state and shrink to header when collapsed
  * - 2025-12-22: Added attachment badge click delegation for popped-out history widget
+ * - 2025-12-23: Added SortableJS initialization for workspace-main (left-side widgets) to enable drag-and-drop
  */
 
 const Widgets = (() => {
@@ -341,6 +342,9 @@ const Widgets = (() => {
             }
         });
 
+        // 2025-12-23: Shared group name for cross-container dragging between main and sidebar
+        const sharedGroup = 'workspace-widgets';
+
         // Make the main sidebar sortable for reordering rows and standalone widgets
         const sidebar = document.querySelector('.workspace-sidebar');
         if (sidebar) {
@@ -348,6 +352,7 @@ const Widgets = (() => {
             console.log('Widgets: Sidebar has', directChildren.length, 'draggable children');
 
             const sidebarSortable = new Sortable(sidebar, {
+                group: sharedGroup,  // 2025-12-23: Enable cross-container dragging
                 animation: 200,
                 handle: '.widget-drag-handle',
                 ghostClass: 'widget-ghost',
@@ -362,28 +367,67 @@ const Widgets = (() => {
             sortableInstances.push(sidebarSortable);
         }
 
+        // 2025-12-23: Make the main workspace sortable for reordering left-side widgets
+        // (Accounts, Balance & Transactions, History) with cross-container support
+        const workspaceMain = document.querySelector('.workspace-main');
+        if (workspaceMain) {
+            const mainWidgets = workspaceMain.querySelectorAll(':scope > .widget-card');
+            console.log('Widgets: Workspace main has', mainWidgets.length, 'draggable widgets');
+
+            const mainSortable = new Sortable(workspaceMain, {
+                group: sharedGroup,  // 2025-12-23: Enable cross-container dragging
+                animation: 200,
+                handle: '.widget-drag-handle',
+                ghostClass: 'widget-ghost',
+                chosenClass: 'widget-chosen',
+                dragClass: 'widget-drag',
+                draggable: '.widget-card',
+                onStart: function (evt) {
+                    console.log('Widgets: Main workspace drag started on', evt.item.dataset.widgetId);
+                },
+                onEnd: handleDragEnd
+            });
+            sortableInstances.push(mainSortable);
+        }
+
         console.log('Widgets: Created', sortableInstances.length, 'Sortable instances');
     }
 
     /**
      * Handle drag end event - save new order
+     * 2025-12-23: Updated to track widget positions across both main and sidebar containers
      * @param {Event} evt - SortableJS event object
      */
     function handleDragEnd(evt) {
-        // Get all widgets in their new order
+        const workspaceMain = document.querySelector('.workspace-main');
         const sidebar = document.querySelector('.workspace-sidebar');
-        if (!sidebar) return;
+        if (!workspaceMain && !sidebar) return;
 
         let order = 0;
 
-        // Walk through all widgets and update their order
-        sidebar.querySelectorAll('[data-widget-id]').forEach(widget => {
-            const widgetId = widget.dataset.widgetId;
-            if (!preferences[widgetId]) {
-                preferences[widgetId] = { order: 0, collapsed: false };
-            }
-            preferences[widgetId].order = order++;
-        });
+        // 2025-12-23: Walk through widgets in main workspace first, then sidebar
+        // This ensures consistent ordering across both containers
+        if (workspaceMain) {
+            workspaceMain.querySelectorAll(':scope > [data-widget-id]').forEach(widget => {
+                const widgetId = widget.dataset.widgetId;
+                if (!preferences[widgetId]) {
+                    preferences[widgetId] = { order: 0, collapsed: false, group: 'main' };
+                }
+                preferences[widgetId].order = order++;
+                preferences[widgetId].group = 'main';  // Track container
+            });
+        }
+
+        if (sidebar) {
+            sidebar.querySelectorAll('[data-widget-id]').forEach(widget => {
+                const widgetId = widget.dataset.widgetId;
+                if (!preferences[widgetId]) {
+                    preferences[widgetId] = { order: 0, collapsed: false, group: 'sidebar' };
+                }
+                preferences[widgetId].order = order++;
+                preferences[widgetId].group = 'sidebar';  // Track container
+            });
+        }
 
         savePreferences();
     }
