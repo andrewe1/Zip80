@@ -495,7 +495,34 @@ const I18n = (() => {
             stocksCustomize: 'Customize',
             stocksModalDesc: 'Select up to 10 stocks to display in your widget.',
             stocksMaxLimit: 'Maximum 10 stocks allowed',
-            loading: 'Loading...'
+            loading: 'Loading...',
+
+            // Calendar Event Modal (2025-12-24)
+            calendarEventDesc: 'Create a reminder in your Google Calendar.',
+            eventTitleLabel: 'Event Title',
+            eventTimingLabel: 'When',
+            eventRecurrenceLabel: 'Repeat',
+            eventNotesLabel: 'Notes (optional)',
+            timingToday: 'Later Today (9 PM)',
+            timingTomorrow: 'Tomorrow (9 AM)',
+            timingNextWeek: 'Next Week (9 AM)',
+            timingCustom: 'Pick Date...',
+            recurrenceNone: 'Does not repeat',
+            recurrenceDaily: 'Daily',
+            recurrenceWeekly: 'Weekly',
+            recurrenceMonthly: 'Monthly',
+            recurrenceYearly: 'Yearly',
+            addToCalendar: '📅 Add to Calendar',
+            eventTitleRequired: 'Please enter a title',
+            eventCreatedSuccess: 'Event added to Google Calendar!',
+            eventCreatedError: 'Failed to add event',
+            or: 'or',
+            openInGoogleCalendar: '🔗 Open in Google Calendar',
+            allowCalendarAccess: 'Allow Calendar access for better integration',
+            hasCalendarReminder: 'Has calendar reminder',
+            removeReminderConfirm: 'Remove this calendar reminder?',
+            reminderRemoved: 'Calendar reminder removed',
+            reminderRemoveError: 'Failed to remove reminder'
         },
 
         es: {
@@ -867,7 +894,34 @@ const I18n = (() => {
             stocksCustomize: 'Personalizar',
             stocksModalDesc: 'Selecciona hasta 10 acciones para mostrar en tu widget.',
             stocksMaxLimit: 'Máximo 10 acciones permitidas',
-            loading: 'Cargando...'
+            loading: 'Cargando...',
+
+            // Calendar Event Modal (2025-12-24)
+            calendarEventDesc: 'Crea un recordatorio en tu Google Calendar.',
+            eventTitleLabel: 'Título del Evento',
+            eventTimingLabel: 'Cuándo',
+            eventRecurrenceLabel: 'Repetir',
+            eventNotesLabel: 'Notas (opcional)',
+            timingToday: 'Hoy Más Tarde (9 PM)',
+            timingTomorrow: 'Mañana (9 AM)',
+            timingNextWeek: 'Próxima Semana (9 AM)',
+            timingCustom: 'Elegir Fecha...',
+            recurrenceNone: 'No se repite',
+            recurrenceDaily: 'Diario',
+            recurrenceWeekly: 'Semanal',
+            recurrenceMonthly: 'Mensual',
+            recurrenceYearly: 'Anual',
+            addToCalendar: '📅 Agregar al Calendario',
+            eventTitleRequired: 'Por favor ingresa un título',
+            eventCreatedSuccess: '¡Evento agregado a Google Calendar!',
+            eventCreatedError: 'Error al agregar evento',
+            or: 'o',
+            openInGoogleCalendar: '🔗 Abrir en Google Calendar',
+            allowCalendarAccess: 'Permitir acceso al Calendario para mejor integración',
+            hasCalendarReminder: 'Tiene recordatorio en calendario',
+            removeReminderConfirm: '¿Eliminar este recordatorio?',
+            reminderRemoved: 'Recordatorio eliminado',
+            reminderRemoveError: 'Error al eliminar recordatorio'
         }
     };
 

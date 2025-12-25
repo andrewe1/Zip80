@@ -59,8 +59,8 @@ const GDrive = (() => {
         ? Config.GOOGLE_CLIENT_ID
         : '';
 
-    // Scopes: Drive file access + user profile for displaying user info
-    const SCOPES = 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email';
+    // Scopes: Drive file access + user profile + Calendar (full access for creating calendars)
+    const SCOPES = 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/calendar';
 
     // Drive API base URL
     const DRIVE_API = 'https://www.googleapis.com/drive/v3';

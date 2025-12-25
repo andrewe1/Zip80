@@ -470,6 +470,23 @@
         setupAutoBackup();     // 2025-12-22: Auto-backup for cloud vaults
         setupStocksWidget();   // 2025-12-23: Stocks widget
         fetchStockPrices();    // 2025-12-23: Load stock prices
+
+        // 2025-12-24: Initialize Google Calendar event modal
+        if (typeof GCalendar !== 'undefined') {
+            GCalendar.initModal();
+
+            // Register callback to store event info in transactions
+            GCalendar.setOnEventCreated(({ eventId, calendarId, transactionId }) => {
+                if (!transactionId) return;
+                const transaction = data.transactions.find(t => t.id === parseInt(transactionId));
+                if (transaction) {
+                    transaction.calendarEventId = eventId;
+                    transaction.calendarId = calendarId;
+                    handleSave();
+                    renderHistory();  // Re-render to show the 🔔 badge
+                }
+            });
+        }
     }
 
     // --- Sticky Notes (2025-12-20) ---
@@ -4749,6 +4766,7 @@
                 <div class="item-details">
                     <span class="item-desc">${escapeHtml(displayDesc)}</span>
                     ${t.attachments && t.attachments.length > 0 ? `<span class="attachment-badge" data-transaction-id="${t.id}" title="${t.attachments.length} ${I18n.t('attachments')}"><span class="badge-icon">📎</span>${t.attachments.length}</span>` : ''}
+                    ${t.calendarEventId ? `<span class="calendar-event-badge" data-transaction-id="${t.id}" title="${I18n.t('hasCalendarReminder') || 'Has calendar reminder'}">🔔</span>` : ''}
                     <span class="item-date">${formatDate(t.date)}</span>
                 </div>
                 <div class="item-actions">
@@ -4764,9 +4782,41 @@
                 </div>
             `;
 
-            li.querySelector('.calendar').addEventListener('click', () => {
-                Calendar.openGoogleCalendar(t.desc, t.date, t.amt);
+            li.querySelector('.calendar').addEventListener('click', async () => {
+                // 2025-12-24: Use native Calendar API modal if scope is available
+                if (typeof GCalendar !== 'undefined') {
+                    const hasScope = await GCalendar.checkCalendarScope();
+                    // Get vault name from file badge (remove emoji prefix)
+                    const badgeText = elements.fileBadge?.textContent || '';
+                    const vaultName = badgeText.replace(/^[☁️📄]\s*/, '').replace('.json', '').trim() || 'Expenses';
+                    GCalendar.showEventModal(t.desc, t.date, t.amt, hasScope, vaultName, t.id);
+                } else {
+                    // Fallback to deep-link if GCalendar module not loaded
+                    Calendar.openGoogleCalendar(t.desc, t.date, t.amt);
+                }
             });
+
+            // 2025-12-24: Calendar event badge click handler (remove reminder)
+            const calendarBadge = li.querySelector('.calendar-event-badge');
+            if (calendarBadge && t.calendarEventId) {
+                calendarBadge.addEventListener('click', async () => {
+                    const confirmed = await showConfirm(I18n.t('removeReminderConfirm') || 'Remove this calendar reminder?');
+                    if (confirmed) {
+                        try {
+                            await GCalendar.deleteEvent(t.calendarEventId, t.calendarId);
+                            // Remove from transaction
+                            delete t.calendarEventId;
+                            delete t.calendarId;
+                            handleSave();
+                            renderHistory();
+                            window.showToast(I18n.t('reminderRemoved') || 'Calendar reminder removed', true);
+                        } catch (err) {
+                            console.error('[Calendar] Delete failed:', err);
+                            window.showToast((I18n.t('reminderRemoveError') || 'Failed to remove reminder') + ': ' + err.message, false);
+                        }
+                    }
+                });
+            }
 
             li.querySelector('.delete').addEventListener('click', () => {
                 deleteTransaction(t.id);
@@ -6313,6 +6363,7 @@
     // --- Expose functions to window for popout delegation (2025-12-19) ---
     window.fetchExchangeHistory = fetchExchangeHistory;
     window.fetchCryptoHistory = fetchCryptoHistory;
+    window.showToast = showToast;  // 2025-12-24: Expose for gcalendar.js
 
     // --- Start ---
     init();

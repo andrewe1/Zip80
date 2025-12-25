@@ -4740,3 +4740,66 @@ html.dark .btn-role.active {
 .stock-select-item.selected {
     background-color: rgba(37, 99, 235, 0.1);
 }
+
+/* --- CALENDAR EVENT MODAL (2025-12-24) --- */
+/* Native Google Calendar integration modal */
+
+/* Form row for side-by-side inputs (date + time) */
+.form-row {
+    display: flex;
+    gap: var(--space-sm);
+}
+
+.form-row .input {
+    flex: 1;
+}
+
+/* Smaller textarea for notes */
+.textarea-sm {
+    min-height: 60px;
+    resize: vertical;
+}
+
+/* Full-width button utility */
+.btn-full {
+    width: 100%;
+}
+
+/* Fallback section styling */
+.calendar-fallback-section {
+    margin-top: var(--space-lg);
+    padding-top: var(--space-md);
+    border-top: 1px solid var(--color-border);
+}
+
+.fallback-divider {
+    text-align: center;
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+    margin-bottom: var(--space-md);
+}
+
+/* Upgrade link for Calendar access */
+.calendar-upgrade-link {
+    display: block;
+    margin-top: var(--space-sm);
+    text-align: center;
+    font-size: var(--font-size-sm);
+}
+
+/* Calendar event badge on transactions (2025-12-24) */
+.calendar-event-badge {
+    display: inline-flex;
+    align-items: center;
+    margin-left: var(--space-xs);
+    padding: 2px 6px;
+    font-size: 0.85em;
+    background: rgba(var(--primary-rgb), 0.15);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: background-color var(--transition-fast);
+}
+
+.calendar-event-badge:hover {
+    background: rgba(var(--primary-rgb), 0.3);
+}

@@ -585,250 +585,252 @@ CHANGE LOG:
             </div><!-- end historical-view -->
 
             <!-- 2025-12-15: Balance Overview Sidebar Widget -->
-<!-- 2025-12-16: Updated with widget system for drag/drop and collapse -->
-<!-- 2025-12-23: Flattened structure - all widgets are direct children for independent dragging -->
-<aside class="workspace-sidebar">
-    <!-- Bank/Cash Widget -->
-    <div class="card widget-card balance-widget-card sidebar-widget-half" data-widget-id="balance-bank">
-        <div class="widget-header">
-            <h3 id="bank-widget-title" class="widget-title">🏦 Bank/Cash</h3>
-        </div>
-        <div class="widget-content">
-            <div id="bank-accounts-list" class="widget-accounts-list">
-                <!-- Bank/Cash items rendered by JS -->
-            </div>
-        </div>
-    </div>
-
-    <!-- Credit Cards Widget -->
-    <div class="card widget-card balance-widget-card sidebar-widget-half" data-widget-id="balance-credit">
-        <div class="widget-header">
-            <h3 id="credit-widget-title" class="widget-title">💳 Credit Cards</h3>
-        </div>
-        <div class="widget-content">
-            <div id="credit-accounts-list" class="widget-accounts-list">
-                <!-- Credit card items rendered by JS -->
-            </div>
-        </div>
-    </div>
-
-    <!-- 2025-12-16: Crypto Widget -->
-    <div id="crypto-widget-card" class="card widget-card balance-widget-card sidebar-widget-half"
-        data-widget-id="balance-crypto" style="display: none;">
-        <div class="widget-header">
-            <h3 id="crypto-widget-title" class="widget-title">🪙 Crypto</h3>
-        </div>
-        <div class="widget-content">
-            <div id="crypto-accounts-list" class="widget-accounts-list">
-                <!-- Crypto items rendered by JS -->
-            </div>
-        </div>
-    </div>
-
-    <!-- 2025-12-15: Calendar Widget - full width -->
-    <div class="card widget-card calendar-widget-card sidebar-widget-full" data-widget-id="calendar">
-        <div class="widget-header">
-            <h3 id="calendar-widget-title" class="widget-title">📅 Calendar</h3>
-        </div>
-        <div class="widget-content">
-            <div id="calendar-full-date" class="calendar-full-date">
-                <!-- Full date rendered by JS -->
-            </div>
-            <div class="calendar-grid">
-                <div class="calendar-weekdays">
-                    <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
-                </div>
-                <div id="calendar-days" class="calendar-days">
-                    <!-- Days rendered by JS -->
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- 2025-12-15: Recurring Expenses Widget -->
-    <div class="card widget-card recurring-widget-card sidebar-widget-half" data-widget-id="recurring">
-        <div class="widget-header">
-            <h3 id="recurring-widget-title" class="widget-title">🔁 Recurring Expenses</h3>
-        </div>
-        <div class="widget-content">
-            <div id="recurring-list" class="recurring-list">
-                <!-- Recurring items rendered by JS -->
-            </div>
-            <p id="recurring-empty" class="recurring-empty">No recurring expenses</p>
-            <!-- 2025-12-16: Total Monthly Expenses -->
-            <p id="recurring-total" class="recurring-total" style="display: none;"></p>
-        </div>
-    </div>
-
-    <!-- 2025-12-16: Exchange Rate Widget -->
-    <div class="card widget-card exchange-widget-card sidebar-widget-half" data-widget-id="exchange">
-        <div class="widget-header">
-            <h3 id="exchange-widget-title" class="widget-title">💱 Exchange Rates</h3>
-        </div>
-        <div class="widget-content">
-            <div class="exchange-content">
-                <!-- 2025-12-19: Currency dropdowns for flexible exchange rate viewing -->
-                <div id="exchange-rates" class="exchange-rates">
-                    <!-- Primary rate row: FROM → TO -->
-                    <div class="exchange-rate-row">
-                        <input type="text" id="exchange-amount-from" class="exchange-amount-input" value="1"
-                            inputmode="decimal">
-                        <select id="exchange-from-currency" class="exchange-currency-select">
-                            <option value="USD" selected>USD</option>
-                            <option value="EUR">EUR</option>
-                            <option value="GBP">GBP</option>
-                            <option value="MXN">MXN</option>
-                            <option value="JPY">JPY</option>
-                        </select>
-                        <span class="exchange-arrow">=</span>
-                        <span id="rate-primary" class="exchange-to">--</span>
-                        <span id="primary-to-label" class="exchange-currency">MXN</span>
+            <!-- 2025-12-16: Updated with widget system for drag/drop and collapse -->
+            <!-- 2025-12-23: Flattened structure - all widgets are direct children for independent dragging -->
+            <aside class="workspace-sidebar">
+                <!-- Bank/Cash Widget -->
+                <div class="card widget-card balance-widget-card sidebar-widget-half" data-widget-id="balance-bank">
+                    <div class="widget-header">
+                        <h3 id="bank-widget-title" class="widget-title">🏦 Bank/Cash</h3>
                     </div>
-                    <!-- Inverse rate row: TO → FROM -->
-                    <div class="exchange-rate-row">
-                        <input type="text" id="exchange-amount-to" class="exchange-amount-input" value="1"
-                            inputmode="decimal">
-                        <select id="exchange-to-currency" class="exchange-currency-select">
-                            <option value="USD">USD</option>
-                            <option value="EUR">EUR</option>
-                            <option value="GBP">GBP</option>
-                            <option value="MXN" selected>MXN</option>
-                            <option value="JPY">JPY</option>
-                        </select>
-                        <span class="exchange-arrow">=</span>
-                        <span id="rate-inverse" class="exchange-to">--</span>
-                        <span id="inverse-to-label" class="exchange-currency">USD</span>
-                    </div>
-                </div>
-                <div class="exchange-chart">
-                    <!-- 2025-12-16: Enhanced chart with X-axis labels and hover tooltip -->
-                    <div class="exchange-chart-container">
-                        <svg id="exchange-sparkline" viewBox="0 0 120 55" preserveAspectRatio="none">
-                            <!-- Chart line -->
-                            <polyline id="sparkline-path" fill="none" stroke="#22c55e" stroke-width="1.5" points="">
-                            </polyline>
-                            <!-- Hover circles (added dynamically) -->
-                            <g id="sparkline-dots"></g>
-                        </svg>
-                        <!-- X-axis labels -->
-                        <div id="chart-x-axis" class="chart-x-axis"></div>
-                        <!-- Hover tooltip -->
-                        <div id="chart-tooltip" class="chart-tooltip" style="display: none;">
-                            <span class="tooltip-rate"></span>
-                            <span class="tooltip-date"></span>
-                        </div>
-                    </div>
-                    <!-- Percentage change indicator -->
-                    <div class="chart-change-row">
-                        <span id="chart-change" class="chart-change">--</span>
-                        <div class="chart-range-btns">
-                            <button class="chart-range-btn active" data-days="7">7d</button>
-                            <button class="chart-range-btn" data-days="30">1m</button>
-                            <button class="chart-range-btn" data-days="180">6m</button>
+                    <div class="widget-content">
+                        <div id="bank-accounts-list" class="widget-accounts-list">
+                            <!-- Bank/Cash items rendered by JS -->
                         </div>
                     </div>
                 </div>
-            </div>
-            <p id="exchange-updated" class="exchange-updated">Loading...</p>
-        </div>
-    </div>
 
-    <!-- 2025-12-19: Crypto Rates Widget for cryptocurrency price tracking -->
-    <div class="card widget-card crypto-rates-widget-card sidebar-widget-half" data-widget-id="crypto-rates">
-        <div class="widget-header">
-            <h3 id="crypto-rates-widget-title" class="widget-title">₿ Crypto Rates</h3>
-        </div>
-        <div class="widget-content">
-            <div class="exchange-content">
-                <div id="crypto-rates" class="exchange-rates">
-                    <!-- Crypto to Fiat row -->
-                    <div class="exchange-rate-row">
-                        <input type="text" id="crypto-amount-from" class="exchange-amount-input" value="1"
-                            inputmode="decimal">
-                        <select id="crypto-from-currency" class="exchange-currency-select">
-                            <option value="BTC" selected>BTC</option>
-                            <option value="ETH">ETH</option>
-                            <option value="SOL">SOL</option>
-                            <option value="XRP">XRP</option>
-                            <option value="ADA">ADA</option>
-                        </select>
-                        <span class="exchange-arrow">=</span>
-                        <span id="crypto-rate-primary" class="exchange-to">--</span>
-                        <span id="crypto-primary-to-label" class="exchange-currency">USD</span>
+                <!-- Credit Cards Widget -->
+                <div class="card widget-card balance-widget-card sidebar-widget-half" data-widget-id="balance-credit">
+                    <div class="widget-header">
+                        <h3 id="credit-widget-title" class="widget-title">💳 Credit Cards</h3>
                     </div>
-                    <!-- Fiat to Crypto row -->
-                    <div class="exchange-rate-row">
-                        <input type="text" id="crypto-amount-to" class="exchange-amount-input" value="1"
-                            inputmode="decimal">
-                        <select id="crypto-to-currency" class="exchange-currency-select">
-                            <option value="USD" selected>USD</option>
-                            <option value="EUR">EUR</option>
-                            <option value="GBP">GBP</option>
-                            <option value="MXN">MXN</option>
-                            <option value="JPY">JPY</option>
-                        </select>
-                        <span class="exchange-arrow">=</span>
-                        <span id="crypto-rate-inverse" class="exchange-to">--</span>
-                        <span id="crypto-inverse-to-label" class="exchange-currency">BTC</span>
-                    </div>
-                </div>
-                <div class="exchange-chart">
-                    <div class="exchange-chart-container">
-                        <svg id="crypto-sparkline" viewBox="0 0 120 55" preserveAspectRatio="none">
-                            <polyline id="crypto-sparkline-path" fill="none" stroke="#22c55e" stroke-width="1.5"
-                                points=""></polyline>
-                            <g id="crypto-sparkline-dots"></g>
-                        </svg>
-                        <div id="crypto-chart-x-axis" class="chart-x-axis"></div>
-                        <div id="crypto-chart-tooltip" class="chart-tooltip" style="display: none;">
-                            <span class="tooltip-rate"></span>
-                            <span class="tooltip-date"></span>
-                        </div>
-                    </div>
-                    <div class="chart-change-row">
-                        <span id="crypto-chart-change" class="chart-change">--</span>
-                        <div class="chart-range-btns crypto-range-btns">
-                            <button class="chart-range-btn active" data-days="7">7d</button>
-                            <button class="chart-range-btn" data-days="30">1m</button>
-                            <button class="chart-range-btn" data-days="180">6m</button>
+                    <div class="widget-content">
+                        <div id="credit-accounts-list" class="widget-accounts-list">
+                            <!-- Credit card items rendered by JS -->
                         </div>
                     </div>
                 </div>
-            </div>
-            <p id="crypto-updated" class="exchange-updated">Loading...</p>
-        </div>
-    </div>
 
-    <!-- 2025-12-23: Stocks Widget for stock price tracking -->
-    <div class="card widget-card stocks-widget-card sidebar-widget-half" data-widget-id="stocks">
-        <div class="widget-header">
-            <h3 id="stocks-widget-title" class="widget-title">📈 Stocks</h3>
-        </div>
-        <div class="widget-content">
-            <div id="stocks-list" class="stocks-list">
-                <!-- Stock items rendered by JS -->
-            </div>
-            <p id="stocks-empty" class="stocks-empty" style="display: none;">No stocks to display</p>
-            <p id="stocks-updated" class="exchange-updated">Loading...</p>
-            <button id="btn-customize-stocks" class="btn btn-secondary btn-sm stocks-customize-btn">
-                ⚙️ <span data-i18n="stocksCustomize">Customize</span>
-            </button>
-        </div>
-    </div>
+                <!-- 2025-12-16: Crypto Widget -->
+                <div id="crypto-widget-card" class="card widget-card balance-widget-card sidebar-widget-half"
+                    data-widget-id="balance-crypto" style="display: none;">
+                    <div class="widget-header">
+                        <h3 id="crypto-widget-title" class="widget-title">🪙 Crypto</h3>
+                    </div>
+                    <div class="widget-content">
+                        <div id="crypto-accounts-list" class="widget-accounts-list">
+                            <!-- Crypto items rendered by JS -->
+                        </div>
+                    </div>
+                </div>
 
-    <!-- 2025-12-17: Activity Log Widget for shared vault attribution -->
-    <div class="card widget-card sidebar-widget-half" data-widget-id="activity-log">
-        <div class="widget-header">
-            <h3 id="activity-log-title" class="widget-title">📋 Activity Log</h3>
-        </div>
-        <div class="widget-content">
-            <div id="activity-log-list" class="activity-log-list">
-                <!-- Activity items rendered by JS -->
-            </div>
-        </div>
-    </div>
-</aside>
-</div><!-- end workspace-layout -->
+                <!-- 2025-12-15: Calendar Widget - full width -->
+                <div class="card widget-card calendar-widget-card sidebar-widget-full" data-widget-id="calendar">
+                    <div class="widget-header">
+                        <h3 id="calendar-widget-title" class="widget-title">📅 Calendar</h3>
+                    </div>
+                    <div class="widget-content">
+                        <div id="calendar-full-date" class="calendar-full-date">
+                            <!-- Full date rendered by JS -->
+                        </div>
+                        <div class="calendar-grid">
+                            <div class="calendar-weekdays">
+                                <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
+                            </div>
+                            <div id="calendar-days" class="calendar-days">
+                                <!-- Days rendered by JS -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2025-12-15: Recurring Expenses Widget -->
+                <div class="card widget-card recurring-widget-card sidebar-widget-half" data-widget-id="recurring">
+                    <div class="widget-header">
+                        <h3 id="recurring-widget-title" class="widget-title">🔁 Recurring Expenses</h3>
+                    </div>
+                    <div class="widget-content">
+                        <div id="recurring-list" class="recurring-list">
+                            <!-- Recurring items rendered by JS -->
+                        </div>
+                        <p id="recurring-empty" class="recurring-empty">No recurring expenses</p>
+                        <!-- 2025-12-16: Total Monthly Expenses -->
+                        <p id="recurring-total" class="recurring-total" style="display: none;"></p>
+                    </div>
+                </div>
+
+                <!-- 2025-12-16: Exchange Rate Widget -->
+                <div class="card widget-card exchange-widget-card sidebar-widget-half" data-widget-id="exchange">
+                    <div class="widget-header">
+                        <h3 id="exchange-widget-title" class="widget-title">💱 Exchange Rates</h3>
+                    </div>
+                    <div class="widget-content">
+                        <div class="exchange-content">
+                            <!-- 2025-12-19: Currency dropdowns for flexible exchange rate viewing -->
+                            <div id="exchange-rates" class="exchange-rates">
+                                <!-- Primary rate row: FROM → TO -->
+                                <div class="exchange-rate-row">
+                                    <input type="text" id="exchange-amount-from" class="exchange-amount-input" value="1"
+                                        inputmode="decimal">
+                                    <select id="exchange-from-currency" class="exchange-currency-select">
+                                        <option value="USD" selected>USD</option>
+                                        <option value="EUR">EUR</option>
+                                        <option value="GBP">GBP</option>
+                                        <option value="MXN">MXN</option>
+                                        <option value="JPY">JPY</option>
+                                    </select>
+                                    <span class="exchange-arrow">=</span>
+                                    <span id="rate-primary" class="exchange-to">--</span>
+                                    <span id="primary-to-label" class="exchange-currency">MXN</span>
+                                </div>
+                                <!-- Inverse rate row: TO → FROM -->
+                                <div class="exchange-rate-row">
+                                    <input type="text" id="exchange-amount-to" class="exchange-amount-input" value="1"
+                                        inputmode="decimal">
+                                    <select id="exchange-to-currency" class="exchange-currency-select">
+                                        <option value="USD">USD</option>
+                                        <option value="EUR">EUR</option>
+                                        <option value="GBP">GBP</option>
+                                        <option value="MXN" selected>MXN</option>
+                                        <option value="JPY">JPY</option>
+                                    </select>
+                                    <span class="exchange-arrow">=</span>
+                                    <span id="rate-inverse" class="exchange-to">--</span>
+                                    <span id="inverse-to-label" class="exchange-currency">USD</span>
+                                </div>
+                            </div>
+                            <div class="exchange-chart">
+                                <!-- 2025-12-16: Enhanced chart with X-axis labels and hover tooltip -->
+                                <div class="exchange-chart-container">
+                                    <svg id="exchange-sparkline" viewBox="0 0 120 55" preserveAspectRatio="none">
+                                        <!-- Chart line -->
+                                        <polyline id="sparkline-path" fill="none" stroke="#22c55e" stroke-width="1.5"
+                                            points="">
+                                        </polyline>
+                                        <!-- Hover circles (added dynamically) -->
+                                        <g id="sparkline-dots"></g>
+                                    </svg>
+                                    <!-- X-axis labels -->
+                                    <div id="chart-x-axis" class="chart-x-axis"></div>
+                                    <!-- Hover tooltip -->
+                                    <div id="chart-tooltip" class="chart-tooltip" style="display: none;">
+                                        <span class="tooltip-rate"></span>
+                                        <span class="tooltip-date"></span>
+                                    </div>
+                                </div>
+                                <!-- Percentage change indicator -->
+                                <div class="chart-change-row">
+                                    <span id="chart-change" class="chart-change">--</span>
+                                    <div class="chart-range-btns">
+                                        <button class="chart-range-btn active" data-days="7">7d</button>
+                                        <button class="chart-range-btn" data-days="30">1m</button>
+                                        <button class="chart-range-btn" data-days="180">6m</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <p id="exchange-updated" class="exchange-updated">Loading...</p>
+                    </div>
+                </div>
+
+                <!-- 2025-12-19: Crypto Rates Widget for cryptocurrency price tracking -->
+                <div class="card widget-card crypto-rates-widget-card sidebar-widget-half"
+                    data-widget-id="crypto-rates">
+                    <div class="widget-header">
+                        <h3 id="crypto-rates-widget-title" class="widget-title">₿ Crypto Rates</h3>
+                    </div>
+                    <div class="widget-content">
+                        <div class="exchange-content">
+                            <div id="crypto-rates" class="exchange-rates">
+                                <!-- Crypto to Fiat row -->
+                                <div class="exchange-rate-row">
+                                    <input type="text" id="crypto-amount-from" class="exchange-amount-input" value="1"
+                                        inputmode="decimal">
+                                    <select id="crypto-from-currency" class="exchange-currency-select">
+                                        <option value="BTC" selected>BTC</option>
+                                        <option value="ETH">ETH</option>
+                                        <option value="SOL">SOL</option>
+                                        <option value="XRP">XRP</option>
+                                        <option value="ADA">ADA</option>
+                                    </select>
+                                    <span class="exchange-arrow">=</span>
+                                    <span id="crypto-rate-primary" class="exchange-to">--</span>
+                                    <span id="crypto-primary-to-label" class="exchange-currency">USD</span>
+                                </div>
+                                <!-- Fiat to Crypto row -->
+                                <div class="exchange-rate-row">
+                                    <input type="text" id="crypto-amount-to" class="exchange-amount-input" value="1"
+                                        inputmode="decimal">
+                                    <select id="crypto-to-currency" class="exchange-currency-select">
+                                        <option value="USD" selected>USD</option>
+                                        <option value="EUR">EUR</option>
+                                        <option value="GBP">GBP</option>
+                                        <option value="MXN">MXN</option>
+                                        <option value="JPY">JPY</option>
+                                    </select>
+                                    <span class="exchange-arrow">=</span>
+                                    <span id="crypto-rate-inverse" class="exchange-to">--</span>
+                                    <span id="crypto-inverse-to-label" class="exchange-currency">BTC</span>
+                                </div>
+                            </div>
+                            <div class="exchange-chart">
+                                <div class="exchange-chart-container">
+                                    <svg id="crypto-sparkline" viewBox="0 0 120 55" preserveAspectRatio="none">
+                                        <polyline id="crypto-sparkline-path" fill="none" stroke="#22c55e"
+                                            stroke-width="1.5" points=""></polyline>
+                                        <g id="crypto-sparkline-dots"></g>
+                                    </svg>
+                                    <div id="crypto-chart-x-axis" class="chart-x-axis"></div>
+                                    <div id="crypto-chart-tooltip" class="chart-tooltip" style="display: none;">
+                                        <span class="tooltip-rate"></span>
+                                        <span class="tooltip-date"></span>
+                                    </div>
+                                </div>
+                                <div class="chart-change-row">
+                                    <span id="crypto-chart-change" class="chart-change">--</span>
+                                    <div class="chart-range-btns crypto-range-btns">
+                                        <button class="chart-range-btn active" data-days="7">7d</button>
+                                        <button class="chart-range-btn" data-days="30">1m</button>
+                                        <button class="chart-range-btn" data-days="180">6m</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <p id="crypto-updated" class="exchange-updated">Loading...</p>
+                    </div>
+                </div>
+
+                <!-- 2025-12-23: Stocks Widget for stock price tracking -->
+                <div class="card widget-card stocks-widget-card sidebar-widget-half" data-widget-id="stocks">
+                    <div class="widget-header">
+                        <h3 id="stocks-widget-title" class="widget-title">📈 Stocks</h3>
+                    </div>
+                    <div class="widget-content">
+                        <div id="stocks-list" class="stocks-list">
+                            <!-- Stock items rendered by JS -->
+                        </div>
+                        <p id="stocks-empty" class="stocks-empty" style="display: none;">No stocks to display</p>
+                        <p id="stocks-updated" class="exchange-updated">Loading...</p>
+                        <button id="btn-customize-stocks" class="btn btn-secondary btn-sm stocks-customize-btn">
+                            ⚙️ <span data-i18n="stocksCustomize">Customize</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 2025-12-17: Activity Log Widget for shared vault attribution -->
+                <div class="card widget-card sidebar-widget-half" data-widget-id="activity-log">
+                    <div class="widget-header">
+                        <h3 id="activity-log-title" class="widget-title">📋 Activity Log</h3>
+                    </div>
+                    <div class="widget-content">
+                        <div id="activity-log-list" class="activity-log-list">
+                            <!-- Activity items rendered by JS -->
+                        </div>
+                    </div>
+                </div>
+            </aside>
+        </div><!-- end workspace-layout -->
     </main>
 
     <!-- New Account Modal (2025-12-15: Added credit card fields) -->
@@ -1452,6 +1454,78 @@ CHANGE LOG:
         </div>
     </div>
 
+    <!-- 2025-12-24: Calendar Event Modal (native Google Calendar integration) -->
+    <div id="calendar-event-modal" class="modal" style="display: none;">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <h2 id="calendar-event-modal-title" class="modal-title">📅 Add to Calendar</h2>
+            <p id="calendar-event-modal-desc" class="modal-desc" data-i18n="calendarEventDesc">Create a reminder in your
+                Google Calendar.</p>
+
+            <div class="form-group">
+                <label id="label-event-title" for="input-event-title" data-i18n="eventTitleLabel">Event Title</label>
+                <input type="text" id="input-event-title" class="input" placeholder="Payment reminder">
+            </div>
+
+            <div class="form-group">
+                <label id="label-event-timing" for="select-event-timing" data-i18n="eventTimingLabel">When</label>
+                <select id="select-event-timing" class="input">
+                    <option value="today" data-i18n="timingToday">Later Today (9 PM)</option>
+                    <option value="tomorrow" data-i18n="timingTomorrow" selected>Tomorrow (9 AM)</option>
+                    <option value="nextweek" data-i18n="timingNextWeek">Next Week (9 AM)</option>
+                    <option value="custom" data-i18n="timingCustom">Pick Date...</option>
+                </select>
+            </div>
+
+            <!-- Custom date/time (shown when "Pick Date" is selected) -->
+            <div id="event-custom-date-group" class="form-group form-row" style="display: none;">
+                <input type="date" id="input-event-custom-date" class="input">
+                <input type="time" id="input-event-custom-time" class="input" value="09:00">
+            </div>
+
+            <div class="form-group">
+                <label id="label-event-recurrence" for="select-event-recurrence"
+                    data-i18n="eventRecurrenceLabel">Repeat</label>
+                <select id="select-event-recurrence" class="input">
+                    <option value="none" data-i18n="recurrenceNone">Does not repeat</option>
+                    <option value="daily" data-i18n="recurrenceDaily">Daily</option>
+                    <option value="weekly" data-i18n="recurrenceWeekly">Weekly</option>
+                    <option value="monthly" data-i18n="recurrenceMonthly">Monthly</option>
+                    <option value="yearly" data-i18n="recurrenceYearly">Yearly</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label id="label-event-notes" for="input-event-notes" data-i18n="eventNotesLabel">Notes
+                    (optional)</label>
+                <textarea id="input-event-notes" class="input textarea-sm" rows="2"
+                    placeholder="Additional notes..."></textarea>
+            </div>
+
+            <div class="modal-actions">
+                <button id="btn-cancel-event" class="btn btn-secondary">
+                    <span data-i18n="cancel">Cancel</span>
+                </button>
+                <button id="btn-add-event" class="btn btn-primary">
+                    <span data-i18n="addToCalendar">📅 Add to Calendar</span>
+                </button>
+            </div>
+
+            <!-- Fallback section (shown if Calendar scope not available) -->
+            <div id="calendar-fallback-section" class="calendar-fallback-section" style="display: none;">
+                <div class="fallback-divider">
+                    <span data-i18n="or">or</span>
+                </div>
+                <button id="btn-event-fallback" class="btn btn-secondary btn-full">
+                    <span data-i18n="openInGoogleCalendar">🔗 Open in Google Calendar</span>
+                </button>
+                <button id="btn-calendar-upgrade" class="btn-link calendar-upgrade-link">
+                    <span data-i18n="allowCalendarAccess">Allow Calendar access for better integration</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- 2025-12-20: Sticky Decks Container (floating notes) -->
     <div id="sticky-decks-container"></div>
 
@@ -1464,6 +1538,8 @@ CHANGE LOG:
     <script src="js/config.js"></script>
     <script src="js/gdrive.js"></script>
     <script src="js/calendar.js"></script>
+    <!-- 2025-12-24: Google Calendar API module for native event creation -->
+    <script src="js/gcalendar.js"></script>
     <!-- 2025-12-16: Widget system with SortableJS for drag-and-drop -->
     <script src="js/Sortable.min.js"></script>
     <script src="js/widgets.js"></script>
