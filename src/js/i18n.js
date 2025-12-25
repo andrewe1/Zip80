@@ -137,6 +137,7 @@ const I18n = (() => {
             btnNew: 'New Vault',
             btnReopen: "Re-open '${filename}'",
             btnReopenBase: 'Re-open last vault',
+            btnReopenUnified: "Re-open '${filename}'",  // 2025-12-24: Unified button text
 
             // Header
             headerTitle: '💸 Zip80',
@@ -536,6 +537,7 @@ const I18n = (() => {
             btnNew: 'Nueva Bóveda',
             btnReopen: "Reabrir '${filename}'",
             btnReopenBase: 'Reabrir última bóveda',
+            btnReopenUnified: "Reabrir '${filename}'",  // 2025-12-24: Unified button text
 
             // Header
             headerTitle: '💸 Zip80',

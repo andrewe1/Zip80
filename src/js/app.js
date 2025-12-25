@@ -322,8 +322,9 @@
         gdrivePickerTitle: document.getElementById('gdrive-picker-title'),
         gdriveVaultList: document.getElementById('gdrive-vault-list'),
         btnGdriveCancel: document.getElementById('btn-gdrive-cancel'),
-        linkGoogleReopen: document.getElementById('link-google-reopen'),
-        googleReopenFilename: document.getElementById('google-reopen-filename'),
+        // 2025-12-24: Unified reopen button elements
+        btnReopenCloudIcon: document.getElementById('btn-reopen-cloud-icon'),
+        btnReopenText: document.getElementById('btn-reopen-text'),
 
         // Encryption (2025-12-17)
         checkboxEncryptVault: document.getElementById('checkbox-encrypt-vault'),
@@ -1459,25 +1460,89 @@
         }
     }
 
+    /**
+     * Check for any recent vault (local or cloud) and show unified reopen button
+     * 2025-12-24: Updated to compare timestamps and show appropriate vault type
+     */
     async function checkForRecentFile() {
+        let localVault = null;
+        let cloudVault = null;
+
+        // Check for local vault
         try {
             const lastHandle = await Storage.getLastHandle();
-            if (lastHandle) {
-                elements.btnResume.style.display = 'block';
-                updateResumeButton(lastHandle.name);
-                return;
+            const lastFilename = await Storage.getLastFileName();
+            const localTimestamp = Storage.getLastLocalTimestamp ? Storage.getLastLocalTimestamp() : 0;
+
+            if (lastHandle || lastFilename) {
+                localVault = {
+                    name: lastHandle?.name || lastFilename,
+                    timestamp: localTimestamp,
+                    isCloud: false
+                };
             }
         } catch (e) {
-            console.log('IndexedDB handle not available:', e);
+            console.log('Local vault check failed:', e);
         }
 
-        // Fallback: check localStorage for filename (works even when handle fails)
-        const lastFilename = await Storage.getLastFileName();
-        if (lastFilename) {
-            elements.btnResume.style.display = 'block';
-            updateResumeButton(lastFilename);
+        // Check for cloud vault (read from localStorage even when signed out)
+        // 2025-12-24: Removed isSignedIn check so button shows cloud vault even when signed out
+        if (typeof GDrive !== 'undefined') {
+            const lastCloudVault = GDrive.getLastVault();
+            if (lastCloudVault && lastCloudVault.id) {
+                cloudVault = {
+                    name: lastCloudVault.name?.replace('.json', '') || 'Cloud Vault',
+                    timestamp: lastCloudVault.timestamp || 0,
+                    isCloud: true,
+                    id: lastCloudVault.id
+                };
+            }
+        }
+
+        // Determine which vault was used more recently
+        let lastVault = null;
+        if (localVault && cloudVault) {
+            lastVault = cloudVault.timestamp > localVault.timestamp ? cloudVault : localVault;
+        } else {
+            lastVault = cloudVault || localVault;
+        }
+
+        // Update the unified button
+        if (lastVault) {
+            elements.btnResume.style.display = 'flex';
+            updateUnifiedReopenButton(lastVault);
+        } else {
+            elements.btnResume.style.display = 'none';
         }
     }
+
+    /**
+     * Update the unified reopen button with vault info
+     * 2025-12-24: New function for unified button
+     */
+    function updateUnifiedReopenButton(vault) {
+        if (!vault) {
+            elements.btnResume.style.display = 'none';
+            return;
+        }
+
+        // Show/hide cloud icon based on vault type
+        if (elements.btnReopenCloudIcon) {
+            elements.btnReopenCloudIcon.style.display = vault.isCloud ? 'inline' : 'none';
+        }
+
+        // Update button text
+        if (elements.btnReopenText) {
+            elements.btnReopenText.textContent = I18n.t('btnReopenUnified', { filename: vault.name }) ||
+                `Re-open '${vault.name}'`;
+        }
+
+        // Store vault info for the click handler
+        lastUnifiedVault = vault;
+    }
+
+    // Store last unified vault for click handler
+    let lastUnifiedVault = null;
 
     // --- Event Listeners ---
 
@@ -1984,8 +2049,41 @@
         }
     }
 
+    /**
+     * Handle unified reopen button click
+     * 2025-12-24: Updated to handle both local and cloud vaults
+     * 2025-12-24: Triggers sign-in when trying to open cloud vault while signed out
+     */
     async function handleReopen() {
-        // Fallback filename for error message (await needed for Electron)
+        // Check if we should open a cloud vault
+        if (lastUnifiedVault && lastUnifiedVault.isCloud) {
+            // If not signed in, trigger sign-in first
+            if (!GDrive.isSignedIn()) {
+                try {
+                    // Trigger sign-in and wait for result
+                    const signedIn = await GDrive.signIn();
+                    if (!signedIn) {
+                        // Sign-in was cancelled or failed
+                        return;
+                    }
+                    // After successful sign-in, try to open the vault
+                } catch (err) {
+                    console.error('Sign-in error:', err);
+                    showToast(I18n.t('toastGoogleError'), false);
+                    return;
+                }
+            }
+
+            try {
+                await loadCloudVault(lastUnifiedVault.id);
+            } catch (err) {
+                console.error('Cloud reopen error:', err);
+                showToast(`${I18n.t('toastErrorReopen')} (${lastUnifiedVault.name})`, false);
+            }
+            return;
+        }
+
+        // Open local vault
         const filename = (await Storage.getLastFileName()) || 'file';
 
         try {
@@ -3239,8 +3337,8 @@
         elements.workspace.style.display = 'none';
         elements.startupScreen.style.display = 'flex';
 
-        // 2025-12-17: Update cloud reopen link
-        updateCloudReopenLink();
+        // 2025-12-24: Update unified reopen button with most recent vault
+        checkForRecentFile();
 
         // 2025-12-19: Stop inactivity timer when vault is closed
         stopInactivityTimer();
@@ -3484,9 +3582,7 @@
         if (elements.btnGdriveCancel) {
             elements.btnGdriveCancel.addEventListener('click', closeVaultPickerModal);
         }
-        if (elements.linkGoogleReopen) {
-            elements.linkGoogleReopen.addEventListener('click', handleReopenCloudVault);
-        }
+        // 2025-12-24: Removed linkGoogleReopen event listener - now handled by unified btn-resume
         if (elements.gdrivePickerModal) {
             elements.gdrivePickerModal.querySelector('.modal-backdrop')
                 .addEventListener('click', closeVaultPickerModal);
@@ -3513,13 +3609,14 @@
             elements.googleUserAvatar.src = user.picture || '';
             elements.googleUserName.textContent = user.name || user.email || '';
 
-            // 2025-12-17: Show reopen link if there's a last cloud vault
-            updateCloudReopenLink();
+            // 2025-12-24: Update unified reopen button with cloud vault info if available
+            checkForRecentFile();
         } else {
             // Show signed-out state
             elements.btnGoogleSignIn.style.display = 'flex';
             elements.googleUserSection.style.display = 'none';
-            elements.linkGoogleReopen.style.display = 'none';
+            // 2025-12-24: Re-check for local vaults only
+            checkForRecentFile();
         }
     }
 

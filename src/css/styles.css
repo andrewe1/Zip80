@@ -642,6 +642,30 @@ html.dark .header-logo-dark {
     margin-bottom: var(--space-lg);
 }
 
+/* 2025-12-24: Unified Reopen Button */
+.btn-reopen {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-sm);
+    /* Match btn-lg sizing */
+    min-height: 56px;
+    padding: var(--space-md) var(--space-xl);
+    font-size: var(--font-size-lg);
+    width: 100%;
+    /* Zip80 green from logo */
+    background-color: #22c55e;
+    box-shadow: 0 4px 15px rgba(34, 197, 94, 0.3);
+}
+
+.btn-reopen:hover {
+    background-color: #16a34a;
+}
+
+.btn-reopen-cloud-icon {
+    font-size: 1.1em;
+}
+
 /* --- MENU BAR (2025-12-17) --- */
 /* Top toolbar for view modes and global options */
 .menu-bar {

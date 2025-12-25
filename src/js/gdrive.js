@@ -323,8 +323,8 @@ const GDrive = (() => {
                 resolve(false);
             };
 
-            // Request access token
-            tokenClient.requestAccessToken({ prompt: 'consent' });
+            // Request access token (empty prompt = only ask for consent when needed)
+            tokenClient.requestAccessToken({ prompt: '' });
         });
     }
 
@@ -585,8 +585,13 @@ const GDrive = (() => {
      * @param {string} fileId - Drive file ID
      * @param {string} name - Vault filename
      */
+    // 2025-12-24: Added timestamp for unified reopen button feature
     function saveLastVault(fileId, name) {
-        localStorage.setItem(LAST_VAULT_KEY, JSON.stringify({ id: fileId, name: name }));
+        localStorage.setItem(LAST_VAULT_KEY, JSON.stringify({
+            id: fileId,
+            name: name,
+            timestamp: Date.now()
+        }));
     }
 
     /**

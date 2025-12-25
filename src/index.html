@@ -154,8 +154,11 @@ CHANGE LOG:
                 </button>
             </div>
 
-            <button id="btn-resume" class="btn-link" style="display: none;">
-                ↻ Re-open last file
+            <!-- 2025-12-24: Unified reopen button for both local and cloud vaults -->
+            <button id="btn-resume" class="btn btn-primary btn-lg btn-reopen" style="display: none;">
+                <span class="btn-icon">↻</span>
+                <span id="btn-reopen-cloud-icon" class="btn-reopen-cloud-icon" style="display: none;">☁️</span>
+                <span id="btn-reopen-text" data-i18n="btnReopenBase">Re-open last vault</span>
             </button>
 
             <!-- 2025-12-16: Google Drive Cloud Storage Section -->
@@ -199,10 +202,7 @@ CHANGE LOG:
                             ✨ <span data-i18n="btnNewCloudVault">New Cloud Vault</span>
                         </button>
                     </div>
-                    <!-- 2025-12-17: Reopen last cloud vault link -->
-                    <a id="link-google-reopen" href="#" class="reopen-link cloud-reopen-link" style="display: none;">
-                        <span data-i18n="btnReopenBase">Reopen</span> '<span id="google-reopen-filename"></span>'
-                    </a>
+                    <!-- 2025-12-24: Removed separate cloud reopen link - now handled by unified btn-resume above -->
                 </div>
             </div>
         </div>

@@ -94,6 +94,8 @@ const Storage = (() => {
         // Also save filename to localStorage as backup
         if (handle && handle.name) {
             localStorage.setItem(LAST_FILENAME_KEY, handle.name);
+            // 2025-12-24: Save timestamp for unified reopen button
+            localStorage.setItem('zip80_lastLocalTimestamp', Date.now().toString());
         }
 
         const database = await initDB();
@@ -111,6 +113,15 @@ const Storage = (() => {
      */
     function getLastFileName() {
         return localStorage.getItem(LAST_FILENAME_KEY);
+    }
+
+    /**
+     * Get timestamp when local vault was last opened
+     * 2025-12-24: Added for unified reopen button feature
+     */
+    function getLastLocalTimestamp() {
+        const ts = localStorage.getItem('zip80_lastLocalTimestamp');
+        return ts ? parseInt(ts, 10) : 0;
     }
 
     async function getLastHandle() {
@@ -351,6 +362,12 @@ const Storage = (() => {
 
             getLastHandle: async () => null,  // Not used in Electron
 
+            // 2025-12-24: For unified reopen button
+            getLastLocalTimestamp() {
+                const ts = localStorage.getItem('zip80_lastLocalTimestamp');
+                return ts ? parseInt(ts, 10) : 0;
+            },
+
             exportToJSON,
             handleDrop: async () => { throw new Error('Drop not supported in Electron'); }
         };
@@ -361,6 +378,7 @@ const Storage = (() => {
         isElectron: false,
         getLastHandle,
         getLastFileName,
+        getLastLocalTimestamp,  // 2025-12-24: For unified reopen button
         openFilePicker,
         createNewFile,
         reopenLastFile,
