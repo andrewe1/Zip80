@@ -79,6 +79,7 @@ CHANGE LOG:
 - 2025-12-19: Added widget popout floating window container
 - 2025-12-19: Added Share Vault modal and options dropdown button for cloud vaults
 - 2025-12-19: Added Browse Drive button and GAPI script for Picker API (shared files)
+- 2025-12-24: Security: Added Content Security Policy meta tag for XSS prevention
 -->
 <!DOCTYPE html>
 <html lang="en">
@@ -87,6 +88,16 @@ CHANGE LOG:
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Zip80 - A simple, accessible expense tracker with local file storage">
+    <!-- 2025-12-24: Content Security Policy for XSS prevention -->
+    <meta http-equiv="Content-Security-Policy" content="
+        default-src 'self';
+        script-src 'self' https://accounts.google.com https://apis.google.com;
+        style-src 'self' 'unsafe-inline';
+        img-src 'self' data: https: blob:;
+        connect-src 'self' https://www.googleapis.com https://oauth2.googleapis.com https://api.allorigins.win https://api.frankfurter.app https://api.coingecko.com https://query1.finance.yahoo.com;
+        frame-src https://accounts.google.com https://docs.google.com;
+        font-src 'self';
+    ">
     <title>Zip80 Expense Tracker</title>
     <link rel="stylesheet" href="css/styles.css">
     <!-- 2025-12-16: Google Identity Services for OAuth2 -->

@@ -95,6 +95,7 @@
  * - 2025-12-22: Added image pan functionality for zoomed attachments (click and drag to pan)
  * - 2025-12-22: Moved zoom button to header bar to prevent scrolling with image content
  * - 2025-12-22: Added auto-backup for cloud vaults (every 3 days, configurable in settings, backup now button)
+ * - 2025-12-24: Security: Added escapeHtml() to activity log, vault picker for XSS prevention
  */
 
 (() => {
@@ -3510,8 +3511,9 @@
                     userBadge = `<span class="activity-user">${I18n.t('activityYou')}</span>`;
                 } else {
                     // Other collaborator - show first name
+                    // 2025-12-24: Added escapeHtml for XSS prevention
                     const displayName = tx.createdBy.name || tx.createdBy.email.split('@')[0];
-                    userBadge = `<span class="activity-user">${displayName}</span>`;
+                    userBadge = `<span class="activity-user">${escapeHtml(displayName)}</span>`;
                 }
             }
 
@@ -3519,7 +3521,7 @@
                 <div class="activity-log-item">
                     <span class="activity-icon">${isIncome ? '💰' : '💸'}</span>
                     <div class="activity-content">
-                        <div class="activity-desc">${tx.desc}</div>
+                        <div class="activity-desc">${escapeHtml(tx.desc)}</div>
                         <div class="activity-meta">
                             ${userBadge}
                             <span class="activity-time">${timeStr}</span>
@@ -3726,7 +3728,7 @@
                 <div class="gdrive-vault-item" data-file-id="${vault.id}">
                     <span class="gdrive-vault-icon">📁</span>
                     <div class="gdrive-vault-info">
-                        <div class="gdrive-vault-name">${vault.name}</div>
+                        <div class="gdrive-vault-name">${escapeHtml(vault.name)}</div>
                         <div class="gdrive-vault-date">${dateStr}</div>
                     </div>
                     ${sharedBadge}
